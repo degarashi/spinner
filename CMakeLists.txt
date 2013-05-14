@@ -1,0 +1,10 @@
+cmake_minimum_required(VERSION 2.6)
+project(dgmath)
+set(CMAKE_CXX_COMPILER "g++-4.80")
+include_directories("/usr/local/include/c++/4.8.0")
+include_directories("/usr/local/include/c++/4.8.0/i686-pc-linux-gnu")
+link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.0")
+set(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -g -O0")
+add_executable(dgmath main.cpp)
+
+install(TARGETS dgmath RUNTIME DESTINATION bin)
