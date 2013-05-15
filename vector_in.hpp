@@ -66,19 +66,12 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	template <bool A>
 	float dot(const VecT<DIM,A>& v) const {
 		__m128 m0 = _mm_mul_ps(LOADTHIS(), v.loadPS());
+		SUMVEC(m0)
 		float ret;
-#ifdef USE_SSE3
-		m0 = _mm_hadd_ps(m0,m0);
-		_mm_store_ss(&ret, _mm_hadd_ps(m0,m0));
-#else
-		__m128 m1 = _mm_shuffle_ps(m0, m0, _MM_SHUFFLE(0,1,0,1));
-		m1 = _mm_add_ps(m0,m1);
-		m0 = _mm_shuffle_ps(m1,m1, _MM_SHUFFLE(1,1,1,1));
-		_mm_store_ss(&ret, _mm_add_ss(m0,m1));
-#endif
+		_mm_store_ss(&ret, m0);
 		return ret;
 	}
-	
+
 	// 最小値選択
 	template <bool A>
 	Vec getMin(const VecT<DIM,A>& v) const {
@@ -107,6 +100,30 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		return _mm_cvttps_pi32(r0) != 0;
 	}
 	
+	void normalize() {
+		*this = normalization();
+	}
+	Vec normalization() const {
+		float tmp = length();
+		__m128 r0 = _mm_load_ps1(&tmp);
+		r0 = _mm_div_ps(LOADTHIS(), r0);
+		return Vec(r0);
+	}
+	//! ベクトルの長さ
+	float length() const {
+		return std::sqrt(len_sq());
+	}
+	//! ベクトル長の2乗
+	float len_sq() const {
+		__m128 r0 = LOADTHISZ();
+		r0 = _mm_mul_ps(r0, r0);
+		SUMVEC(r0)
+		
+		float ret;
+		_mm_store_ss(&ret, r0);
+		return ret;
+	}
+	
 #if DIM==4
 	using Vec3 = VecT<3,BOOLNIZE(ALIGN)>;
 	Vec3 asVec3() const {
@@ -122,15 +139,15 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		__m128 r0 = LOADTHIS(),
 				r1 = v.loadPS();
 		// r0[y,z,x]
-		__m128 m0 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,2,0)),
+		__m128 m0 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,0,2,1)),
 		// r0[z,x,y]
-				m1 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,2,0,1)),
+				m1 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,0,2)),
 		// r1[z,x,y]
-				m2 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,2,0,1)),
+				m2 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,1,0,2)),
 		// r1[y,z,x]
-				m3 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,1,2,0));
-		r0 = _mm_mul_ps(m0,m1);
-		r1 = _mm_mul_ps(m2,m3);
+				m3 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,0,2,1));
+		r0 = _mm_mul_ps(m0,m2);
+		r1 = _mm_mul_ps(m1,m3);
 		return Vec(_mm_sub_ps(r0, r1));
 	}
 	template <bool A>

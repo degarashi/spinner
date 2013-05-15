@@ -1,17 +1,25 @@
 #pragma once
 #ifdef USE_SSE3
 	#include <pmmintrin.h>
+	// rの各要素を足し合わせる
+	#define SUMVEC(r)	{ r = _mm_hadd_ps(r,r); \
+			r = _mm_hadd_ps(r,r); }
 #else
 	#include <xmmintrin.h>
+	#define SUMVEC(r)	{ __m128 tmp = _mm_shuffle_ps(r, r, _MM_SHUFFLE(0,1,2,3)); \
+			tmp = _mm_add_ps(r, tmp); \
+			r = _mm_shuffle_ps(tmp,tmp, _MM_SHUFFLE(1,0,0,1)); \
+			r = _mm_add_ps(r, tmp); }
 #endif
 
 #define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
+#include <cmath>
 
 // アラインメントや次元毎のロード/ストア関数を定義
 alignas(16)
-const static float xmm_tmp1000[4]={1.0f, 0, 0, 0},
-					xmm_tmp0111[4]={0,1,1,1},
+const static float xmm_tmp0001[4]={1,0,0,0},
+					xmm_tmp0111[4]={1,1,1,0},
 					xmm_tmp0000[4]={0,0,0,0},
 					xmm_tmp0[1] = {0};
 
