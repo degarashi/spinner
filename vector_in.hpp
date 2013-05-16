@@ -1,8 +1,23 @@
-//! ベクトルクラスヘッダ
-/*!	事前にDIM, ALIGNを定義
-	DIM = 2-4
-	ALIGN = (nothing) or 'A' */
+//! ベクトルクラス本体ヘッダ
+/*! 2-4次元のベクトルをアラインメント有りと無しでそれぞれ定義 */
 
+#if !BOOST_PP_IS_ITERATING
+	#ifndef VECTOR_IN_HEADER_
+		#define VECTOR_IN_HEADER_
+		#include <cmath>
+		#include <boost/operators.hpp>
+		#define BOOST_PP_VARIADICS 1
+		#include <boost/preprocessor.hpp>
+		
+		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_in.hpp", 0))
+		#include BOOST_PP_ITERATE()
+		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_in.hpp", 1))
+		#include BOOST_PP_ITERATE()
+	#endif
+#else
+
+#define ALIGN			BOOST_PP_ITERATION_FLAGS_1()
+#define DIM				BOOST_PP_ITERATION()
 //! 自身のベクトル要素をレジスタに読み出し
 #define BASE_LOADPS(ZFLAG,ptr) BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(ZFLAG, BOOST_PP_CAT(AFLAG(ALIGN), DIM)))(ptr)
 #define LOADTHIS()		BASE_LOADPS(NOTHING, (this->m))
@@ -175,6 +190,8 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 
 };
 
+#undef DIM
+#undef ALIGN
 #undef DEF_OP
 #undef BASE_LOADPS
 #undef LOADTHIS
@@ -189,3 +206,5 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 #undef Vec
 #undef UVec
 #undef AVec
+
+#endif

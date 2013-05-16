@@ -12,10 +12,6 @@
 			r = _mm_add_ps(r, tmp); }
 #endif
 
-#define BOOST_PP_VARIADICS 1
-#include <boost/preprocessor.hpp>
-#include <cmath>
-
 // アラインメントや次元毎のロード/ストア関数を定義
 alignas(16)
 const static float xmm_tmp0001[4]={1,0,0,0},
@@ -44,59 +40,13 @@ const static float xmm_tmp0001[4]={1,0,0,0},
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
 #define STOREPS_A2(ptr, r)	_mm_storel_pi((__m64*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)
-
-// ----------- ベクトル基底定義 -----------
-#define SEQ_VECELEM (x)(y)(z)(w)
+					
+#define BOOST_PP_VARIADICS 1
+#include <boost/preprocessor.hpp>
 #define NOTHING
 #define BOOLNIZE(b) BOOST_PP_IF(b,true,false)
 #define AFLAG(a) BOOST_PP_IF(a,A,NOTHING)
-#define DEF_REGSET(align, n)	VecT(__m128 r){ BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(align)), n)(m, r); }
-#define DEF_VECBASE(z,n,align)	template <> struct BOOST_PP_IF(align, alignas(16), NOTHING) \
-	VecT<n, BOOLNIZE(align)> { \
-	union { \
-		struct {float BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, n)); }; \
-		float m[n]; \
-	}; \
-	VecT() = default; \
-	DEF_REGSET(align,n) \
-	VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, n))) { \
-		BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, n)) } \
-	__m128 loadPS() const { return BOOST_PP_IF(align, _mm_load_ps, _mm_loadu_ps)(m); } };
 
-#define DEF_VECS(align) BOOST_PP_REPEAT_FROM_TO(2,5,DEF_VECBASE,align)
-	
-#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
-#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
-#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
-
-template <int N, bool A>
-struct VecT;
-
-// アラインメント無し
-DEF_VECS(0)
-// 16byteアラインメント有り
-DEF_VECS(1)
-
-#include <boost/operators.hpp>
-
-#define ALIGN 1
-#define DIM 4
-#include "vector_in.hpp"
-#undef DIM
-#define DIM 3
-#include "vector_in.hpp"
-#undef DIM
-#define DIM 2
-#include "vector_in.hpp"
-
-#undef ALIGN
-#define ALIGN 0
-#undef DIM
-#define DIM 4
-#include "vector_in.hpp"
-#undef DIM
-#define DIM 3
-#include "vector_in.hpp"
-#undef DIM
-#define DIM 2
+// ----------- ベクトル基底定義 -----------
+#include "vector_base.hpp"
 #include "vector_in.hpp"
