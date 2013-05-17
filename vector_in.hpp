@@ -56,13 +56,12 @@
 	UVec&& operator op (UVec&& v) const { \
 		STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
 		return std::forward<UVec>(v); }
-
+namespace spn {
 struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	enum { width = DIM };
 	using AVec = VecT<DIM,true>;
 	using UVec = VecT<DIM,false>;
 	using VecT::VecT;
-	constexpr const static float EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 	
 	// -------------------- ctor --------------------
 	//! アラインメント済ベクトルで初期化
@@ -241,4 +240,5 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 
 	// TODO: 行列との計算ルーチン実装
 };
+}
 #endif

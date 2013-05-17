@@ -1,6 +1,7 @@
 #include <iostream>
 #include "vector.hpp"
 
+using namespace spn;
 int main(int argc, char **argv) {
 	AVec3 v{1,0,0},
 		v2{0,1,0};

@@ -12,15 +12,16 @@
 		#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
 		#define DEF_REGSET(align, n)	VecT(__m128 r){ BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(align)), n)(m, r); }
 		#define SEQ_VECELEM (x)(y)(z)(w)
-		
-		template <int N, bool A>
-		struct VecT;
-		// アラインメント無し
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 0))
-		#include BOOST_PP_ITERATE()
-		// 16byteアラインメント有り
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 1))
-		#include BOOST_PP_ITERATE()
+		namespace spn {
+			template <int N, bool A>
+			struct VecT;
+			// アラインメント無し
+			#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 0))
+			#include BOOST_PP_ITERATE()
+			// 16byteアラインメント有り
+			#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 1))
+			#include BOOST_PP_ITERATE()
+		}
 	#endif
 #else
 	#define DIM		BOOST_PP_ITERATION()

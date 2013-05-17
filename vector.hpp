@@ -12,13 +12,19 @@
 			r = _mm_add_ps(r, tmp); }
 #endif
 
-// アラインメントや次元毎のロード/ストア関数を定義
+namespace spn {
+constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
+// SSEレジスタ用の定数
 alignas(16)
 const static float xmm_tmp0001[4]={1,0,0,0},
 					xmm_tmp0111[4]={1,1,1,0},
 					xmm_tmp0000[4]={0,0,0,0},
+					xmm_tmp1000[4]={0,0,0,1},
+					xmm_tmp1111[4]={1,1,1,1},
+					xmm_epsilon[4]={FLOAT_EPSILON, FLOAT_EPSILON, FLOAT_EPSILON, FLOAT_EPSILON},
 					xmm_tmp0[1] = {0};
-
+}
+// 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
 #define LOADPS_A4(ptr)		_mm_load_ps(ptr)			// アラインメント済み4次元ベクトル読み込み
 #define LOADPS_4(ptr)		_mm_loadu_ps(ptr)
