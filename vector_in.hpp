@@ -34,8 +34,6 @@
 #define STOREPSU(ptr,r)	BOOST_PP_CAT(STOREPS_, DIM)(ptr,r)
 
 #define Vec		BOOST_PP_CAT(BOOST_PP_IF(ALIGN,A,NOTHING), BOOST_PP_CAT(Vec,DIM))
-#define UVec	VecT<DIM,false>
-#define AVec	VecT<DIM,true>
 
 #define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (float s) { \
 		STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
@@ -46,6 +44,12 @@
 	Vec& operator BOOST_PP_CAT(op,=) (const UVec& v) { \
 		STORETHIS(func(LOADTHIS(), LOADPSU(v.m))); \
 		return *this; } \
+	Vec operator op (float s) const { \
+		return Vec(func(LOADTHIS(), _mm_load1_ps(&s))); } \
+	AVec operator op (const AVec& v) const { \
+		return AVec(func(LOADTHIS(), LOADPS(v.m))); } \
+	UVec operator op (const UVec& v) const { \
+		return UVec(func(LOADTHIS(), LOADPSU(v.m))); } \
 	AVec&& operator op (AVec&& v) const { \
 		STOREPS(v.m, func(LOADTHIS(), LOADPS(v.m))); \
 		return std::forward<AVec>(v); } \
@@ -54,13 +58,20 @@
 		return std::forward<UVec>(v); }
 
 struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
+	enum { width = DIM };
+	using AVec = VecT<DIM,true>;
+	using UVec = VecT<DIM,false>;
 	using VecT::VecT;
-	Vec(const VecT<DIM,true>& v) {
-		STORETHIS(LOADPS(v.m));
-	}
-	Vec(const VecT<DIM,false>& v) {
-		STORETHIS(LOADPSU(v.m));
-	}
+	constexpr const static float EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
+	
+	// -------------------- ctor --------------------
+	//! アラインメント済ベクトルで初期化
+	Vec(const AVec& v) {
+		STORETHIS(LOADPS(v.m)); }
+	//! アラインメント無しベクトルで初期化
+	Vec(const UVec& v) {
+		STORETHIS(LOADPSU(v.m)); }
+	
 	Vec& operator = (const AVec& v) {
 		STORETHIS(LOADPS(v.m));
 		return *this;
@@ -70,24 +81,39 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		return *this;
 	}
 	
-	// オペレータ定義
+	// -------------------- operators --------------------
 	// ベクトルとの積算や除算は同じ要素同士の演算とする
 	DEF_OP(+, _mm_add_ps)
 	DEF_OP(-, _mm_sub_ps)
 	DEF_OP(*, _mm_mul_ps)
 	DEF_OP(/, _mm_div_ps)
 
+	// -------------------- others --------------------
+	static float _sumup(__m128 xm) {
+		SUMVEC(xm)
+		float ret;
+		_mm_store_ss(&ret, xm);
+		return ret;
+	}
 	// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
 	template <bool A>
 	float dot(const VecT<DIM,A>& v) const {
-		__m128 m0 = _mm_mul_ps(LOADTHIS(), v.loadPS());
-		SUMVEC(m0)
-		float ret;
-		_mm_store_ss(&ret, m0);
-		return ret;
+		return _sumup(_mm_mul_ps(LOADTHIS(), v.loadPS()));
+	}
+	float average() const {
+		return _sumup(LOADTHIS());
+	}
+	template <bool A>
+	float distance(const VecT<DIM,A>& v) const {
+		return std::sqrt(dist_sq(v));
+	}
+	template <bool A>
+	float dist_sq(const VecT<DIM,A>& v) const {
+		auto tv = v - *this;
+		return tv.len_sq();
 	}
 
-	// 最小値選択
+	//! 要素ごとに最小値選択
 	template <bool A>
 	Vec getMin(const VecT<DIM,A>& v) const {
 		return Vec(_mm_min_ps(LOADTHIS(), v.loadPS())); }
@@ -95,7 +121,7 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	void selectMin(const VecT<DIM,A>& v) {
 		STORETHIS(_mm_min_ps(LOADTHIS(), v.loadPS())); }
 	
-	// 最大値選択
+	//! 要素ごとに最大値選択
 	template <bool A>
 	Vec getMax(const VecT<DIM,A>& v) const {
 		return Vec(_mm_max_ps(LOADTHIS(), v.loadPS())); }
@@ -104,9 +130,9 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		STORETHIS(_mm_max_ps(LOADTHIS(), v.loadPS())); }
 
 	Vec operator - () const {
-		const float c_tmp = -1.0f;
-		return Vec(_mm_mul_ps(LOADTHIS(), _mm_load_ps1(&c_tmp)));
+		return *this * -1.0f;
 	}
+	/*! \return 要素が全て等しい時にtrue, それ以外はfalse */
 	template <bool A>
 	bool operator == (const VecT<DIM,A>& v) const {
 		__m128 r0 = _mm_cmpeq_ps(LOADTHIS(), v.loadPS());
@@ -114,7 +140,7 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,2,3)));
 		return _mm_cvttps_pi32(r0) != 0;
 	}
-	
+
 	void normalize() {
 		*this = normalization();
 	}
@@ -124,11 +150,11 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		r0 = _mm_div_ps(LOADTHIS(), r0);
 		return Vec(r0);
 	}
-	//! ベクトルの長さ
+	/*! \return ベクトルの長さ */
 	float length() const {
 		return std::sqrt(len_sq());
 	}
-	//! ベクトル長の2乗
+	/*! \return ベクトル長の2乗 */
 	float len_sq() const {
 		__m128 r0 = LOADTHISZ();
 		r0 = _mm_mul_ps(r0, r0);
@@ -138,17 +164,40 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		_mm_store_ss(&ret, r0);
 		return ret;
 	}
+	void saturate(float fMin, float fMax) {
+		*this = saturation(fMin, fMax);
+	}
+	Vec saturation(float fMin, float fMax) const {
+		__m128 xm = _mm_max_ps(LOADTHIS(), _mm_load1_ps(&fMin));
+		return Vec(_mm_min_ps(xm, _mm_load1_ps(&fMax)));
+	}
+	void lerp(const UVec& v, float r) {
+		*this = l_intp(v,r);
+	}
+	template <bool A>
+	Vec l_intp(const VecT<DIM,A>& v, float r) const {
+		_mm_mul_ps(_mm_load1_ps(&r), _mm_add_ps(LOADTHIS(), v.loadPS()));
+	}
+	
+#if ALIGN==1
+	//! AVec -> Vec へ暗黙変換
+	operator VecT<DIM,false>& () { return *reinterpret_cast<VecT<DIM,false>*>(this); }
+	operator const VecT<DIM,false>& () const { return *reinterpret_cast<const VecT<DIM,false>*>(this); }
+#endif
 	
 #if DIM==4
 	using Vec3 = VecT<3,BOOLNIZE(ALIGN)>;
+	/*! \return x,y,z成分 */
 	Vec3 asVec3() const {
 		return Vec3(x,y,z);
 	}
+	/*! \return x,y,zそれぞれをwで割った値 */
 	Vec3 asVec3Coord() const {
 		__m128 r0 = _mm_rcp_ps(_mm_load_ps1(&w));
 		return Vec3(_mm_mul_ps(LOADTHIS(), r0));
 	}
 #elif DIM==3
+	/*! \return this X v の外積ベクトル */
 	template <bool A>
 	Vec cross(const VecT<DIM,A>& v) const {
 		__m128 r0 = LOADTHIS(),
@@ -165,10 +214,12 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 		r1 = _mm_mul_ps(m1,m3);
 		return Vec(_mm_sub_ps(r0, r1));
 	}
+	//! 外積計算cross()と同義
 	template <bool A>
 	void operator %= (const VecT<DIM,A>& v) {
 		*this = cross(v);
 	}
+	//! 外積計算cross()と同義
 	template <bool A>
 	Vec operator % (const VecT<DIM,A>& v) const {
 		return cross(v);
@@ -177,9 +228,9 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	Vec4 asVec4(float w) const {
 		return Vec4(x,y,z,w);
 	}
-	// planeLerp
-	// flip(plane)
-	// *= quat
+	// TODO:  planeLerp
+	// TODO: flip(plane)
+	// TODO: *= quat
 #elif DIM==2
 	// ccw
 	template <bool A>
@@ -188,23 +239,6 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	}
 #endif
 
+	// TODO: 行列との計算ルーチン実装
 };
-
-#undef DIM
-#undef ALIGN
-#undef DEF_OP
-#undef BASE_LOADPS
-#undef LOADTHIS
-#undef LOADTHISZ
-#undef STORETHIS
-#undef LOADPS
-#undef LOADPSU
-#undef LOADPSZ
-#undef LOADPSZU
-#undef STOREPS
-#undef STOREPSU
-#undef Vec
-#undef UVec
-#undef AVec
-
 #endif
