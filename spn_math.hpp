@@ -60,6 +60,6 @@ const static float xmm_tmp0001[4]={1,0,0,0},
 #define BOOLNIZE(b) BOOST_PP_IF(b,true,false)
 #define AFLAG(a) BOOST_PP_IF(a,A,NOTHING)
 
-// ----------- ベクトル基底定義 -----------
+// ----------- ベクトルや行列の定義 -----------
 #include "vector_base.hpp"
 #include "vector_in.hpp"

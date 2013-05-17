@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vector.hpp"
+#include "spn_math.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
