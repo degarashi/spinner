@@ -115,4 +115,3 @@ const static __m128 xmm_matI[4] = {
 
 // ----------- ベクトルや行列の定義 -----------
 #include "vector_base.hpp"
-#include "vector_in.hpp"
