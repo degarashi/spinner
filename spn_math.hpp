@@ -11,18 +11,71 @@
 			r = _mm_shuffle_ps(tmp,tmp, _MM_SHUFFLE(1,0,0,1)); \
 			r = _mm_add_ps(r, tmp); }
 #endif
+#define RCP22BIT(r) { __m128 tmprcp = _mm_rcp_ps(r); \
+	r = _mm_mul_ps(r, _mm_mul_ps(tmprcp, tmprcp)); \
+	tmprcp = _mm_add_ps(tmprcp,tmprcp); \
+	r = _mm_sub_ps(tmprcp, r); }
 
 namespace spn {
+//! ニュートン法で逆数を計算
+inline __m128 _mmRcp22Bit(__m128 r) {
+	__m128 tmp = _mm_rcp_ps(r);
+	r = _mm_mul_ps(r, _mm_mul_ps(tmp,tmp));
+	tmp = _mm_add_ps(tmp,tmp);
+	return _mm_sub_ps(tmp, r);
+}
+//! ニュートン法で逆数を計算して積算 = _mm_div_psよりはマシな除算
+inline __m128 _mmDivPs(__m128 r0, __m128 r1) {
+	return _mm_mul_ps(r0, _mmRcp22Bit(r1));
+}
+inline __m128 _mmAbsPs(__m128 r) {
+	const static __m128 signMask = _mm_set1_ps(-0.0f);
+	return _mm_andnot_ps(signMask, r);
+}
+inline __m128 _mmSetPs(float w, float z, float y, float x) {
+	const float tmp[4]{w,z,y,x};
+	return _mm_loadu_ps(tmp);
+}
+inline __m128 _mmSetPs(float s) {
+	return _mm_load1_ps(&s);
+}
+inline float _sseRcp22Bit(float s) {
+	__m128 tmp = _mm_load_ss(&s);
+	RCP22BIT(tmp)
+	float ret;
+	_mm_store_ss(&ret, tmp);
+	return ret;
+}
+
 constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 // SSEレジスタ用の定数
-alignas(16)
-const static float xmm_tmp0001[4]={1,0,0,0},
-					xmm_tmp0111[4]={1,1,1,0},
-					xmm_tmp0000[4]={0,0,0,0},
-					xmm_tmp1000[4]={0,0,0,1},
-					xmm_tmp1111[4]={1,1,1,1},
-					xmm_epsilon[4]={FLOAT_EPSILON, FLOAT_EPSILON, FLOAT_EPSILON, FLOAT_EPSILON},
-					xmm_tmp0[1] = {0};
+const static __m128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
+					xmm_tmp0111(_mmSetPs(1,1,1,0)),
+					xmm_tmp0000(_mmSetPs(0,0,0,0)),
+					xmm_tmp1000(_mmSetPs(0,0,0,1)),
+					xmm_tmp1111(_mmSetPs(1)),
+					xmm_epsilon(_mmSetPs(FLOAT_EPSILON)),
+					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON));
+
+template <int A, int B, int C, int D>
+inline __m128 _makeMask() {
+	__m128 zero = _mm_setzero_ps();
+	__m128 full = _mm_andnot_ps(zero, zero);
+	const int tmp2 = ((~D&1)<<3)|((~C&1)<<2)|((~B&1)<<1)|(~A&1);
+	__m128 tmp = _mm_move_ss(zero, full);
+	return _mm_shuffle_ps(tmp, tmp, tmp2);
+}
+const static __m128 xmm_mask0001(_makeMask<1,0,0,0>()),
+					xmm_mask0011(_makeMask<1,1,0,0>()),
+					xmm_mask0111(_makeMask<1,1,1,0>()),
+					xmm_mask1111(_makeMask<1,1,1,1>());
+					
+const static __m128 xmm_matI[4] = {
+	_mmSetPs(1,0,0,0),
+	_mmSetPs(0,1,0,0),
+	_mmSetPs(0,0,1,0),
+	_mmSetPs(0,0,0,1)
+};
 }
 // 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
@@ -37,7 +90,7 @@ const static float xmm_tmp0001[4]={1,0,0,0},
 
 #define LOADPS_A3(ptr)		LOADPS_A4(ptr)
 #define LOADPS_3(ptr)		LOADPS_4(ptr)
-#define LOADPS_BASE3(ptr,src,lfunc)	_mm_mul_ps(_mm_load_ps(src), lfunc(ptr))
+#define LOADPS_BASE3(ptr,src,lfunc)	_mm_mul_ps(src, lfunc(ptr))
 #define LOADPS_ZA3(ptr)		LOADPS_BASE3(ptr,xmm_tmp0111,_mm_load_ps)
 #define LOADPS_Z3(ptr)		LOADPS_BASE3(ptr,xmm_tmp0111,_mm_loadu_ps)
 #define LOADPS_IA3(ptr,n)	LOADPS_BASE3(ptr, xmm_matI[n], _mm_load_ps)
@@ -47,7 +100,7 @@ const static float xmm_tmp0001[4]={1,0,0,0},
 
 #define LOADPS_A2(ptr)		LOADPS_A4(ptr)
 #define LOADPS_2(ptr)		LOADPS_A2(ptr)
-#define LOADPS_ZA2(ptr)		_mm_loadl_pi(_mm_load_ps1(xmm_tmp0), (const __m64*)ptr)
+#define LOADPS_ZA2(ptr)		_mm_loadl_pi(xmm_tmp0000, (const __m64*)ptr)
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
 #define LOADPS_IA2(ptr,n)	_mm_loadl_pi(_mm_load_ps(xmm_matI[n]), (const __m64*)ptr)
 #define LOADPS_I2(ptr,n)	LOADPS_IA2(ptr,n)

@@ -35,27 +35,6 @@
 
 #define Vec		BOOST_PP_CAT(BOOST_PP_IF(ALIGN,A,NOTHING), BOOST_PP_CAT(Vec,DIM))
 
-#define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (float s) { \
-		STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
-		return *this; } \
-	Vec& operator BOOST_PP_CAT(op,=) (const AVec& v) { \
-		STORETHIS(func(LOADTHIS(), LOADPS(v.m))); \
-		return *this; } \
-	Vec& operator BOOST_PP_CAT(op,=) (const UVec& v) { \
-		STORETHIS(func(LOADTHIS(), LOADPSU(v.m))); \
-		return *this; } \
-	Vec operator op (float s) const { \
-		return Vec(func(LOADTHIS(), _mm_load1_ps(&s))); } \
-	AVec operator op (const AVec& v) const { \
-		return AVec(func(LOADTHIS(), LOADPS(v.m))); } \
-	UVec operator op (const UVec& v) const { \
-		return UVec(func(LOADTHIS(), LOADPSU(v.m))); } \
-	AVec&& operator op (AVec&& v) const { \
-		STOREPS(v.m, func(LOADTHIS(), LOADPS(v.m))); \
-		return std::forward<AVec>(v); } \
-	UVec&& operator op (UVec&& v) const { \
-		STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
-		return std::forward<UVec>(v); }
 namespace spn {
 struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	enum { width = DIM };
@@ -82,6 +61,27 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	
 	// -------------------- operators --------------------
 	// ベクトルとの積算や除算は同じ要素同士の演算とする
+	#define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (float s) { \
+			STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
+			return *this; } \
+		Vec& operator BOOST_PP_CAT(op,=) (const AVec& v) { \
+			STORETHIS(func(LOADTHIS(), LOADPS(v.m))); \
+			return *this; } \
+		Vec& operator BOOST_PP_CAT(op,=) (const UVec& v) { \
+			STORETHIS(func(LOADTHIS(), LOADPSU(v.m))); \
+			return *this; } \
+		Vec operator op (float s) const { \
+			return Vec(func(LOADTHIS(), _mm_load1_ps(&s))); } \
+		AVec operator op (const AVec& v) const { \
+			return AVec(func(LOADTHIS(), LOADPS(v.m))); } \
+		UVec operator op (const UVec& v) const { \
+			return UVec(func(LOADTHIS(), LOADPSU(v.m))); } \
+		AVec&& operator op (AVec&& v) const { \
+			STOREPS(v.m, func(LOADTHIS(), LOADPS(v.m))); \
+			return std::forward<AVec>(v); } \
+		UVec&& operator op (UVec&& v) const { \
+			STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
+			return std::forward<UVec>(v); }
 	DEF_OP(+, _mm_add_ps)
 	DEF_OP(-, _mm_sub_ps)
 	DEF_OP(*, _mm_mul_ps)
@@ -238,7 +238,7 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	}
 #endif
 
-	// TODO: 行列との計算ルーチン実装
+	// TODO: 行列との計算ルーチン実装(おそらく、別ファイル)
 };
 }
 #endif
