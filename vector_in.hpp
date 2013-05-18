@@ -23,53 +23,9 @@
 
 namespace spn {
 struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
-	using AVec = VecT<DIM,true>;
-	using UVec = VecT<DIM,false>;
 	using VecT::VecT;
-	
 	// -------------------- ctor --------------------
-	//! アラインメント済ベクトルで初期化
-	Vec(const AVec& v) {
-		STORETHIS(LOADPS(v.m)); }
-	//! アラインメント無しベクトルで初期化
-	Vec(const UVec& v) {
-		STORETHIS(LOADPSU(v.m)); }
-	
-	Vec& operator = (const AVec& v) {
-		STORETHIS(LOADPS(v.m));
-		return *this;
-	}
-	Vec& operator = (const UVec& v) {
-		STORETHIS(LOADPSU(v.m));
-		return *this;
-	}
-	
-	// -------------------- operators --------------------
-	// ベクトルとの積算や除算は同じ要素同士の演算とする
-	#define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (const AVec& v) { \
-			STORETHIS(func(LOADTHIS(), LOADPS(v.m))); \
-			return *this; } \
-		Vec& operator BOOST_PP_CAT(op,=) (const UVec& v) { \
-			STORETHIS(func(LOADTHIS(), LOADPSU(v.m))); \
-			return *this; } \
-		AVec operator op (const AVec& v) const { \
-			return AVec(func(LOADTHIS(), LOADPS(v.m))); } \
-		UVec operator op (const UVec& v) const { \
-			return UVec(func(LOADTHIS(), LOADPSU(v.m))); } \
-		AVec&& operator op (AVec&& v) const { \
-			STOREPS(v.m, func(LOADTHIS(), LOADPS(v.m))); \
-			return std::forward<AVec>(v); } \
-		UVec&& operator op (UVec&& v) const { \
-			STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
-			return std::forward<UVec>(v); } \
-		using VecT::operator op; \
-		using VecT::operator BOOST_PP_CAT(op,=);
-
-	DEF_OP(+, _mm_add_ps)
-	DEF_OP(-, _mm_sub_ps)
-	DEF_OP(*, _mm_mul_ps)
-	DEF_OP(/, _mmDivPs)
-
+	Vec(const VecT& v): VecT(v) {}
 	// -------------------- others --------------------
 	static float _sumup(__m128 xm) {
 		SUMVEC(xm)
