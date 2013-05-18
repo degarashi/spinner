@@ -15,29 +15,14 @@
 		#include BOOST_PP_ITERATE()
 	#endif
 #else
-
-#define ALIGN			BOOST_PP_ITERATION_FLAGS_1()
-#define DIM				BOOST_PP_ITERATION()
-//! 自身のベクトル要素をレジスタに読み出し
-#define BASE_LOADPS(ZFLAG,ptr) BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(ZFLAG, BOOST_PP_CAT(AFLAG(ALIGN), DIM)))(ptr)
-#define LOADTHIS()		BASE_LOADPS(NOTHING, (this->m))
-#define LOADTHISZ()		BASE_LOADPS(Z, (this->m))
-//! レジスタを自分のメモリ領域へ書き出し
-#define STORETHIS(r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN), DIM))(this->m,r)
-//! 同次元のベクトルをレジスタへ読み出し
-#define LOADPS(ptr)		BOOST_PP_CAT(LOADPS_A, DIM)(ptr)
-#define LOADPSU(ptr)	BOOST_PP_CAT(LOADPS_, DIM)(ptr)
-#define LOADPSZ(ptr)	BOOST_PP_CAT(LOADPS_ZA, DIM)(ptr)
-#define LOADPSZU(ptr)	BOOST_PP_CAT(LOADPS_Z, DIM)(ptr)
-//! 同次元のベクトルをレジスタへ書き出し
-#define STOREPS(ptr,r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(A, DIM))(ptr,r)
-#define STOREPSU(ptr,r)	BOOST_PP_CAT(STOREPS_, DIM)(ptr,r)
+#define DIM		BOOST_PP_ITERATION()
+#define ALIGN	BOOST_PP_ITERATION_FLAGS_1()
+#include "local_macro.hpp"
 
 #define Vec		BOOST_PP_CAT(BOOST_PP_IF(ALIGN,A,NOTHING), BOOST_PP_CAT(Vec,DIM))
 
 namespace spn {
 struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
-	enum { width = DIM };
 	using AVec = VecT<DIM,true>;
 	using UVec = VecT<DIM,false>;
 	using VecT::VecT;
@@ -61,17 +46,12 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 	
 	// -------------------- operators --------------------
 	// ベクトルとの積算や除算は同じ要素同士の演算とする
-	#define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (float s) { \
-			STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
-			return *this; } \
-		Vec& operator BOOST_PP_CAT(op,=) (const AVec& v) { \
+	#define DEF_OP(op, func)	Vec& operator BOOST_PP_CAT(op,=) (const AVec& v) { \
 			STORETHIS(func(LOADTHIS(), LOADPS(v.m))); \
 			return *this; } \
 		Vec& operator BOOST_PP_CAT(op,=) (const UVec& v) { \
 			STORETHIS(func(LOADTHIS(), LOADPSU(v.m))); \
 			return *this; } \
-		Vec operator op (float s) const { \
-			return Vec(func(LOADTHIS(), _mm_load1_ps(&s))); } \
 		AVec operator op (const AVec& v) const { \
 			return AVec(func(LOADTHIS(), LOADPS(v.m))); } \
 		UVec operator op (const UVec& v) const { \
@@ -81,11 +61,14 @@ struct Vec : VecT<DIM, BOOLNIZE(ALIGN)>, boost::equality_comparable<Vec> {
 			return std::forward<AVec>(v); } \
 		UVec&& operator op (UVec&& v) const { \
 			STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
-			return std::forward<UVec>(v); }
+			return std::forward<UVec>(v); } \
+		using VecT::operator op; \
+		using VecT::operator BOOST_PP_CAT(op,=);
+
 	DEF_OP(+, _mm_add_ps)
 	DEF_OP(-, _mm_sub_ps)
 	DEF_OP(*, _mm_mul_ps)
-	DEF_OP(/, _mm_div_ps)
+	DEF_OP(/, _mmDivPs)
 
 	// -------------------- others --------------------
 	static float _sumup(__m128 xm) {

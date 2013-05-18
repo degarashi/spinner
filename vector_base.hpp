@@ -26,15 +26,18 @@
 #else
 	#define DIM		BOOST_PP_ITERATION()
 	#define ALIGN	BOOST_PP_ITERATION_FLAGS_1()
-		
+	#include "local_macro.hpp"
+
 	template <>
 	struct BOOST_PP_IF(ALIGN, alignas(16), NOTHING) VecT<DIM, BOOLNIZE(ALIGN)> {
+		enum { width = DIM };
 		union {
 			struct {
 				float BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM));
 			};
 			float m[DIM];
 		};
+		// -------------------- ctor --------------------
 		VecT() = default;
 		DEF_REGSET(ALIGN,DIM)
 		VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))) {
@@ -43,5 +46,16 @@
 		__m128 loadPS() const {
 			return BOOST_PP_IF(ALIGN, _mm_load_ps, _mm_loadu_ps)(m);
 		}
+		
+		// -------------------- operators --------------------
+		#define DEF_OP(op, func)	VecT& operator BOOST_PP_CAT(op,=) (float s) { \
+				STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
+				return *this; } \
+			VecT operator op (float s) const { \
+				return VecT(func(LOADTHIS(), _mm_load1_ps(&s))); }
+		DEF_OP(+, _mm_add_ps)
+		DEF_OP(-, _mm_sub_ps)
+		DEF_OP(*, _mm_mul_ps)
+		DEF_OP(/, _mmDivPs)
 	};
 #endif
