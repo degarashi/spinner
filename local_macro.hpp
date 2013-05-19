@@ -14,9 +14,10 @@
 	#define STOREPS(ptr,r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(A, DIM))(ptr,r)
 	#define STOREPSU(ptr,r)	BOOST_PP_CAT(STOREPS_, DIM)(ptr,r)
 #else
-	#define LOADTHIS(n)		BASE_LOADPS(NOTHING, (this->ma[n]))
-	#define LOADTHISZ(n)	BASE_LOADPS(Z, (this->ma[n]))
-	#define STORETHIS(n,r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN), DIM))(this->ma[n],r)
+	#define LOADTHIS(n)			BASE_LOADPS(NOTHING, (this->ma[n]))
+	#define LOADTHISZ(n)		BASE_LOADPS(Z, (this->ma[n]))
+	#define LOADTHISI(n)		BOOST_PP_CAT(LOADPS_I, BOOST_PP_CAT(AFLAG(ALIGN), DIM))(this->ma[n], n)
+	#define STORETHIS(n,r)		BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN), DIM))(this->ma[n],r)
 #endif
 
 //! 同次元のベクトルをレジスタへ読み出し

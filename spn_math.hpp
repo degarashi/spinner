@@ -65,11 +65,16 @@ inline __m128 _makeMask() {
 	__m128 tmp = _mm_move_ss(zero, full);
 	return _mm_shuffle_ps(tmp, tmp, tmp2);
 }
-const static __m128 xmm_mask0001(_makeMask<1,0,0,0>()),
-					xmm_mask0011(_makeMask<1,1,0,0>()),
-					xmm_mask0111(_makeMask<1,1,1,0>()),
-					xmm_mask1111(_makeMask<1,1,1,1>());
-					
+const static __m128 xmm_mask[4] = {_makeMask<1,0,0,0>(),
+									_makeMask<1,1,0,0>(),
+									_makeMask<1,1,1,0>(),
+									_makeMask<1,1,1,1>()};
+const static float cs_matI[4][4] = {
+	{1,0,0,0},
+	{0,1,0,0},
+	{0,0,1,0},
+	{0,0,0,1}
+};
 const static __m128 xmm_matI[4] = {
 	_mmSetPs(1,0,0,0),
 	_mmSetPs(0,1,0,0),
@@ -119,3 +124,4 @@ const static __m128 xmm_matI[4] = {
 
 // ----------- ベクトルや行列の定義 -----------
 #include "vector_base.hpp"
+#include "matrix_base.hpp"
