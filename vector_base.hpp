@@ -12,7 +12,6 @@
 		#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
 		#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
 		#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
-		#define DEF_REGSET(align, n)	VecT(__m128 r){ BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(align)), n)(m, r); }
 		#define SEQ_VECELEM (x)(y)(z)(w)
 		namespace spn {
 			template <int N, bool A>
@@ -51,7 +50,9 @@
 				};
 				// -------------------- ctor --------------------
 				VecT() = default;
-				DEF_REGSET(ALIGN,DIM)
+				explicit VecT(__m128 r){
+					BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(ALIGN)), DIM)(m, r);
+				}
 				VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))) {
 					BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))
 				}
@@ -64,6 +65,10 @@
 				VecT(const UVec& v);
 				VecT& operator = (const AVec& v);
 				VecT& operator = (const UVec& v);
+				VecT& operator = (__m128 r) {
+					STOREPS(m, r);
+					return *this;
+				}
 				
 				// -------------------- operators --------------------
 				// ベクトルとの積算や除算は同じ要素同士の演算とする

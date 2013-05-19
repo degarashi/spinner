@@ -91,10 +91,14 @@ const static __m128 xmm_matI[4] = {
 #define LOADPS_A3(ptr)		LOADPS_A4(ptr)
 #define LOADPS_3(ptr)		LOADPS_4(ptr)
 #define LOADPS_BASE3(ptr,src,lfunc)	_mm_mul_ps(src, lfunc(ptr))
-#define LOADPS_ZA3(ptr)		LOADPS_BASE3(ptr,xmm_tmp0111,_mm_load_ps)
-#define LOADPS_Z3(ptr)		LOADPS_BASE3(ptr,xmm_tmp0111,_mm_loadu_ps)
-#define LOADPS_IA3(ptr,n)	LOADPS_BASE3(ptr, xmm_matI[n], _mm_load_ps)
-#define LOADPS_I3(ptr,n)	LOADPS_BASE3(ptr, xmm_matI[n], _mm_loadu_ps)
+#define LOADPS_ZA3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_load_ps(ptr))
+#define LOADPS_Z3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_loadu_ps(ptr))
+#define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
+										_mm_or_ps(xmm_mask[3], LOADPS_ZA3(ptr)), \
+										LOADPS_ZA3(ptr))
+#define LOADPS_I3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
+										_mm_or_ps(xmm_mask[3], LOADPS_Z3(ptr)), \
+										LOADPS_Z3(ptr))
 #define STOREPS_A3(ptr, r)	{ _mm_storel_pi((__m64*)ptr, r); _mm_store_ss(ptr+2, _mm_shuffle_ps(r, r, _MM_SHUFFLE(2,2,2,2))); }
 #define STOREPS_3(ptr, r)	STOREPS_A3(ptr,r)
 
@@ -102,7 +106,7 @@ const static __m128 xmm_matI[4] = {
 #define LOADPS_2(ptr)		LOADPS_A2(ptr)
 #define LOADPS_ZA2(ptr)		_mm_loadl_pi(xmm_tmp0000, (const __m64*)ptr)
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
-#define LOADPS_IA2(ptr,n)	_mm_loadl_pi(_mm_load_ps(xmm_matI[n]), (const __m64*)ptr)
+#define LOADPS_IA2(ptr,n)	_mm_loadl_pi(xmm_matI[n], (const __m64*)ptr)
 #define LOADPS_I2(ptr,n)	LOADPS_IA2(ptr,n)
 #define STOREPS_A2(ptr, r)	_mm_storel_pi((__m64*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)
