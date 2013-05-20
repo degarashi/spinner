@@ -38,7 +38,7 @@
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
 		namespace spn {
 			template <>
-			struct Vec : boost::equality_comparable<Vec> {
+			struct Vec : boost::equality_comparable<VT> {
 				enum { width = DIM };
 				using AVec = VecT<DIM,true>;
 				using UVec = VecT<DIM,false>;
@@ -103,34 +103,34 @@
 				
 				//! 要素ごとに最小値選択
 				template <bool A>
-				Vec getMin(const VecT<DIM,A>& v) const;
+				VecT getMin(const VecT<DIM,A>& v) const;
 				template <bool A>
 				void selectMin(const VecT<DIM,A>& v);
 				
 				//! 要素ごとに最大値選択
 				template <bool A>
-				Vec getMax(const VecT<DIM,A>& v) const;
+				VecT getMax(const VecT<DIM,A>& v) const;
 				template <bool A>
 				void selectMax(const VecT<DIM,A>& v);
 				
-				Vec operator - () const;
+				VecT operator - () const;
 				
 				/*! \return 要素が全て等しい時にtrue, それ以外はfalse */
 				template <bool A>
 				bool operator == (const VecT<DIM,A>& v) const;
 				
 				void normalize();
-				Vec normalization() const;
+				VecT normalization() const;
 				/*! \return ベクトルの長さ */
 				float length() const;
 				/*! \return ベクトル長の2乗 */
 				float len_sq() const;
 				
 				void saturate(float fMin, float fMax);
-				Vec saturation(float fMin, float fMax) const;
+				VecT saturation(float fMin, float fMax) const;
 				void lerp(const UVec& v, float r);
 				template <bool A>
-				Vec l_intp(const VecT<DIM,A>& v, float r) const;
+				VecT l_intp(const VecT<DIM,A>& v, float r) const;
 				
 				#if ALIGN==1
 					//! AVec -> Vec へ暗黙変換
@@ -146,13 +146,13 @@
 				#elif DIM==3
 					/*! \return this X v の外積ベクトル */
 					template <bool A>
-					Vec cross(const VecT<DIM,A>& v) const;
+					VecT cross(const VecT<DIM,A>& v) const;
 					//! 外積計算cross()と同義
 					template <bool A>
 					void operator %= (const VecT<DIM,A>& v);
 					//! 外積計算cross()と同義
 					template <bool A>
-					Vec operator % (const VecT<DIM,A>& v) const;
+					VecT operator % (const VecT<DIM,A>& v) const;
 					using Vec4 = VecT<4,BOOLNIZE(ALIGN)>;
 					Vec4 asVec4(float w) const;
 					// TODO:  planeLerp
@@ -247,7 +247,7 @@
 				__m128 r0 = _mm_cmpeq_ps(LOADTHIS(), v.loadPS());
 				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(1,0,3,2)));
 				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,2,3)));
-				return _mm_cvttps_pi32(r0) != 0;
+				return _mm_cvttss_si32(r0) != 0;
 			}
 
 			void VT::normalize() {

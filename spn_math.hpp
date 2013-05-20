@@ -99,10 +99,10 @@ const static __m128 xmm_matI[4] = {
 #define LOADPS_ZA3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_load_ps(ptr))
 #define LOADPS_Z3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_loadu_ps(ptr))
 #define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_mask[3], LOADPS_ZA3(ptr)), \
+										_mm_or_ps(xmm_mask[3], LOADPS_A3(ptr)), \
 										LOADPS_ZA3(ptr))
 #define LOADPS_I3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_mask[3], LOADPS_Z3(ptr)), \
+										_mm_or_ps(xmm_mask[3], LOADPS_3(ptr)), \
 										LOADPS_Z3(ptr))
 #define STOREPS_A3(ptr, r)	{ _mm_storel_pi((__m64*)ptr, r); _mm_store_ss(ptr+2, _mm_shuffle_ps(r, r, _MM_SHUFFLE(2,2,2,2))); }
 #define STOREPS_3(ptr, r)	STOREPS_A3(ptr,r)

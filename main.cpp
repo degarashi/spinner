@@ -11,9 +11,11 @@ int main(int argc, char **argv) {
 	v = AVec3(1,2,3);
 	v.normalize();
 	
-	AMat33 m = {1,2,3,4,5,6,7,8,9};
-	auto m2 = m.convert43();
-	AMat23 m3 = {100,200,300,400,500,600};
-	
+	AMat34 m = {1,2,3,4,5,6,7,8,9,10,11,12},
+			m2(10.f, AMat33::TagDiagonal);
+	auto p = &m,
+		p2 = &m2;
+	auto m3 = m * m2;
+	m *= m2;
     return 0;
 }
