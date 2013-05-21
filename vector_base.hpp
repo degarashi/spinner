@@ -163,7 +163,6 @@
 					template <bool A>
 					float ccw(const VecT<DIM,A>& v) const;
 				#endif
-				// TODO: 行列との計算ルーチン実装(おそらく、別ファイル)
 			};
 		}
 	#elif BOOST_PP_ITERATION_FLAGS() == 1

@@ -384,7 +384,7 @@
 				// Mat44 b;
 				// a * b -> 3x4
 				// a * [3x4](4x4) -> 3x4
-				// 入力が出力と同じサイズで、なおかつrvalueだったら&&で受け取ってそのアドレスを返す
+				// TODO: 入力が出力と同じサイズで、なおかつrvalueだったら&&で受け取ってそのアドレスを返す
 				
 				//! 行列サイズを変更
 				/*! 縮小の場合は要素を削り
@@ -394,11 +394,10 @@
 				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)() const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 
-				//! 行列との積算
+				//! 行列との積算 (3 operands)
 				#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const;
-// 				#define DEF_MUL(n0,n1)		MatT<n0, DIM_M, ALIGNB> operator * BOOST_PP_IF(BOOST_PP_EQUAL(DIM_M, n1), (MatT<n0,n1,false>&& m), (const MatT<n0,n1,false>& m)) const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
-				
+				//! 行列との積算 (2 operands)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
 			};
@@ -446,16 +445,15 @@
 				#endif
 				return ret;
 			}
-			// TODO: 出力アラインメント指定対応
 			/*	Pseudo-code:
-				MatT<n0,n1,true> MT::convert##n0##n1() const {
-					MatT<n0,n1,true> ret;
+				MatT<n0,n1,align> MT::convert##align##n0##n1() const {
+					MatT<n0,n1,align> ret;
 					// <Repeat by ITR_COPY>
 					for(int i=0 ; i<n0 ; i++) {
 						if(i < DIM_M)
-							STOREPS_A##n1(ret.ma[i], LOADTHIS(i));
+							STOREPS_(A)##n1(ret.ma[i], LOADTHIS(i));
 						else
-							STOREPS_A##n1(ret.ma[i], xmm_matI[i]);
+							STOREPS_(A)##n1(ret.ma[i], xmm_matI[i]);
 					}
 					return ret;
 				}
@@ -475,9 +473,8 @@
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 			
 			//! 行列の積算
-			// TODO: 入力側のアラインメント対応
 			/*	Pseudo-code:
-				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,true>& m) const {
+				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
 					ALIGN16 MatT<DIM_M, n1, ALIGNB> ret;
 					// <Repeat by MUL_OUTER>
 					for(int i=0 ; i<n0 ; i++) {
@@ -505,7 +502,7 @@
 			
 			// 自分との積算でなければ上書き演算
 			/*	Pseudo-code:
-				MT& MT::operator *= (const MatT<n0,n1,true>& m) {
+				MT& MT::operator *= (const MatT<n0,n1,align>& m) {
 					// 自分との積算ならば *this = *this * *this; の形で計算
 					if((uintptr_t)&m == (uintptr_t)this)
 						return *this = *this * *this;
@@ -534,6 +531,8 @@
 		}
 	#else
 		namespace spn {
+			// 他の行列と計算するメソッドを定義
+			// 使いやすいように別名を定義 ex. MatT<2,2,true> = AMat22
 			using BOOST_PP_CAT(
 					BOOST_PP_CAT(
 						BOOST_PP_CAT(AFLAG(ALIGN),Mat)
