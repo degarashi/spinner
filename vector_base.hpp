@@ -13,10 +13,7 @@
 		#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
 		#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
 		#define SEQ_VECELEM (x)(y)(z)(w)
-		namespace spn {
-			template <int N, bool A>
-			struct VecT;
-		}
+
 		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 0))
 		#include BOOST_PP_ITERATE()
 		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector_base.hpp", 1))
@@ -31,8 +28,9 @@
 	#include BOOST_PP_ITERATE()
 #else
 	#define ALIGN	BOOST_PP_ITERATION()
-	#define Vec		BOOST_PP_IF(ALIGN, alignas(16), NOTHING) VecT<DIM, BOOLNIZE(ALIGN)>
-	#define VT		VecT<DIM, BOOLNIZE(ALIGN)>
+	#define ALIGNB	BOOLNIZE(ALIGN)
+	#define Vec		BOOST_PP_IF(ALIGN, alignas(16), NOTHING) VecT<DIM, ALIGNB>
+	#define VT		VecT<DIM, ALIGNB>
 	#include "local_macro.hpp"
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
@@ -138,7 +136,7 @@
 					operator const VecT<DIM,false>& () const;
 				#endif
 				#if DIM==4
-					using Vec3 = VecT<3,BOOLNIZE(ALIGN)>;
+					using Vec3 = VecT<3,ALIGNB>;
 					/*! \return x,y,z成分 */
 					Vec3 asVec3() const;
 					/*! \return x,y,zそれぞれをwで割った値 */
@@ -153,16 +151,20 @@
 					//! 外積計算cross()と同義
 					template <bool A>
 					VecT operator % (const VecT<DIM,A>& v) const;
-					using Vec4 = VecT<4,BOOLNIZE(ALIGN)>;
+					using Vec4 = VecT<4,ALIGNB>;
 					Vec4 asVec4(float w) const;
-					// TODO:  planeLerp
-					// TODO: flip(plane)
-					// TODO: *= quat
+					// TODO: 平面との交差点を算出
+					// TODO: 平面にてベクトルを反転
+					// TODO: クォータニオンでベクトルを回転
 				#elif DIM==2
 					// ccw
 					template <bool A>
 					float ccw(const VecT<DIM,A>& v) const;
 				#endif
+				//! 行列との積算 (左から掛ける)
+				/*! 行ベクトルとして扱う */
+				template <int N, bool A>
+				VecT<N,ALIGNB> operator * (const MatT<DIM,N,A>& m) const;
 			};
 		}
 	#elif BOOST_PP_ITERATION_FLAGS() == 1
@@ -296,7 +298,7 @@
 				VT::operator const VecT<DIM,false>& () const { return *reinterpret_cast<const VecT<DIM,false>*>(this); }
 			#endif
 			#if DIM==4
-				#define _Vec3 VecT<3,BOOLNIZE(ALIGN)>
+				#define _Vec3 VecT<3,ALIGNB>
 				/*! \return x,y,z成分 */
 				_Vec3 VT::asVec3() const {
 					return _Vec3(x,y,z);
@@ -334,7 +336,7 @@
 				VT VT::operator % (const VecT<DIM,A>& v) const {
 					return cross(v);
 				}
-				#define _Vec4 VecT<4,BOOLNIZE(ALIGN)>
+				#define _Vec4 VecT<4,ALIGNB>
 				_Vec4 VT::asVec4(float w) const {
 					return _Vec4(x,y,z,w);
 				}

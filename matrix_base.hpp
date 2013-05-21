@@ -8,18 +8,6 @@
 		#include <cstring>
 		#include <stdexcept>
 		
-		namespace spn {
-			struct MatBase {
-				//! 対角線上に数値を設定。残りはゼロ
-				static struct _TagDiagonal {} TagDiagonal;
-				//! 全てを対象
-				static struct _TagAll {} TagAll;
-			};
-
-			template <int M, int N, bool A>
-			struct MatT;
-		}
-		
 		// 定義する行列の次元(M,N)
 		#define SEQ_MATDEF	((2,2))((2,3))((2,4))((4,2))((3,2))((3,3))((3,4))((4,3))((4,4))
 		#define LEN_SEQ		BOOST_PP_SEQ_SIZE(SEQ_MATDEF)
@@ -86,21 +74,22 @@
 				MatT() = default;
 				BOOST_PP_IF(ALIGN, NOTHING, explicit) MatT(const AMat& m);
 				BOOST_PP_IF(ALIGN, explicit, NOTHING) MatT(const UMat& m);
+				
+				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
+				#define DIAGONAL(z,n,data)		BOOST_PP_REPEAT_##z(DIM_N, DIAGONAL2, n)
 				MatT(float s, _TagDiagonal) {
-					memset(ma[0], 0x00, sizeof(*this));
-					for(int i=0 ; i<DMIN ; i++)
-						ma[i][i] = s;
+					BOOST_PP_REPEAT(DIM_M, DIAGONAL, NOTHING)
 				}
+				#define ALLSET(z,n,data)	STORETHIS(n, data);
 				MatT(float s, _TagAll) {
-					__m128 m = _mm_load1_ps(&s);
-					for(int i=0 ; i<height ; i++)
-						getRow(i) = m;
+					__m128 r = _mm_load1_ps(&s);
+					BOOST_PP_REPEAT(DIM_M, ALLSET, r)
 				}
+				MatT(_TagIdentity): MatT(1.f, TagDiagonal) {}
+				
+				#define SETARRAY(z,n,src)	STORETHIS(n, _mm_loadu_ps(src)); src += DIM_N;
 				MatT(const float* src) {
-					for(int i=0 ; i<DIM_M ; i++) {
-						getRow(i) = _mm_loadu_ps(src);
-						src += DIM_N;
-					}
+					BOOST_PP_REPEAT(DIM_M, SETARRAY, src)
 				}
 				template <int N>
 				float& ref1D() {
@@ -227,19 +216,23 @@
 				#elif DMIN >= 3
 						//! X軸周りの回転
 						MatT& setRotateX(float ang) {
-							return *this;
+							// TODO: implement later
+							throw std::domain_error("not implemented yet");
 						}
 						//! Y軸周りの回転
 						MatT& setRotateY(float ang) {
-							return *this;
+							// TODO: implement later
+							throw std::domain_error("not implemented yet");
 						}
 						//! Z軸周りの回転
 						MatT& setRotateZ(float ang) {
-							return *this;
+							// TODO: implement later
+							throw std::domain_error("not implemented yet");
 						}
 						//! 任意軸周りの回転
 						MatT& setRotateAxis(const VecT<3,false>& axis) {
-							return *this;
+							// TODO: implement later
+							throw std::domain_error("not implemented yet");
 						}
 					#if DIM_M == 4
 						//! 3次元移動
@@ -265,7 +258,6 @@
 							// 部分行列を使って計算
 							// TODO: implement later
 							throw std::domain_error("not implemented yet");
-							return 0;
 						#endif
 					}
 					// TODO: 固有ベクトル計算
@@ -400,6 +392,11 @@
 				//! 行列との積算 (2 operands)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
+				
+				//! 行列との積算 (右から掛ける)
+				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
+				template <bool A>
+				VecT<DIM_N,ALIGNB> operator * (const VecT<DIM_N,A>& v) const;
 			};
 		}
 	#elif BOOST_PP_FRAME_FLAGS(1) == 1
@@ -472,7 +469,7 @@
 				return ret; }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 			
-			//! 行列の積算
+			// 行列の積算
 			/*	Pseudo-code:
 				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
 					ALIGN16 MatT<DIM_M, n1, ALIGNB> ret;

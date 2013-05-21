@@ -123,5 +123,21 @@ const static __m128 xmm_matI[4] = {
 #define AFLAG(a) BOOST_PP_IF(a,A,NOTHING)
 
 // ----------- ベクトルや行列の定義 -----------
+namespace spn {
+	template <int N, bool A>
+	struct VecT;
+	
+	struct MatBase {
+		//! 対角線上に数値を設定。残りはゼロ
+		static struct _TagDiagonal {} TagDiagonal;
+		static struct _TagIdentity {} TagIdentity;
+		//! 全てを対象
+		static struct _TagAll {} TagAll;
+	};
+	template <int M, int N, bool A>
+	struct MatT;
+}
 #include "vector_base.hpp"
 #include "matrix_base.hpp"
+#include "vector_prop.hpp"
+#include "matrix_prop.hpp"
