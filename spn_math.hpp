@@ -137,7 +137,3 @@ namespace spn {
 	template <int M, int N, bool A>
 	struct MatT;
 }
-#include "vector_base.hpp"
-#include "matrix_base.hpp"
-#include "vector_prop.hpp"
-#include "matrix_prop.hpp"

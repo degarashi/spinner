@@ -1,8 +1,8 @@
 //! 行列クラス基底ヘッダ
 /*! 他行列との演算を除いたメソッドを定義 */
 #if !BOOST_PP_IS_ITERATING
-	#ifndef MATRIX_BASE_H_
-		#define MATRIX_BASE_H_
+	#if !defined(MATRIX_H_) || INCLUDE_LEVEL >= 1
+		#define MATRIX_H_
 		#define BOOST_PP_VARIADICS 1
 		#include <boost/preprocessor.hpp>
 		#include <cstring>
@@ -13,20 +13,17 @@
 		#define LEN_SEQ		BOOST_PP_SEQ_SIZE(SEQ_MATDEF)
 		#define LEN_SEQ_M1	BOOST_PP_DEC(LEN_SEQ)
 
-		// 定義シーケンスイテレーション
-		// Base
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix_base.hpp", 0))
+		// 要求された定義レベルを実体化
+		#ifndef INCLUDE_LEVEL
+			#define INCLUDE_LEVEL 0
+		#endif
+		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix.hpp", INCLUDE_LEVEL))
 		#include BOOST_PP_ITERATE()
-		// Operators (self)
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix_base.hpp", 1))
-		#include BOOST_PP_ITERATE()
-		// Operators (other)
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix_base.hpp", 2))
-		#include BOOST_PP_ITERATE()
+		#undef INCLUDE_LEVEL
 	#endif
 #elif BOOST_PP_ITERATION_DEPTH() == 1
 	// アラインメントイテレーション
-	#define BOOST_PP_ITERATION_PARAMS_2 (3, (0, 1, "matrix_base.hpp"))
+	#define BOOST_PP_ITERATION_PARAMS_2 (3, (0, 1, "matrix.hpp"))
 	#include BOOST_PP_ITERATE()
 #else
 	#define TUP	BOOST_PP_SEQ_ELEM(BOOST_PP_FRAME_ITERATION(1), SEQ_MATDEF)
@@ -398,6 +395,13 @@
 				template <bool A>
 				VecT<DIM_N,ALIGNB> operator * (const VecT<DIM_N,A>& v) const;
 			};
+			// 使いやすいように別名を定義 ex. MatT<2,2,true> = AMat22
+			using BOOST_PP_CAT(
+					BOOST_PP_CAT(
+						BOOST_PP_CAT(AFLAG(ALIGN),Mat)
+						,DIM_M)
+					,DIM_N)
+					= MatT<DIM_M,DIM_N,ALIGNB>;
 		}
 	#elif BOOST_PP_FRAME_FLAGS(1) == 1
 		namespace spn {
@@ -516,7 +520,7 @@
 				}
 			*/
 			#define DEF_MULE(n0,n1,align)	MT& MT::operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m) { \
-						if((uintptr_t)&m == (uintptr_t)this) return *this = *this * *this; \
+						if((intptr_t)&m == (intptr_t)this) return *this = *this * *this; \
 						BOOST_PP_REPEAT(DIM_M, MUL_OUTER2, BOOST_PP_IF(align, NOTHING, U)) \
 						return *this; }
 			#define MUL_INNER2(z,n,AU)	_mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
@@ -528,14 +532,19 @@
 		}
 	#else
 		namespace spn {
-			// 他の行列と計算するメソッドを定義
-			// 使いやすいように別名を定義 ex. MatT<2,2,true> = AMat22
-			using BOOST_PP_CAT(
-					BOOST_PP_CAT(
-						BOOST_PP_CAT(AFLAG(ALIGN),Mat)
-						,DIM_M)
-					,DIM_N)
-					= MatT<DIM_M,DIM_N,ALIGNB>;
+			// 他の行列やベクトルと計算するメソッドを定義
+			/*	Pseudo-code:
+				template <>
+				VecT<DIM_N,ALIGNB> operator * (const VecT<DIM_N,align>& v) const {
+					auto tmpM = transposition();
+					return v * tmpM;
+				}
+			*/
+			#define DEF_MULOP(z,align,dummy)	template <> VecT<DIM_N,ALIGNB> MT::operator * (const VecT<DIM_N,BOOLNIZE(align)>& v) const { \
+				auto tmpM = BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(transposition().convert, AFLAG(ALIGN)), DIM_N), DIM_N)(); \
+				return v * tmpM; }
+			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
 		}
 	#endif
+	#undef DEFINE_MATRIX
 #endif

@@ -1,5 +1,7 @@
 #include <iostream>
 #include "spn_math.hpp"
+#include "vector.hpp"
+#include "matrix.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
