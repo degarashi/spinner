@@ -136,4 +136,6 @@ namespace spn {
 	};
 	template <int M, int N, bool A>
 	struct MatT;
+	
+	struct Plane;
 }
