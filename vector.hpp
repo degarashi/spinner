@@ -8,6 +8,8 @@
 		#include <boost/preprocessor.hpp>
 		#include <boost/operators.hpp>
 		#include <cmath>
+		#include "spn_math.hpp"
+		
 		#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
 		#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
 		#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
@@ -36,7 +38,7 @@
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
 		namespace spn {
 			template <>
-			struct Vec : boost::equality_comparable<VT> {
+			struct Vec : boost::equality_comparable<VT>, boost::multipliable<VT> {
 				enum { width = DIM };
 				using AVec = VecT<DIM,true>;
 				using UVec = VecT<DIM,false>;
@@ -151,6 +153,8 @@
 				/*! 行ベクトルとして扱う */
 				template <int N, bool A>
 				VecT<N,ALIGNB> operator * (const MatT<DIM,N,A>& m) const;
+				template <int N, bool A>
+				VecT& operator *= (const MatT<DIM,N,A>& m);
 			};
 			#undef Vec
 			// 使いやすいようにクラスの別名を定義
@@ -412,8 +416,10 @@
 						accum = _mm_setzero_ps(); \
 						BOOST_PP_REPEAT_##z(n, LOOP_MULOP, BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(AFLAG(align),n))) \
 						return VecT<n,ALIGNB>(accum); }
+			#define DEF_MULOPA_2(z,n,align)	template <> VT& VT::operator *= (const MatT<DIM,DIM,BOOLNIZE(align)>& mat) { \
+					return *this = *this * mat; }
 
-			#define DEF_MULOP(z,align,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(2,5, DEF_MULOPA, align)
+			#define DEF_MULOP(z,align,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(2,5, DEF_MULOPA, align) DEF_MULOPA_2(dummy,dummy,align)
 			BOOST_PP_REPEAT(2, DEF_MULOP, NOTHING)
 		}
 	#endif

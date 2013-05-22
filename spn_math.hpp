@@ -122,7 +122,7 @@ const static __m128 xmm_matI[4] = {
 #define BOOLNIZE(b) BOOST_PP_IF(b,true,false)
 #define AFLAG(a) BOOST_PP_IF(a,A,NOTHING)
 
-// ----------- ベクトルや行列の定義 -----------
+// ----------- ベクトルや行列のプロトタイプ定義 -----------
 namespace spn {
 	template <int N, bool A>
 	struct VecT;

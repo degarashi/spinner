@@ -1,5 +1,4 @@
 #include <iostream>
-#include "spn_math.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
 

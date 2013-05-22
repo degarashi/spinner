@@ -7,6 +7,7 @@
 		#include <boost/preprocessor.hpp>
 		#include <cstring>
 		#include <stdexcept>
+		#include "spn_math.hpp"
 		
 		// 定義する行列の次元(M,N)
 		#define SEQ_MATDEF	((2,2))((2,3))((2,4))((4,2))((3,2))((3,3))((3,4))((4,3))((4,4))
@@ -180,66 +181,27 @@
 				
 				// -------------------- others --------------------
 				// 行列拡張Get = Mat::getRowE()
-				MatT& identity() {
-					*this = MatT(1.0f, TagDiagonal);
-					return *this;
-				}
-				#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
-				MatT& setScaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
-					*this = MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
-					return *this;
-				}
+				MatT& identity();
+				MatT& setScaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f)));
 				#if DMIN == 2
-						//! 2D回転
-						MatT& setRotate(float ang) {
-							float s = std::sin(ang),
-									c = std::cos(ang);
-							identity();
-							ma[0][0] = s;
-							ma[0][1] = c;
-							ma[1][0] = c;
-							ma[1][1] = -s;
-							return *this;
-						}
+					//! 2D回転
+					MatT& setRotate(float ang);
 					#if DIM_M == 3
 						//! 2次元移動
-						MatT& setTranslate(const VecT<2,false>& v) {
-							identity();
-							ma[0][2] = v.x;
-							ma[1][2] = v.y;
-							return *this;
-						}
+						MatT& setTranslate(const VecT<2,false>& v);
 					#endif
 				#elif DMIN >= 3
 						//! X軸周りの回転
-						MatT& setRotateX(float ang) {
-							// TODO: implement later
-							throw std::domain_error("not implemented yet");
-						}
+						MatT& setRotateX(float ang);
 						//! Y軸周りの回転
-						MatT& setRotateY(float ang) {
-							// TODO: implement later
-							throw std::domain_error("not implemented yet");
-						}
+						MatT& setRotateY(float ang);
 						//! Z軸周りの回転
-						MatT& setRotateZ(float ang) {
-							// TODO: implement later
-							throw std::domain_error("not implemented yet");
-						}
+						MatT& setRotateZ(float ang);
 						//! 任意軸周りの回転
-						MatT& setRotateAxis(const VecT<3,false>& axis) {
-							// TODO: implement later
-							throw std::domain_error("not implemented yet");
-						}
+						MatT& setRotateAxis(const VecT<3,false>& axis);
 					#if DIM_M == 4
 						//! 3次元移動
-						MatT& setTranslate(const VecT<3,false>& v) {
-							identity();
-							ma[0][3] = v.x;
-							ma[1][3] = v.y;
-							ma[2][3] = v.z;
-							return *this;
-						}
+						MatT& setTranslate(const VecT<3,false>& v);
 					#endif
 				#endif
 				
@@ -247,120 +209,45 @@
 				#if DIM_M==DIM_N
 					void transpose();
 					//! 固有値計算
-					float calcDeterminant() const {
-						#if DMIN == 2
-							// 公式で計算
-							return ma[0][0]*ma[1][1] - ma[0][1]*ma[1][0];
-						#else
-							// 部分行列を使って計算
-							// TODO: implement later
-							throw std::domain_error("not implemented yet");
-						#endif
-					}
+					float calcDeterminant() const;
 					// TODO: 固有ベクトル計算
+					//! 逆行列計算
+					bool inversion(MatT& dst) const;
+					bool inversion(MatT& dst, float det) const;
+					bool invert();
 				#endif
 				MatT<DIM_N,DIM_M,ALIGNB> transposition() const;
 				
 				#if DMIN > 2
 					//! 指定した行と列を省いた物を出力
-					MatT<height-1,width-1,ALIGNB> curRC(int row, int clm) const {
-						// TODO: 余力があったらマクロ展開
-						MatT<height-1,width-1,ALIGNB> ret;
-						// 左上
-						for(int i=0 ; i<row ; i++) {
-							for(int j=0 ; j<clm ; j++)
-								ret.ma[i][j] = ma[i][j];
-						}
-						// 右上
-						for(int i=0 ; i<row ; i++) {
-							for(int j=clm+1 ; j<width ; j++)
-								ret.ma[i][j-1] = ma[i][j];
-						}
-						// 左下
-						for(int i=row+1 ; i<height ; i++) {
-							for(int j=0 ; j<clm ; j++)
-								ret.ma[i-1][j] = ma[i][j];
-						}
-						// 右下
-						for(int i=row+1 ; i<height ; i++) {
-							for(int j=clm+1 ; j<width ; j++)
-								ret.ma[i-1][j-1] = ma[i][j];
-						}
-						return ret;
-					}
-				#endif				
+					MatT<height-1,width-1,ALIGNB> cutRC(int row, int clm) const;
+				#endif
 				// ---------- < 行の基本操作 > ----------
 				//! 行を入れ替える
-				void rowSwap(int r0, int r1) {
-					__m128 xm0 = LOADPS(ma[r0]),
-							xm1 = LOADPS(ma[r1]);
-					STOREPS(ma[r1], xm0);
-					STOREPS(ma[r0], xm1);
-				}
+				void rowSwap(int r0, int r1);
 				//! ある行を定数倍する
-				void rowMul(int r0, float s) {
-					STOREPS(ma[r0], _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)));
-				}
+				void rowMul(int r0, float s);
 				//! ある行を定数倍した物を別の行へ足す
-				void rowMulAdd(int r0, float s, int r1) {
-					__m128 xm0 = _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)),
-							xm1 = LOADPS(ma[r1]);
-					STORETHIS(r1, _mm_add_ps(xm0, xm1));
-				}
+				void rowMulAdd(int r0, float s, int r1);
 				// ---------- < 列の基本操作 > ----------
 				//! 列を入れ替える
-				void clmSwap(int c0, int c1) {
-					setColumn(c1, getColumn(c0));
-				}
+				void clmSwap(int c0, int c1);
 				//! ある列を定数倍する
-				void clmMul(int c0, float s) {
-					auto clm = getColumn(c0);
-					clm *= s;
-					setColumn(c0, clm);
-				}
+				void clmMul(int c0, float s);
 				//! ある列を定数倍した物を別の行へ足す
-				void clmMulAdd(int c0, float s, int c1) {
-					Column clm0 = getColumn(c0),
-						clm1 = getColumn(c1);
-					clm0 *= s;
-					clm0 += clm1;
-					setColumn(c1, clm0);
-				}
+				void clmMulAdd(int c0, float s, int c1);
 				
 				//! ある行の要素が全てゼロか判定 (誤差=EPSILON込み)
-				bool isZeroRow(int n) const {
-					__m128 xm0 = LOADPSZ(ma[n]);
-					__m128 xm1 = _mm_cmplt_ps(xm0, xmm_epsilon),
-							xm2 = _mm_cmpnle_ps(xm0, xmm_epsilonM);
-					xm1 = _mm_or_ps(xm1, xm2);
-					return _mm_movemask_ps(xm1) == 0;
-				}
+				bool isZeroRow(int n) const;
 				//! 零行列か判定
-				bool isZero() const {
-					for(int i=0 ; i<height ; i++) {
-						if(!isZeroRow(i))
-							return false;
-					}
-					return true;
-				}
+				bool isZero() const;
 				//! 各行を正規化する (最大の係数が1になるように)
-				void rowNormalize() {
-					__m128 xm0 = LOADPS(ma[0]);
-					for(int i=1 ; i<height ; i++)
-						xm0 = _mm_max_ps(xm0, LOADPS(ma[i]));
-					RCP22BIT(xm0)
-					for(int i=0 ; i<height ; i++)
-						STOREPS(ma[i], _mm_mul_ps(LOADTHIS(i), xm0));
-				}
+				void rowNormalize();
 				//! 被約形かどうか判定
 				bool isEchelon() const { return false; }
 				//! 被約形にする
 				/*! \return 0の行数 */
-				int rowReduce() {
-					rowNormalize();
-					// TODO; implement later
-					throw std::domain_error("not implemented yet");
-				}
+				int rowReduce();
 				// TODO: DecompAffine [DIM >= 3]
 				
 				// 本来行列の積算が出来るのはDIM_N == 相手のDIM_Mの時だけだが
@@ -413,7 +300,195 @@
 				for(int i=0 ; i<DIM_M ; i++)
 					STORETHIS(i, LOADPSU(m.ma[i]));
 			}
-
+			// 行列拡張Get = Mat::getRowE()
+			MT& MT::identity() {
+				*this = MatT(1.0f, TagDiagonal);
+				return *this;
+			}
+			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
+			MT& MT::setScaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
+				*this = MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
+				return *this;
+			}
+			#if DMIN == 2
+				MT& MT::setRotate(float ang) {
+					float s = std::sin(ang),
+							c = std::cos(ang);
+					identity();
+					ma[0][0] = s;
+					ma[0][1] = c;
+					ma[1][0] = c;
+					ma[1][1] = -s;
+					return *this;
+				}
+				#if DIM_M == 3
+					MT& MT::setTranslate(const VecT<2,false>& v) {
+						identity();
+						ma[0][2] = v.x;
+						ma[1][2] = v.y;
+						return *this;
+					}
+				#endif
+			#elif DMIN >= 3
+					MT& MT::setRotateX(float ang) {
+						// TODO: implement later
+						throw std::domain_error("not implemented yet");
+					}
+					MT& MT::setRotateY(float ang) {
+						// TODO: implement later
+						throw std::domain_error("not implemented yet");
+					}
+					MT& MT::setRotateZ(float ang) {
+						// TODO: implement later
+						throw std::domain_error("not implemented yet");
+					}
+					MT& MT::setRotateAxis(const VecT<3,false>& axis) {
+						// TODO: implement later
+						throw std::domain_error("not implemented yet");
+					}
+				#if DIM_M == 4
+					MT& MT::setTranslate(const VecT<3,false>& v) {
+						identity();
+						ma[0][3] = v.x;
+						ma[1][3] = v.y;
+						ma[2][3] = v.z;
+						return *this;
+					}
+				#endif
+			#endif
+			void MT::rowSwap(int r0, int r1) {
+				__m128 xm0 = LOADPS(ma[r0]),
+						xm1 = LOADPS(ma[r1]);
+				STOREPS(ma[r1], xm0);
+				STOREPS(ma[r0], xm1);
+			}
+			void MT::rowMul(int r0, float s) {
+				STOREPS(ma[r0], _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)));
+			}
+			void MT::rowMulAdd(int r0, float s, int r1) {
+				__m128 xm0 = _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)),
+						xm1 = LOADPS(ma[r1]);
+				STORETHIS(r1, _mm_add_ps(xm0, xm1));
+			}
+			void MT::clmSwap(int c0, int c1) {
+				setColumn(c1, getColumn(c0));
+			}
+			void MT::clmMul(int c0, float s) {
+				auto clm = getColumn(c0);
+				clm *= s;
+				setColumn(c0, clm);
+			}
+			void MT::clmMulAdd(int c0, float s, int c1) {
+				Column clm0 = getColumn(c0),
+					clm1 = getColumn(c1);
+				clm0 *= s;
+				clm0 += clm1;
+				setColumn(c1, clm0);
+			}
+			bool MT::isZeroRow(int n) const {
+				__m128 xm0 = LOADPSZ(ma[n]);
+				__m128 xm1 = _mm_cmplt_ps(xm0, xmm_epsilon),
+						xm2 = _mm_cmpnle_ps(xm0, xmm_epsilonM);
+				xm1 = _mm_or_ps(xm1, xm2);
+				return _mm_movemask_ps(xm1) == 0;
+			}
+			bool MT::isZero() const {
+				for(int i=0 ; i<height ; i++) {
+					if(!isZeroRow(i))
+						return false;
+				}
+				return true;
+			}
+			void MT::rowNormalize() {
+				__m128 xm0 = LOADPS(ma[0]);
+				for(int i=1 ; i<height ; i++)
+					xm0 = _mm_max_ps(xm0, LOADPS(ma[i]));
+				RCP22BIT(xm0)
+				for(int i=0 ; i<height ; i++)
+					STOREPS(ma[i], _mm_mul_ps(LOADTHIS(i), xm0));
+			}
+			int MT::rowReduce() {
+				rowNormalize();
+				// TODO; implement later
+				throw std::domain_error("not implemented yet");
+			}
+			#if DIM_M==DIM_N
+				void MT::transpose() {
+					*this = transposition();
+				}
+				float MT::calcDeterminant() const {
+					#if DMIN == 2
+						// 公式で計算
+						return ma[0][0]*ma[1][1] - ma[0][1]*ma[1][0];
+					#else
+						float res = 0,
+								s = 1;
+						// 部分行列を使って計算
+						for(int i=0 ; i<DIM_M ; i++) {
+							auto mt = cutRC(0,i);
+							res += ma[0][i] * mt.calcDeterminant() * s;
+							s *= -1;
+						}
+						return res;
+					#endif
+				}
+				bool MT::inversion(MatT& dst) const {
+					return inversion(dst, calcDeterminant());
+				}
+				bool MT::inversion(MatT& dst, float det) const {
+					if(std::fabs(det) < FLOAT_EPSILON)
+						return false;
+					
+					det = _sseRcp22Bit(det);
+					#if DIM_M==2
+						dst.ma[0][0] = ma[1][1] * det;
+						dst.ma[0][1] = -ma[1][0] * det;
+						dst.ma[1][0] = -ma[0][1] * det;
+						dst.ma[1][1] = ma[0][0] * det;
+					#else
+						const float c_val[2] = {1,-1};
+						for(int i=0 ; i<DIM_M ; i++) {
+							for(int j=0 ; j<DIM_N ; j++) {
+								auto in_mat = cutRC(j,i);
+								float in_det = in_mat.calcDeterminant();
+								dst.ma[i][j] = c_val[(i+j)&1] * in_det * det;
+							}
+						}
+					#endif
+					return true;
+				}
+				bool MT::invert() {
+					return inversion(*this);
+				}
+			#endif
+			#if DMIN > 2
+				//! 指定した行と列を省いた物を出力
+				MatT<DIM_M-1,DIM_N-1,ALIGNB> MT::cutRC(int row, int clm) const {
+					// TODO: 余力があったらマクロ展開
+					MatT<height-1,width-1,ALIGNB> ret;
+					// 左上
+					for(int i=0 ; i<row ; i++) {
+						for(int j=0 ; j<clm ; j++)
+							ret.ma[i][j] = ma[i][j];
+					}
+					// 右上
+					for(int i=0 ; i<row ; i++) {
+						for(int j=clm+1 ; j<width ; j++)
+							ret.ma[i][j-1] = ma[i][j];
+					}
+					// 左下
+					for(int i=row+1 ; i<height ; i++) {
+						for(int j=0 ; j<clm ; j++)
+							ret.ma[i-1][j] = ma[i][j];
+					}
+					// 右下
+					for(int i=row+1 ; i<height ; i++) {
+						for(int j=clm+1 ; j<width ; j++)
+							ret.ma[i-1][j-1] = ma[i][j];
+					}
+					return ret;
+				}
+			#endif
 			MatT<DIM_N,DIM_M,ALIGNB> MT::transposition() const {
 				MatT<DIM_N,DIM_M,ALIGNB> ret;
 				#if DMIN == 2
