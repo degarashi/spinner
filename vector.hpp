@@ -2,7 +2,7 @@
 /*! 2-4次元のベクトルをアラインメント有りと無しでそれぞれ定義
 	初期化や要素毎のアクセスなど基本的なメソッド */
 #if !BOOST_PP_IS_ITERATING
-	#if !defined(VECTOR_H_) || INCLUDE_LEVEL >= 1
+	#if !defined(VECTOR_H_) || INCLUDE_VECTOR_LEVEL >= 1
 		#define VECTOR_H_
 		#define BOOST_PP_VARIADICS 1
 		#include <boost/preprocessor.hpp>
@@ -16,12 +16,12 @@
 		#define SEQ_VECELEM (x)(y)(z)(w)
 
 		// 要求された定義レベルを実体化
-		#ifndef INCLUDE_LEVEL
-			#define INCLUDE_LEVEL 0
+		#ifndef INCLUDE_VECTOR_LEVEL
+			#define INCLUDE_VECTOR_LEVEL 0
 		#endif
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector.hpp", INCLUDE_LEVEL))
+		#define BOOST_PP_ITERATION_PARAMS_1 (4, (2,4, "vector.hpp", INCLUDE_VECTOR_LEVEL))
 		#include BOOST_PP_ITERATE()
-		#undef INCLUDE_LEVEL
+		#undef INCLUDE_VECTOR_LEVEL
 	#endif
 #elif BOOST_PP_ITERATION_DEPTH() == 1
 	// アラインメントイテレーション

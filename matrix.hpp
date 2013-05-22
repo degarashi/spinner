@@ -1,7 +1,7 @@
 //! 行列クラス基底ヘッダ
 /*! 他行列との演算を除いたメソッドを定義 */
 #if !BOOST_PP_IS_ITERATING
-	#if !defined(MATRIX_H_) || INCLUDE_LEVEL >= 1
+	#if !defined(MATRIX_H_) || INCLUDE_MATRIX_LEVEL >= 1
 		#define MATRIX_H_
 		#define BOOST_PP_VARIADICS 1
 		#include <boost/preprocessor.hpp>
@@ -15,12 +15,12 @@
 		#define LEN_SEQ_M1	BOOST_PP_DEC(LEN_SEQ)
 
 		// 要求された定義レベルを実体化
-		#ifndef INCLUDE_LEVEL
-			#define INCLUDE_LEVEL 0
+		#ifndef INCLUDE_MATRIX_LEVEL
+			#define INCLUDE_MATRIX_LEVEL 0
 		#endif
-		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix.hpp", INCLUDE_LEVEL))
+		#define BOOST_PP_ITERATION_PARAMS_1 (4, (0, LEN_SEQ_M1, "matrix.hpp", INCLUDE_MATRIX_LEVEL))
 		#include BOOST_PP_ITERATE()
-		#undef INCLUDE_LEVEL
+		#undef INCLUDE_MATRIX_LEVEL
 	#endif
 #elif BOOST_PP_ITERATION_DEPTH() == 1
 	// アラインメントイテレーション
