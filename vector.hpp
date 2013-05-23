@@ -143,7 +143,9 @@
 					Vec4 asVec4(float w) const;
 					// TODO: 平面との交差点を算出
 					// TODO: 平面にてベクトルを反転
-					// TODO: クォータニオンでベクトルを回転
+					VecT& operator *= (const QuatT<ALIGNB>& q);
+					VecT operator * (const QuatT<ALIGNB>& q) const;
+					VecT&& operator * (QuatT<ALIGNB>&& q) const;
 				#elif DIM==2
 					// ccw
 					template <bool A>
@@ -421,6 +423,23 @@
 
 			#define DEF_MULOP(z,align,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(2,5, DEF_MULOPA, align) DEF_MULOPA_2(dummy,dummy,align)
 			BOOST_PP_REPEAT(2, DEF_MULOP, NOTHING)
+			
+			#if DIM==3
+				VT& VT::operator *= (const QuatT<ALIGNB>& q) {
+					*this = (*this * q);
+					return *this;
+				}
+				VT VT::operator * (const QuatT<ALIGNB>& q) const {
+					VecT tmp(*this);
+					tmp *= q;
+					return tmp;
+				}
+				VT&& VT::operator * (QuatT<ALIGNB>&& q) const {
+					VT& rVT = *reinterpret_cast<VT*>(&q);
+					rVT = *this * q;
+					return std::move(rVT);
+				}
+			#endif
 		}
 	#endif
 #endif

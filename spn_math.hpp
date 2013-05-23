@@ -15,7 +15,9 @@
 	r = _mm_mul_ps(r, _mm_mul_ps(tmprcp, tmprcp)); \
 	tmprcp = _mm_add_ps(tmprcp,tmprcp); \
 	r = _mm_sub_ps(tmprcp, r); }
-
+	
+#include <cmath>
+#include <cstdint>
 namespace spn {
 //! ニュートン法で逆数を計算
 inline __m128 _mmRcp22Bit(__m128 r) {
@@ -45,6 +47,13 @@ inline float _sseRcp22Bit(float s) {
 	float ret;
 	_mm_store_ss(&ret, tmp);
 	return ret;
+}
+inline float _sseSqrt(float s) {
+	_mm_store_ss(&s, _mm_sqrt_ss(_mm_load_ss(&s)));
+	return s;
+}
+inline float _sseRSqrt(float s) {
+	return _sseRcp22Bit(_sseSqrt(s));
 }
 
 constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
@@ -81,6 +90,11 @@ const static __m128 xmm_matI[4] = {
 	_mmSetPs(0,0,1,0),
 	_mmSetPs(0,0,0,1)
 };
+const static float PI = std::atan(1.0f)*4;
+template <class T>
+T Square(const T& t0) { return t0*t0; }
+template <class T>
+T Cubic(const T& t0) { return t0*t0*t0; }
 }
 // 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
@@ -124,6 +138,13 @@ const static __m128 xmm_matI[4] = {
 
 // ----------- ベクトルや行列のプロトタイプ定義 -----------
 namespace spn {
+	enum AXIS_FLAG {
+		AXIS_X,
+		AXIS_Y,
+		AXIS_Z,
+		NUM_AXIS
+	};
+	
 	template <int N, bool A>
 	struct VecT;
 	
@@ -139,4 +160,12 @@ namespace spn {
 	
 	template <bool A>
 	struct Plane;
+	
+	struct QuatBase {
+		static struct _TagIdentity {} TagIdentity;
+	};
+	template <bool A>
+	struct QuatT;
+	template <bool A>
+	struct ExpQuatT;
 }

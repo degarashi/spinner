@@ -5,6 +5,8 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 #include "plane.hpp"
+#include "quat.hpp"
+#include "expquat.hpp"
 
 // 自身で完結する演算
 #define INCLUDE_VECTOR_LEVEL 1
@@ -21,3 +23,7 @@
 #include "plane.hpp"
 #define INCLUDE_MATRIX_LEVEL 2
 #include "matrix.hpp"
+#define INCLUDE_QUAT_LEVEL 1
+#include "quat.hpp"
+#define INCLUDE_EXPQUAT_LEVEL 1
+#include "expquat.hpp"
