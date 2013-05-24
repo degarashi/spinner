@@ -169,7 +169,7 @@ namespace spn {
 	struct MatT;
 	
 	template <bool A>
-	struct Plane;
+	struct PlaneT;
 	
 	struct QuatBase {
 		static struct _TagIdentity {} TagIdentity;

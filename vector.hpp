@@ -141,8 +141,11 @@
 					VecT operator % (const VecT<DIM,A>& v) const;
 					using Vec4 = VecT<4,ALIGNB>;
 					Vec4 asVec4(float w) const;
-					// TODO: 平面との交差点を算出
-					// TODO: 平面にてベクトルを反転
+					//! 平面との交差点を算出
+					template <bool A>
+					std::tuple<VecT,bool> planeDivide(const VecT<DIM,A>& v, const PlaneT<false>& p) const;
+					//! 平面にてベクトルを反転
+					void flip(const PlaneT<false>& plane);
 					VecT& operator *= (const QuatT<ALIGNB>& q);
 					VecT operator * (const QuatT<ALIGNB>& q) const;
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
@@ -286,7 +289,7 @@
 			}
 			template bool VT::operator == (const VecT<DIM,false>&) const;
 			template bool VT::operator == (const VecT<DIM,true>&) const;
-
+			
 			void VT::normalize() {
 				*this = normalization();
 			}
@@ -439,6 +442,28 @@
 					rVT = *this * q;
 					return std::move(rVT);
 				}
+				void VT::flip(const Plane& plane) {
+					const auto& nml = plane.getNormal();
+					float d = plane.dot(*this);
+					*this += nml*-d*2;
+				}
+				template <bool A>
+				std::tuple<VT,bool> VT::planeDivide(const VecT<DIM,A>& v, const PlaneT<false>& p) const {
+					// 線分が平面をまたぐか
+					float distf = p.dot(*this);
+					float distb = p.dot(v);
+					if(distf * distb >= 0.0f)
+						return std::make_tuple(VecT(),false);
+					
+					float ratio = fabs(distf) / (fabs(distf) + fabs(distb));
+					// 平面と線分の交点 -> tv
+					Vec3 tv = v - (*this);
+					tv *= ratio;
+					VecT cp = tv + (*this);
+					return std::make_tuple(cp,true);
+				}
+				template std::tuple<VT,bool> VT::planeDivide(const VecT<DIM,true>&,const PlaneT<false>&) const;
+				template std::tuple<VT,bool> VT::planeDivide(const VecT<DIM,false>&,const PlaneT<false>&) const;
 			#endif
 		}
 	#endif
