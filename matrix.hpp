@@ -345,11 +345,11 @@
 							S = std::sin(ang);
 							
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_set_ps(1,0,0,0));
-						STORETHISPS(mt.ma[1], _mm_set_ps(0,C,-S,0));
-						STORETHISPS(mt.ma[2], _mm_set_ps(0,S,C,0));
+						STORETHISPS(mt.ma[0], _mm_setr_ps(1,0,0,0));
+						STORETHISPS(mt.ma[1], _mm_setr_ps(0,C,-S,0));
+						STORETHISPS(mt.ma[2], _mm_setr_ps(0,S,C,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -357,11 +357,11 @@
 						float C = std::cos(ang),
 							S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_set_ps(C,0,S,0));
-						STORETHISPS(mt.ma[1], _mm_set_ps(0,1,0,0));
-						STORETHISPS(mt.ma[2], _mm_set_ps(-S,0,C,0));
+						STORETHISPS(mt.ma[0], _mm_setr_ps(C,0,S,0));
+						STORETHISPS(mt.ma[1], _mm_setr_ps(0,1,0,0));
+						STORETHISPS(mt.ma[2], _mm_setr_ps(-S,0,C,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -369,11 +369,11 @@
 						float C = std::cos(ang),
 							S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_set_ps(C,-S,0,0));
-						STORETHISPS(mt.ma[1], _mm_set_ps(S,C,0,0));
-						STORETHISPS(mt.ma[2], _mm_set_ps(0,0,1,0));
+						STORETHISPS(mt.ma[0], _mm_setr_ps(C,-S,0,0));
+						STORETHISPS(mt.ma[1], _mm_setr_ps(S,C,0,0));
+						STORETHISPS(mt.ma[2], _mm_setr_ps(0,0,1,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -382,17 +382,17 @@
 							S = std::sin(ang),
 							RC = 1-C;
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_set_ps(C+Square(axis.x)*RC,
+						STORETHISPS(mt.ma[0], _mm_setr_ps(C+Square(axis.x)*RC,
 														axis.x * axis.y * RC + axis.z*S,
 														axis.x * axis.z * RC + axis.y*S, 0));
-						STORETHISPS(mt.ma[1], _mm_set_ps(axis.x * axis.y * RC - axis.z*S,
+						STORETHISPS(mt.ma[1], _mm_setr_ps(axis.x * axis.y * RC - axis.z*S,
 														C + Square(axis.y) * RC,
 														 axis.y * axis.z * RC + axis.x*S, 0));
-						STORETHISPS(mt.ma[2], _mm_set_ps(axis.x * axis.z * RC + axis.y*S,
+						STORETHISPS(mt.ma[2], _mm_setr_ps(axis.x * axis.z * RC + axis.y*S,
 														axis.y * axis.z * RC + axis.x*S,
 														C + Square(axis.z) * RC, 0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -412,10 +412,10 @@
 						xA.normalize();
 						
 						MatT ret;
-						STORETHISPS(ret.ma[0], _mm_set_ps(xA.x, up.x, dir.x, 0));
-						STORETHISPS(ret.ma[1], _mm_set_ps(xA.y, up.y, dir.y, 0));
-						STORETHISPS(ret.ma[2], _mm_set_ps(xA.z, up.z, dir.z, 0));
-						STORETHISPS(ret.ma[3], _mm_set_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
+						STORETHISPS(ret.ma[0], _mm_setr_ps(xA.x, up.x, dir.x, 0));
+						STORETHISPS(ret.ma[1], _mm_setr_ps(xA.y, up.y, dir.y, 0));
+						STORETHISPS(ret.ma[2], _mm_setr_ps(xA.z, up.z, dir.z, 0));
+						STORETHISPS(ret.ma[3], _mm_setr_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
 						return ret;
 					}
 					MT MT::LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up) {
@@ -432,10 +432,10 @@
 								f0 = fz/(fz-nz),
 								f1 = -nz*fz/(fz-nz);
 						MatT ret;
-						STORETHISPS(ret.ma[0], _mm_set_ps(w,0,0,0));
-						STORETHISPS(ret.ma[1], _mm_set_ps(0,h,0,0));
-						STORETHISPS(ret.ma[2], _mm_set_ps(0,0,f0,coeff));
-						STORETHISPS(ret.ma[3], _mm_set_ps(0,0,f1*coeff,0));
+						STORETHISPS(ret.ma[0], _mm_setr_ps(w,0,0,0));
+						STORETHISPS(ret.ma[1], _mm_setr_ps(0,h,0,0));
+						STORETHISPS(ret.ma[2], _mm_setr_ps(0,0,f0,coeff));
+						STORETHISPS(ret.ma[3], _mm_setr_ps(0,0,f1*coeff,0));
 						return ret;
 					}
 					MT MT::PerspectiveFovLH(float fov, float aspect, float nz, float fz) {

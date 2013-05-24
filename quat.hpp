@@ -110,7 +110,7 @@
 	#elif BOOST_PP_ITERATION_FLAGS() == 1
 		QT::QuatT(const QuatT<false>& q) { STORETHIS(LOADPSU(q.m)); }
 		QT::QuatT(const QuatT<true>& q) { STORETHIS(LOADPS(q.m)); }
-		QT::QuatT(_TagIdentity) { STORETHIS(_mm_set_ps(0,0,0,1)); }
+		QT::QuatT(_TagIdentity) { STORETHIS(_mm_setr_ps(0,0,0,1)); }
 		QT::QuatT(float fx, float fy, float fz, float fw) {
 			x = fx;
 			y = fy;
@@ -182,14 +182,14 @@
 		BOOST_PP_REPEAT_FROM_TO(3,5, DEF_FROMMAT0, NOTHING)
 		
 		void QT::identity() {
-			STORETHIS(_mm_set_ps(0,0,0,1));
+			STORETHIS(_mm_setr_ps(0,0,0,1));
 		}
 		void QT::conjugate() {
-			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_set_ps(-1,-1,-1,1)));
+			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_setr_ps(-1,-1,-1,1)));
 		}
 		QT QT::conjugation() const {
 			QuatT ret;
-			STORETHISPS(ret.m, _mm_mul_ps(LOADTHIS(), _mm_set_ps(-1,-1,-1,1)));
+			STORETHISPS(ret.m, _mm_mul_ps(LOADTHIS(), _mm_setr_ps(-1,-1,-1,1)));
 			return ret;
 		}
 		void QT::invert() {

@@ -99,6 +99,12 @@ template <class T>
 T Square(const T& t0) { return t0*t0; }
 template <class T>
 T Cubic(const T& t0) { return t0*t0*t0; }
+inline float DEGtoRAD(float ang) {
+	return ang*_sseRcp22Bit(180.f) * PI;
+}
+inline float RADtoDEG(float ang) {
+	return ang*_sseRcp22Bit(PI) * 180.f;
+}
 }
 // 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
