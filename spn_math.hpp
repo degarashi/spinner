@@ -77,7 +77,11 @@ inline __m128 _makeMask() {
 const static __m128 xmm_mask[4] = {_makeMask<1,0,0,0>(),
 									_makeMask<1,1,0,0>(),
 									_makeMask<1,1,1,0>(),
-									_makeMask<1,1,1,1>()};
+									_makeMask<1,1,1,1>()},
+					xmm_maskN[4] = {_makeMask<0,1,1,1>(),
+									_makeMask<0,0,1,1>(),
+									_makeMask<0,0,0,1>(),
+									_makeMask<0,0,0,0>()};
 const static float cs_matI[4][4] = {
 	{1,0,0,0},
 	{0,1,0,0},

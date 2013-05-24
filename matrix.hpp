@@ -55,6 +55,8 @@
 				using RowE = VecT<4, ALIGNB>;				//!< 4要素の行ベクトル型
 				using AMat = MatT<DIM_M, DIM_N, true>;
 				using UMat = MatT<DIM_M, DIM_N, false>;
+				using UVec2 = VecT<2,false>;
+				using UVec3 = VecT<3,false>;
 				
 				enum { width=DIM_N,
 						height=DIM_M };
@@ -181,27 +183,37 @@
 				
 				// -------------------- others --------------------
 				// 行列拡張Get = Mat::getRowE()
-				MatT& identity();
-				MatT& setScaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f)));
+				void identity();
+				static MatT Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f)));
 				#if DMIN == 2
 					//! 2D回転
-					MatT& setRotate(float ang);
+					static MatT Rotation(float ang);
 					#if DIM_M == 3
 						//! 2次元移動
-						MatT& setTranslate(const VecT<2,false>& v);
+						static MatT Translation(const UVec2& v);
 					#endif
 				#elif DMIN >= 3
 						//! X軸周りの回転
-						MatT& setRotateX(float ang);
+						static MatT RotationX(float ang);
 						//! Y軸周りの回転
-						MatT& setRotateY(float ang);
+						static MatT RotationY(float ang);
 						//! Z軸周りの回転
-						MatT& setRotateZ(float ang);
+						static MatT RotationZ(float ang);
 						//! 任意軸周りの回転
-						MatT& setRotateAxis(const VecT<3,false>& axis);
+						static MatT RotationAxis(const UVec3& axis, float ang);
 					#if DIM_M == 4
 						//! 3次元移動
-						MatT& setTranslate(const VecT<3,false>& v);
+						static MatT Translation(const UVec3& v);
+						static MatT LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up);
+						static MatT LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up);
+						static MatT LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up);
+						static MatT LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up);
+					#endif
+					#if DIM_M==4 && DIM_N==4
+						//! 透視変換行列
+						static MatT PerspectiveFovLH(float fov, float aspect, float nz, float fz);
+						static MatT PerspectiveFovRH(float fov, float aspect, float nz, float fz);
+						static MatT _PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff);
 					#endif
 				#endif
 				
@@ -244,7 +256,7 @@
 				//! 各行を正規化する (最大の係数が1になるように)
 				void rowNormalize();
 				//! 被約形かどうか判定
-				bool isEchelon() const { return false; }
+				bool isEchelon() const;
 				//! 被約形にする
 				/*! \return 0の行数 */
 				int rowReduce();
@@ -301,61 +313,173 @@
 					STORETHIS(i, LOADPSU(m.ma[i]));
 			}
 			// 行列拡張Get = Mat::getRowE()
-			MT& MT::identity() {
+			void MT::identity() {
 				*this = MatT(1.0f, TagDiagonal);
-				return *this;
 			}
 			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
-			MT& MT::setScaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
-				*this = MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
-				return *this;
+			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
+				return MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
 			}
 			#if DMIN == 2
-				MT& MT::setRotate(float ang) {
+				MT MT::Rotation(float ang) {
 					float s = std::sin(ang),
 							c = std::cos(ang);
-					identity();
-					ma[0][0] = s;
-					ma[0][1] = c;
-					ma[1][0] = c;
-					ma[1][1] = -s;
-					return *this;
+					MatT mt(TagIdentity);
+					mt.ma[0][0] = s;
+					mt.ma[0][1] = c;
+					mt.ma[1][0] = c;
+					mt.ma[1][1] = -s;
+					return mt;
 				}
 				#if DIM_M == 3
-					MT& MT::setTranslate(const VecT<2,false>& v) {
-						identity();
-						ma[0][2] = v.x;
-						ma[1][2] = v.y;
-						return *this;
+					MT MT::Translation(const VecT<2,false>& v) {
+						MatT mt(TagIdentity);
+						mt.ma[0][2] = v.x;
+						mt.ma[1][2] = v.y;
+						return mt;
 					}
 				#endif
 			#elif DMIN >= 3
-					MT& MT::setRotateX(float ang) {
-						// TODO: implement later
-						throw std::domain_error("not implemented yet");
+					MT MT::RotationX(float ang) {
+						float C = std::cos(ang),
+							S = std::sin(ang);
+							
+						MatT mt;
+						STORETHISPS(mt.ma[0], _mm_set_ps(1,0,0,0));
+						STORETHISPS(mt.ma[1], _mm_set_ps(0,C,-S,0));
+						STORETHISPS(mt.ma[2], _mm_set_ps(0,S,C,0));
+						#if DIM_M == 4
+							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+						#endif
+						return mt;
 					}
-					MT& MT::setRotateY(float ang) {
-						// TODO: implement later
-						throw std::domain_error("not implemented yet");
+					MT MT::RotationY(float ang) {
+						float C = std::cos(ang),
+							S = std::sin(ang);
+						MatT mt;
+						STORETHISPS(mt.ma[0], _mm_set_ps(C,0,S,0));
+						STORETHISPS(mt.ma[1], _mm_set_ps(0,1,0,0));
+						STORETHISPS(mt.ma[2], _mm_set_ps(-S,0,C,0));
+						#if DIM_M == 4
+							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+						#endif
+						return mt;
 					}
-					MT& MT::setRotateZ(float ang) {
-						// TODO: implement later
-						throw std::domain_error("not implemented yet");
+					MT MT::RotationZ(float ang) {
+						float C = std::cos(ang),
+							S = std::sin(ang);
+						MatT mt;
+						STORETHISPS(mt.ma[0], _mm_set_ps(C,-S,0,0));
+						STORETHISPS(mt.ma[1], _mm_set_ps(S,C,0,0));
+						STORETHISPS(mt.ma[2], _mm_set_ps(0,0,1,0));
+						#if DIM_M == 4
+							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+						#endif
+						return mt;
 					}
-					MT& MT::setRotateAxis(const VecT<3,false>& axis) {
-						// TODO: implement later
-						throw std::domain_error("not implemented yet");
+					MT MT::RotationAxis(const UVec3& axis, float ang) {
+						float C = std::cos(ang),
+							S = std::sin(ang),
+							RC = 1-C;
+						MatT mt;
+						STORETHISPS(mt.ma[0], _mm_set_ps(C+Square(axis.x)*RC,
+														axis.x * axis.y * RC + axis.z*S,
+														axis.x * axis.z * RC + axis.y*S, 0));
+						STORETHISPS(mt.ma[1], _mm_set_ps(axis.x * axis.y * RC - axis.z*S,
+														C + Square(axis.y) * RC,
+														 axis.y * axis.z * RC + axis.x*S, 0));
+						STORETHISPS(mt.ma[2], _mm_set_ps(axis.x * axis.z * RC + axis.y*S,
+														axis.y * axis.z * RC + axis.x*S,
+														C + Square(axis.z) * RC, 0));
+						#if DIM_M == 4
+							STORETHISPS(mt.ma[3], _mm_set_ps(0,0,0,1));
+						#endif
+						return mt;
 					}
 				#if DIM_M == 4
-					MT& MT::setTranslate(const VecT<3,false>& v) {
-						identity();
-						ma[0][3] = v.x;
-						ma[1][3] = v.y;
-						ma[2][3] = v.z;
-						return *this;
+					MT MT::Translation(const UVec3& v) {
+						MatT mt(TagIdentity);
+						mt.ma[0][3] = v.x;
+						mt.ma[1][3] = v.y;
+						mt.ma[2][3] = v.z;
+						return mt;
+					}
+					MT MT::LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up) {
+						return LookDirLH(pos, (at-pos).normalization(), up);
+					}
+					MT MT::LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
+						AVec3 xA(up % dir);
+						xA.normalize();
+						
+						MatT ret;
+						STORETHISPS(ret.ma[0], _mm_set_ps(xA.x, up.x, dir.x, 0));
+						STORETHISPS(ret.ma[1], _mm_set_ps(xA.y, up.y, dir.y, 0));
+						STORETHISPS(ret.ma[2], _mm_set_ps(xA.z, up.z, dir.z, 0));
+						STORETHISPS(ret.ma[3], _mm_set_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
+						return ret;
+					}
+					MT MT::LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up) {
+						return LookDirLH(pos, (pos-at).normalization(), up);
+					}
+					MT MT::LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
+						return LookDirLH(pos, -dir, up);
+					}
+				#endif
+				#if DIM_M==4 && DIM_N==4
+					MT MT::_PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff) {
+						float h = 1.0f / std::tan(fov/2),
+								w = h / aspect,
+								f0 = fz/(fz-nz),
+								f1 = -nz*fz/(fz-nz);
+						MatT ret;
+						STORETHISPS(ret.ma[0], _mm_set_ps(w,0,0,0));
+						STORETHISPS(ret.ma[1], _mm_set_ps(0,h,0,0));
+						STORETHISPS(ret.ma[2], _mm_set_ps(0,0,f0,coeff));
+						STORETHISPS(ret.ma[3], _mm_set_ps(0,0,f1*coeff,0));
+						return ret;
+					}
+					MT MT::PerspectiveFovLH(float fov, float aspect, float nz, float fz) {
+						return _PerspectiveFov(fov, aspect, nz, fz, 1);
+					}
+					MT MT::PerspectiveFovRH(float fov, float aspect, float nz, float fz) {
+						return _PerspectiveFov(fov, aspect, nz, fz, 1);
 					}
 				#endif
 			#endif
+			bool MT::isEchelon() const {
+				uint32_t clmFlagT = 0,
+						clmFlagF = 0;
+				int topClm = -1;
+				bool bZero = false;
+				for(int i=0 ; i<DIM_M ; i++) {
+					int lcltop = -1;
+					for(int j=0 ; j<DIM_N-1 ; j++) {
+						float val = ma[i][j];
+						if(std::fabs(val) >= FLOAT_EPSILON) {
+							if(lcltop >= 0)
+								clmFlagF |= 1<<j;
+							else {
+								lcltop = j;
+								// 0でない成分を持つ全ての行について，先導成分が1である
+								// 行の下に行くにつれて先導成分が右へずれていく
+								if(topClm >= j || !(val-1.f >= FLOAT_EPSILON))
+									return false;
+								clmFlagT |= 1<<j;
+							}
+						}
+					}
+					if(lcltop < 0)
+						bZero = true;
+					else {
+						// 0でない成分を持つすべての行は，0だけの行よりも先に来る
+						if(bZero)
+							return false;
+						topClm = lcltop;
+					}
+				}
+				// ある行の先導成分が第j列ならば，他の行の第j列は0である
+				return !(clmFlagT & clmFlagF);
+			}
 			void MT::rowSwap(int r0, int r1) {
 				__m128 xm0 = LOADPS(ma[r0]),
 						xm1 = LOADPS(ma[r1]);
@@ -393,11 +517,11 @@
 				return _mm_movemask_ps(xm1) == 0;
 			}
 			bool MT::isZero() const {
-				for(int i=0 ; i<height ; i++) {
-					if(!isZeroRow(i))
-						return false;
-				}
-				return true;
+				__m128 accum = _mm_setzero_ps();
+				#define ACCUM_ABS(dummy,n,dummy2)	_mm_add_ps(accum, _mmAbsPs(LOADTHIS(n)));
+				BOOST_PP_REPEAT(DIM_M, ACCUM_ABS, NOTHING)
+				accum = _mm_and_ps(accum, xmm_mask[DIM_N]);
+				return _mm_movemask_ps(accum) == 0;
 			}
 			void MT::rowNormalize() {
 				__m128 xm0 = LOADPS(ma[0]);
@@ -408,9 +532,56 @@
 					STOREPS(ma[i], _mm_mul_ps(LOADTHIS(i), xm0));
 			}
 			int MT::rowReduce() {
-				rowNormalize();
-				// TODO; implement later
-				throw std::domain_error("not implemented yet");
+				// rowNormalize();
+				int rbase = 0,
+					cbase = 0;
+				for(;;) {
+					// 行の先端が0でなく、かつ絶対値が最大の行を探す
+					int idx = -1;
+					float absmax = 0;
+					for(int i=rbase ; i<DIM_M ; i++) {
+						float v = std::fabs(ma[i][cbase]);
+						if(absmax < v) {
+							if(std::fabs(v) >= FLOAT_EPSILON) {
+								absmax = v;
+								idx = i;
+							}
+						}
+					}
+					if(idx < 0) {
+						// 無かったので次の列へ
+						++cbase;
+						if(cbase == DIM_N) {
+							// 終了
+							break;
+						}
+						continue;
+					}
+
+					// 基準行でなければ入れ替え
+					if(idx > rbase)
+						rowSwap(idx, rbase);
+					// 基点で割って1にする
+					rowMul(rbase, _sseRcp22Bit(ma[rbase][cbase]));
+					ma[rbase][cbase] = 1;	// 精度の問題で丁度1にならない事があるので強制的に1をセット
+					// 他の行の同じ列を0にする
+					for(int i=0 ; i<DIM_M ; i++) {
+						if(i==rbase)
+							continue;
+
+						float scale = -ma[i][cbase];
+						rowMulAdd(rbase, scale, i);
+						ma[i][cbase] = 0;	// 上と同じく精度の問題により0をセット
+					}
+					// 次の行,列へ移る
+					++rbase;
+					++cbase;
+					if(rbase == DIM_M || cbase == DIM_N) {
+						// 最後の行まで処理し終わるか，全て0の行しか無ければ終了
+						break;
+					}
+				}
+				return DIM_M - rbase;
 			}
 			#if DIM_M==DIM_N
 				void MT::transpose() {
