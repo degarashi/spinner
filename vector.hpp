@@ -406,13 +406,13 @@
 							accum = _mm_setzero_ps();
 					for(int i=0 ; i<DIM ; i++) {
 						__m128 tmp = _mm_shuffle_ps(ths, ths, _MM_SHUFFLE(i,i,i,i));
-						_mm_add_ps(accum, _mm_mul_ps(tmp, LOADPS_(N)(m.ma[i])));
+						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, LOADPS_(N)(m.ma[i])));
 					}
 					return VecT<N,ALIGNB>(accum);
 				}
 			*/
 			#define LOOP_MULOP(z,n,loadf)		{__m128 tmp=_mm_shuffle_ps(ths,ths, _MM_SHUFFLE(n,n,n,n)); \
-						_mm_add_ps(accum, _mm_mul_ps(tmp, loadf(mat.ma[n]))); }
+						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, loadf(mat.ma[n]))); }
 			#define DEF_MULOPA(z,n,align)	template <> VecT<n,ALIGNB> VT::operator * (const MatT<DIM,n,BOOLNIZE(align)>& mat) const { \
 						__m128 ths = LOADTHIS(), \
 						accum = _mm_setzero_ps(); \

@@ -5,7 +5,7 @@
 using namespace spn;
 int main(int argc, char **argv) {
 	AMat33 mrX = AMat33::RotationX(DEGtoRAD(90));
-	AVec3 vrot(0,0,2);
-	vrot *= mrX;
+	AVec3 vrot(1,1,1);
+	auto vr = vrot * mrX;
     return 0;
 }
