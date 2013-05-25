@@ -28,6 +28,7 @@
 	#define DIM		BOOST_PP_FRAME_ITERATION(1)
 	#define BOOST_PP_ITERATION_PARAMS_2 (4, (0,1, "vector.hpp", BOOST_PP_FRAME_FLAGS(1)))
 	#include BOOST_PP_ITERATE()
+	#undef DIM
 #else
 	#define ALIGN	BOOST_PP_ITERATION()
 	#define ALIGNB	BOOLNIZE(ALIGN)
@@ -467,4 +468,8 @@
 			#endif
 		}
 	#endif
+	#undef ALIGN
+	#undef ALIGNB
+	#undef Vec
+	#undef VT
 #endif

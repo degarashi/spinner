@@ -18,6 +18,7 @@
 	#define ALIGN16	BOOST_PP_IF(ALIGN, alignas(16), NOTHING)
 	#define QT		QuatT<ALIGNB>
 	#define EQT		ExpQuatT<ALIGNB>
+	#define	VEC3	VecT<3, ALIGNB>
 	
 	#define DIM		3
 	#include "local_macro.hpp"
@@ -124,4 +125,12 @@
 		}
 	#endif
 	}
+	#undef ALIGN
+	#undef ALIGNA
+	#undef ALIGNB
+	#undef ALIGN16
+	#undef QT
+	#undef EQT
+	#undef VEC3
+	#undef DIM
 #endif

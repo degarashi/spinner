@@ -124,4 +124,11 @@
 		}
 	#endif
 	}
+	#undef ALIGN
+	#undef ALIGNA
+	#undef ALIGNB
+	#undef ALIGN16
+	#undef VEC3
+	#undef PT
+	#undef DIM
 #endif

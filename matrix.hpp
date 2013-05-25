@@ -792,5 +792,17 @@
 			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
 		}
 	#endif
+	#undef TUP
+	#undef DIM_M
+	#undef DIM_N
+	#undef ALIGN
+	#undef ALIGNB
+	#undef ALIGN16
+	#undef MT
+	#undef DMAX
+	#undef DMIN
+	#undef DMUL
+	#undef DIMTUPLE
+	#undef DEF_CONV_ITR
 	#undef DEFINE_MATRIX
 #endif

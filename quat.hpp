@@ -468,4 +468,14 @@
 		}
 	#endif
 	}
+	#undef ALIGN
+	#undef ALIGNA
+	#undef ALIGNB
+	#undef ALIGN16
+	#undef VEC3
+	#undef MAT33
+	#undef MAT44
+	#undef QT
+	#undef EQT
+	#undef DIM
 #endif
