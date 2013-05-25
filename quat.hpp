@@ -1,7 +1,7 @@
 #if !BOOST_PP_IS_ITERATING
 	#if !defined(QUAT_H_) || INCLUDE_QUAT_LEVEL >= 1
 		#define QUAT_H_
-		#include "vector.hpp"
+		#include "matrix.hpp"
 		// 要求された定義レベルを実体化
 		#ifndef INCLUDE_QUAT_LEVEL
 			#define INCLUDE_QUAT_LEVEL 0
