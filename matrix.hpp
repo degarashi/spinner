@@ -442,7 +442,7 @@
 						return _PerspectiveFov(fov, aspect, nz, fz, 1);
 					}
 					MT MT::PerspectiveFovRH(float fov, float aspect, float nz, float fz) {
-						return _PerspectiveFov(fov, aspect, nz, fz, 1);
+						return _PerspectiveFov(fov, aspect, nz, fz, -1);
 					}
 				#endif
 			#endif
