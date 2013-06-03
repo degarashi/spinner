@@ -176,7 +176,7 @@
 				BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))
 			}
 			__m128 VT::loadPS() const {
-				return BOOST_PP_IF(ALIGN, _mm_load_ps, _mm_loadu_ps)(m);
+				return BOOST_PP_CAT(LOADPS_, DIM)(m);
 			}
 			VT& VT::operator = (__m128 r) {
 				STOREPS(m, r);
@@ -326,7 +326,9 @@
 			}
 			template <bool A>
 			VT VT::l_intp(const VecT<DIM,A>& v, float r) const {
-				_mm_mul_ps(_mm_load1_ps(&r), _mm_add_ps(LOADTHIS(), v.loadPS()));
+				__m128 ths = LOADTHIS();
+				ths = _mm_add_ps(ths, _mm_mul_ps(_mm_sub_ps(v.loadPS(), ths), _mm_load1_ps(&r)));
+				return VT(ths);
 			}
 			template VT VT::l_intp(const VecT<DIM,false>&, float) const;
 			template VT VT::l_intp(const VecT<DIM,true>&, float) const;
@@ -368,8 +370,8 @@
 					r1 = _mm_mul_ps(m1,m3);
 					return VT(_mm_sub_ps(r0, r1));
 				}
-				template VT VT::VT::cross(const VecT<DIM,false>&) const;
-				template VT VT::VT::cross(const VecT<DIM,true>&) const;
+				template VT VT::cross(const VecT<DIM,false>&) const;
+				template VT VT::cross(const VecT<DIM,true>&) const;
 				
 				//! 外積計算cross()と同義
 				template <bool A>

@@ -740,13 +740,13 @@
 				BOOST_PP_REPEAT(n0, MUL_OUTER, BOOST_PP_IF(align, NOTHING, U)) \
 				return ret; \
 			}
-			#define MUL_INNER(z,n,data)	_mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(n,n,n,n)), LOADPS(m.ma[n])));
+			#define MUL_INNER(z,n,AU)	accum = _mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
 			#define MUL_OUTER(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
 				__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
-				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, NOTHING) \
+				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, AU) \
 				BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
-			
+
 			// 自分との積算でなければ上書き演算
 			/*	Pseudo-code:
 				MT& MT::operator *= (const MatT<n0,n1,align>& m) {
@@ -769,7 +769,7 @@
 						if((intptr_t)&m == (intptr_t)this) return *this = *this * *this; \
 						BOOST_PP_REPEAT(DIM_M, MUL_OUTER2, BOOST_PP_IF(align, NOTHING, U)) \
 						return *this; }
-			#define MUL_INNER2(z,n,AU)	_mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
+			#define MUL_INNER2(z,n,AU)	accum = _mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
 			#define MUL_OUTER2(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
 					__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
 					BOOST_PP_REPEAT_FROM_TO(1,DIM_M, MUL_INNER2, AU) \

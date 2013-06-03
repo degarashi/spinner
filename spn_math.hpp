@@ -70,7 +70,7 @@ template <int A, int B, int C, int D>
 inline __m128 _makeMask() {
 	__m128 zero = _mm_setzero_ps();
 	__m128 full = _mm_andnot_ps(zero, zero);
-	const int tmp2 = ((~D&1)<<3)|((~C&1)<<2)|((~B&1)<<1)|(~A&1);
+	const int tmp2 = (((~D)&1)<<3)|(((~C)&1)<<2)|(((~B)&1)<<1)|((~A)&1);
 	__m128 tmp = _mm_move_ss(zero, full);
 	return _mm_shuffle_ps(tmp, tmp, tmp2);
 }
@@ -123,23 +123,23 @@ inline float RADtoDEG(float ang) {
 #define LOADPS_ZA3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_load_ps(ptr))
 #define LOADPS_Z3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_loadu_ps(ptr))
 #define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_mask[3], LOADPS_A3(ptr)), \
+										_mm_or_ps(xmm_matI[3], LOADPS_ZA3(ptr)), \
 										LOADPS_ZA3(ptr))
 #define LOADPS_I3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_mask[3], LOADPS_3(ptr)), \
+										_mm_or_ps(xmm_matI[3], LOADPS_Z3(ptr)), \
 										LOADPS_Z3(ptr))
 #define STOREPS_A3(ptr, r)	{ _mm_storel_pi((__m64*)ptr, r); _mm_store_ss(ptr+2, _mm_shuffle_ps(r, r, _MM_SHUFFLE(2,2,2,2))); }
 #define STOREPS_3(ptr, r)	STOREPS_A3(ptr,r)
 
 #define LOADPS_A2(ptr)		LOADPS_A4(ptr)
-#define LOADPS_2(ptr)		LOADPS_A2(ptr)
+#define LOADPS_2(ptr)		LOADPS_4(ptr)
 #define LOADPS_ZA2(ptr)		_mm_loadl_pi(xmm_tmp0000, (const __m64*)ptr)
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
 #define LOADPS_IA2(ptr,n)	_mm_loadl_pi(xmm_matI[n], (const __m64*)ptr)
 #define LOADPS_I2(ptr,n)	LOADPS_IA2(ptr,n)
 #define STOREPS_A2(ptr, r)	_mm_storel_pi((__m64*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)
-					
+
 #define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 #define NOTHING

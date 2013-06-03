@@ -143,7 +143,7 @@
 			// 最大要素の値を算出
 			QuatT res;
 			float* qr = reinterpret_cast<float*>(&res);
-			float v = std::sqrtf(elem[idx]) * 0.5f;
+			float v = std::sqrt(elem[idx]) * 0.5f;
 			qr[idx] = v;
 			float mult = 0.25f / v;
 			switch(idx) {
