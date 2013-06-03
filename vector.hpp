@@ -468,6 +468,7 @@
 			#endif
 		}
 	#endif
+	#include "local_unmacro.hpp"
 	#undef ALIGN
 	#undef ALIGNB
 	#undef Vec

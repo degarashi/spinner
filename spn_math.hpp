@@ -15,7 +15,7 @@
 	r = _mm_mul_ps(r, _mm_mul_ps(tmprcp, tmprcp)); \
 	tmprcp = _mm_add_ps(tmprcp,tmprcp); \
 	r = _mm_sub_ps(tmprcp, r); }
-	
+
 #include <cmath>
 #include <cstdint>
 namespace spn {
@@ -154,10 +154,10 @@ namespace spn {
 		AXIS_Z,
 		NUM_AXIS
 	};
-	
+
 	template <int N, bool A>
 	struct VecT;
-	
+
 	struct MatBase {
 		//! 対角線上に数値を設定。残りはゼロ
 		static struct _TagDiagonal {} TagDiagonal;
@@ -167,10 +167,10 @@ namespace spn {
 	};
 	template <int M, int N, bool A>
 	struct MatT;
-	
+
 	template <bool A>
 	struct PlaneT;
-	
+
 	struct QuatBase {
 		static struct _TagIdentity {} TagIdentity;
 	};

@@ -7,8 +7,8 @@
 		#include <boost/preprocessor.hpp>
 		#include <cstring>
 		#include <stdexcept>
-		#include "spn_math.hpp"
-		
+		#include "vector.hpp"
+
 		// 定義する行列の次元(M,N)
 		#define SEQ_MATDEF	((2,2))((2,3))((2,4))((4,2))((3,2))((3,3))((3,4))((4,3))((4,4))
 		#define LEN_SEQ		BOOST_PP_SEQ_SIZE(SEQ_MATDEF)
@@ -37,14 +37,14 @@
 	#define DMAX 	BOOST_PP_MAX(DIM_M, DIM_N)
 	#define DMIN 	BOOST_PP_MIN(DIM_M, DIM_N)
 	#define DMUL	BOOST_PP_MUL(DIM_M, DIM_N)
-	
+
 	#define DIMTUPLE(n,i)				BOOST_PP_TUPLE_ELEM(i, BOOST_PP_SEQ_ELEM(n, SEQ_MATDEF))
 	#define DEF_CONV_ITR(z,n,data)		data(DIMTUPLE(n,0), DIMTUPLE(n,1), 0) data(DIMTUPLE(n,0), DIMTUPLE(n,1), 1)
-	
+
 	#define DIM		DIM_N
 	#define DEFINE_MATRIX
 	#include "local_macro.hpp"
-	
+
 	#if BOOST_PP_FRAME_FLAGS(1) == 0
 		namespace spn {
 			// row-major
@@ -57,7 +57,7 @@
 				using UMat = MatT<DIM_M, DIM_N, false>;
 				using UVec2 = VecT<2,false>;
 				using UVec3 = VecT<3,false>;
-				
+
 				enum { width=DIM_N,
 						height=DIM_M };
 				const static int PaddingedSize = BOOST_PP_IF(ALIGN, 4, DIM_N),
@@ -69,12 +69,12 @@
 					//! 2次元配列アクセス用
 					float	ma[0][PaddingedSize];
 				};
-				
+
 				// -------------------- ctor --------------------
 				MatT() = default;
 				BOOST_PP_IF(ALIGN, NOTHING, explicit) MatT(const AMat& m);
 				BOOST_PP_IF(ALIGN, explicit, NOTHING) MatT(const UMat& m);
-				
+
 				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
 				#define DIAGONAL(z,n,data)		BOOST_PP_REPEAT_##z(DIM_N, DIAGONAL2, n)
 				MatT(float s, _TagDiagonal) {
@@ -86,7 +86,7 @@
 					BOOST_PP_REPEAT(DIM_M, ALLSET, r)
 				}
 				MatT(_TagIdentity): MatT(1.f, TagDiagonal) {}
-				
+
 				#define SETARRAY(z,n,src)	STORETHIS(n, _mm_loadu_ps(src)); src += DIM_N;
 				MatT(const float* src) {
 					BOOST_PP_REPEAT(DIM_M, SETARRAY, src)
@@ -95,7 +95,7 @@
 				float& ref1D() {
 					return ma[N/DIM_N][N%DIM_N];
 				}
-				
+
 				#define DEF_ARGS(z,n,data)	(float BOOST_PP_CAT(data,n))
 				#define SET_ARGS0(z,n,data)	ref1D<n>() = BOOST_PP_CAT(data,n);
 				//! 全てを指定
@@ -107,7 +107,7 @@
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMIN, SET_ARGS1, f)
 				}
-				
+
 				// -------------------- query values --------------------
 				const Row& getRow(int n) const {
 					if(n >= height)
@@ -144,12 +144,12 @@
 						return Column(xmm_matI[n]);
 					return Column(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DIM_M, SET_COLUMN, n)));
 				}
-				
+
 				#define DEF_GETROW(z,n,data)	BOOST_PP_CAT(const Row& getRow, n)() const { return *reinterpret_cast<const Row*>(ma[n]); }
 				//! マクロからのアクセス用: 行毎に個別のメンバ関数を用意
 				/*! マクロのColumn取得は多分、不要 */
 				BOOST_PP_REPEAT(DIM_M, DEF_GETROW, NOTHING)
-				
+
 				// -------------------- operators --------------------
 				#define FUNC(z,n,func)		STOREPS(ma[n], func(LOADPS(ma[n]), r0));
 				#define FUNC2(z,n,func)		STOREPS(ret.ma[n], func(LOADPS(ma[n]), r0));
@@ -167,7 +167,7 @@
 				DEF_OP(-, _mm_sub_ps)
 				DEF_OP(*, _mm_mul_ps)
 				DEF_OP(/, _mmDivPs)
-				
+
 				#define FUNC3(z,n,func)		STOREPS(ma[n], func(LOADPS(m.ma[n]), LOADPS(ma[n])));
 				#define FUNC4(z,n,func)		STOREPS(ret.ma[n], func(LOADPS(m.ma[n]), LOADPS(ma[n])));
 				#define DEF_OPM(op, func) MatT& operator BOOST_PP_CAT(op,=) (const MatT& m) { \
@@ -180,7 +180,7 @@
 
 				DEF_OPM(+, _mm_add_ps)
 				DEF_OPM(-, _mm_sub_ps)
-				
+
 				// -------------------- others --------------------
 				// 行列拡張Get = Mat::getRowE()
 				void identity();
@@ -216,7 +216,7 @@
 						static MatT _PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff);
 					#endif
 				#endif
-				
+
 				// 正方行列限定のルーチン
 				#if DIM_M==DIM_N
 					void transpose();
@@ -229,7 +229,7 @@
 					bool invert();
 				#endif
 				MatT<DIM_N,DIM_M,ALIGNB> transposition() const;
-				
+
 				#if DMIN > 2
 					//! 指定した行と列を省いた物を出力
 					MatT<height-1,width-1,ALIGNB> cutRC(int row, int clm) const;
@@ -248,7 +248,7 @@
 				void clmMul(int c0, float s);
 				//! ある列を定数倍した物を別の行へ足す
 				void clmMulAdd(int c0, float s, int c1);
-				
+
 				//! ある行の要素が全てゼロか判定 (誤差=EPSILON込み)
 				bool isZeroRow(int n) const;
 				//! 零行列か判定
@@ -261,7 +261,7 @@
 				/*! \return 0の行数 */
 				int rowReduce();
 				// TODO: DecompAffine [DIM >= 3]
-				
+
 				// 本来行列の積算が出来るのはDIM_N == 相手のDIM_Mの時だけだが
 				// 足りない分をgetRowE()で補う事で可能にする
 				// 演算結果も本当は(DIM_M, Other::DIM_N)となるが
@@ -273,7 +273,7 @@
 				// a * b -> 3x4
 				// a * [3x4](4x4) -> 3x4
 				// TODO: 入力が出力と同じサイズで、なおかつrvalueだったら&&で受け取ってそのアドレスを返す
-				
+
 				//! 行列サイズを変更
 				/*! 縮小の場合は要素を削り
 					拡大の際に足りない成分は対角=1, 他は0とする */
@@ -288,7 +288,7 @@
 				//! 行列との積算 (2 operands)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
-				
+
 				//! 行列との積算 (右から掛ける)
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
 				template <bool A>
@@ -343,7 +343,7 @@
 					MT MT::RotationX(float ang) {
 						float C = std::cos(ang),
 							S = std::sin(ang);
-							
+
 						MatT mt;
 						STORETHISPS(mt.ma[0], _mm_setr_ps(1,0,0,0));
 						STORETHISPS(mt.ma[1], _mm_setr_ps(0,C,-S,0));
@@ -410,7 +410,7 @@
 					MT MT::LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
 						AVec3 xA(up % dir);
 						xA.normalize();
-						
+
 						MatT ret;
 						STORETHISPS(ret.ma[0], _mm_setr_ps(xA.x, up.x, dir.x, 0));
 						STORETHISPS(ret.ma[1], _mm_setr_ps(xA.y, up.y, dir.y, 0));
@@ -609,7 +609,7 @@
 				bool MT::inversion(MatT& dst, float det) const {
 					if(std::fabs(det) < FLOAT_EPSILON)
 						return false;
-					
+
 					det = _sseRcp22Bit(det);
 					#if DIM_M==2
 						dst.ma[0][0] = ma[1][1] * det;
@@ -676,7 +676,7 @@
 					#define BOOST_PP_LOCAL_MACRO(n)	xm[n] = LOADROWE(n);
 					#define BOOST_PP_LOCAL_LIMITS (0,DMAX)
 					#include BOOST_PP_LOCAL_ITERATE()
-					
+
 					xmt[0] = _mm_unpacklo_ps(xm[0], xm[2]);
 					xmt[1] = _mm_unpacklo_ps(xm[1], xm[3]);
 					xmt[2] = _mm_unpackhi_ps(xm[0], xm[2]);
@@ -714,11 +714,11 @@
 						BOOST_PP_CAT(convert, AFLAG(align)), \
 						n0), \
 					n1)() const { \
- 				MatT<n0,n1,BOOLNIZE(align)> ret; \
+				MatT<n0,n1,BOOLNIZE(align)> ret; \
 				BOOST_PP_REPEAT(n0, ITR_COPY, (n1)(align)) \
 				return ret; }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
-			
+
 			// 行列の積算
 			/*	Pseudo-code:
 				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
@@ -792,6 +792,7 @@
 			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
 		}
 	#endif
+	#include "local_unmacro.hpp"
 	#undef TUP
 	#undef DIM_M
 	#undef DIM_N

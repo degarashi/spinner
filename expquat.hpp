@@ -125,6 +125,7 @@
 		}
 	#endif
 	}
+	#include "local_unmacro.hpp"
 	#undef ALIGN
 	#undef ALIGNA
 	#undef ALIGNB
