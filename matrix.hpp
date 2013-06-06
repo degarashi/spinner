@@ -109,6 +109,17 @@
 				}
 
 				// -------------------- query values --------------------
+				#if ALIGN==1 && BOOST_PP_LESS(DIM_N,4)==1
+					template <class T>
+					T& getAuxRef(int m, int n) {
+						return *reinterpret_cast<T*>(ma[m]+DIM_N+n);
+					}
+					template <class T>
+					const T& getAuxRef(int m, int n) const {
+						return *reinterpret_cast<const T*>(ma[m]+DIM_N+n);
+					}
+				#endif
+
 				const Row& getRow(int n) const {
 					if(n >= height)
 						return *reinterpret_cast<const Row*>(cs_matI[n]);
@@ -316,6 +327,7 @@
 			void MT::identity() {
 				*this = MatT(1.0f, TagDiagonal);
 			}
+
 			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
 			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 				return MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));

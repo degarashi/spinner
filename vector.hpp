@@ -9,7 +9,7 @@
 		#include <boost/operators.hpp>
 		#include <cmath>
 		#include "spn_math.hpp"
-		
+
 		#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
 		#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
 		#define DEF_ARGSET(index,data,elem)		elem = BOOST_PP_CAT(f, elem);
@@ -52,6 +52,7 @@
 				// -------------------- ctor --------------------
 				VecT() = default;
 				explicit VecT(__m128 r);
+				VecT(float a);
 				VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
 				__m128 loadPS() const;
 
@@ -76,7 +77,7 @@
 				DEF_PRE(-, _mm_sub_ps)
 				DEF_PRE(*, _mm_mul_ps)
 				DEF_PRE(/, _mmDivPs)
-				
+
 				// -------------------- others --------------------
 				static float _sumup(__m128 xm);
 				// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
@@ -87,38 +88,38 @@
 				float distance(const VecT<DIM,A>& v) const;
 				template <bool A>
 				float dist_sq(const VecT<DIM,A>& v) const;
-				
+
 				//! 要素ごとに最小値選択
 				template <bool A>
 				VecT getMin(const VecT<DIM,A>& v) const;
 				template <bool A>
 				void selectMin(const VecT<DIM,A>& v);
-				
+
 				//! 要素ごとに最大値選択
 				template <bool A>
 				VecT getMax(const VecT<DIM,A>& v) const;
 				template <bool A>
 				void selectMax(const VecT<DIM,A>& v);
-				
+
 				VecT operator - () const;
-				
+
 				/*! \return 要素が全て等しい時にtrue, それ以外はfalse */
 				template <bool A>
 				bool operator == (const VecT<DIM,A>& v) const;
-				
+
 				void normalize();
 				VecT normalization() const;
 				/*! \return ベクトルの長さ */
 				float length() const;
 				/*! \return ベクトル長の2乗 */
 				float len_sq() const;
-				
+
 				void saturate(float fMin, float fMax);
 				VecT saturation(float fMin, float fMax) const;
 				void lerp(const UVec& v, float r);
 				template <bool A>
 				VecT l_intp(const VecT<DIM,A>& v, float r) const;
-				
+
 				#if ALIGN==1
 					//! AVec -> Vec へ暗黙変換
 					operator VecT<DIM,false>& ();
@@ -152,8 +153,10 @@
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
 				#elif DIM==2
 					// ccw
-					template <bool A>
-					float ccw(const VecT<DIM,A>& v) const;
+					float ccw(const VecT<DIM,false>& v) const;
+
+					using Vec3 = VecT<3,ALIGNB>;
+					Vec3 asVec3(float z) const;
 				#endif
 				//! 行列との積算 (左から掛ける)
 				/*! 行ベクトルとして扱う */
@@ -172,11 +175,14 @@
 			VT::VecT(__m128 r){
 				BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(ALIGN)), DIM)(m, r);
 			}
+			VT::VecT(float a) {
+				STORETHIS(_mm_load1_ps(&a));
+			}
 			VT::VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))) {
 				BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))
 			}
 			__m128 VT::loadPS() const {
-				return BOOST_PP_CAT(LOADPS_, DIM)(m);
+				return LOADTHIS();
 			}
 			VT& VT::operator = (__m128 r) {
 				STOREPS(m, r);
@@ -227,14 +233,14 @@
 			DEF_OP(-, _mm_sub_ps)
 			DEF_OP(*, _mm_mul_ps)
 			DEF_OP(/, _mmDivPs)
-			
+
 			template <bool A>
 			float VT::dot(const VecT<DIM,A>& v) const {
 				return _sumup(_mm_mul_ps(LOADTHIS(), v.loadPS()));
 			}
 			template float VT::dot(const VecT<DIM,false>& v) const;
 			template float VT::dot(const VecT<DIM,true>& v) const;
-			
+
 			float VT::average() const {
 				return _sumup(LOADTHIS());
 			}
@@ -244,7 +250,7 @@
 			}
 			template float VT::distance(const VecT<DIM,false>&) const;
 			template float VT::distance(const VecT<DIM,true>&) const;
-			
+
 			template <bool A>
 			float VT::dist_sq(const VecT<DIM,A>& v) const {
 				auto tv = v - *this;
@@ -252,25 +258,25 @@
 			}
 			template float VT::dist_sq(const VecT<DIM,false>&) const;
 			template float VT::dist_sq(const VecT<DIM,true>&) const;
-			
+
 			template <bool A>
 			VT VT::getMin(const VecT<DIM,A>& v) const {
 				return VT(_mm_min_ps(LOADTHIS(), v.loadPS())); }
 			template VT VT::getMin(const VecT<DIM,false>&) const;
 			template VT VT::getMin(const VecT<DIM,true>&) const;
-			
+
 			template <bool A>
 			void VT::selectMin(const VecT<DIM,A>& v) {
 				STORETHIS(_mm_min_ps(LOADTHIS(), v.loadPS())); }
 			template void VT::selectMin(const VecT<DIM,false>&);
 			template void VT::selectMin(const VecT<DIM,true>&);
-			
+
 			template <bool A>
 			VT VT::getMax(const VecT<DIM,A>& v) const {
 				return VT(_mm_max_ps(LOADTHIS(), v.loadPS())); }
 			template VT VT::getMax(const VecT<DIM,false>&) const;
 			template VT VT::getMax(const VecT<DIM,true>&) const;
-			
+
 			template <bool A>
 			void VT::selectMax(const VecT<DIM,A>& v) {
 				STORETHIS(_mm_max_ps(LOADTHIS(), v.loadPS())); }
@@ -280,7 +286,7 @@
 			VT VT::operator - () const {
 				return *this * -1.0f;
 			}
-			
+
 			template <bool A>
 			bool VT::operator == (const VecT<DIM,A>& v) const {
 				__m128 r0 = _mm_cmpeq_ps(LOADTHIS(), v.loadPS());
@@ -290,7 +296,7 @@
 			}
 			template bool VT::operator == (const VecT<DIM,false>&) const;
 			template bool VT::operator == (const VecT<DIM,true>&) const;
-			
+
 			void VT::normalize() {
 				*this = normalization();
 			}
@@ -309,7 +315,7 @@
 				__m128 r0 = LOADTHISZ();
 				r0 = _mm_mul_ps(r0, r0);
 				SUMVEC(r0)
-				
+
 				float ret;
 				_mm_store_ss(&ret, r0);
 				return ret;
@@ -372,7 +378,7 @@
 				}
 				template VT VT::cross(const VecT<DIM,false>&) const;
 				template VT VT::cross(const VecT<DIM,true>&) const;
-				
+
 				//! 外積計算cross()と同義
 				template <bool A>
 				void VT::operator %= (const VecT<DIM,A>& v) {
@@ -380,7 +386,7 @@
 				}
 				template void VT::operator %= (const VecT<DIM,false>&);
 				template void VT::operator %= (const VecT<DIM,true>&);
-				
+
 				//! 外積計算cross()と同義
 				template <bool A>
 				VT VT::operator % (const VecT<DIM,A>& v) const {
@@ -388,19 +394,20 @@
 				}
 				template VT VT::operator % (const VecT<DIM,false>&) const;
 				template VT VT::operator % (const VecT<DIM,true>&) const;
-				
+
 				#define _Vec4 VecT<4,ALIGNB>
 				_Vec4 VT::asVec4(float w) const {
 					return _Vec4(x,y,z,w);
 				}
 			#elif DIM==2
 				// ccw
-				template <bool A>
-				float VT::ccw(const VecT<DIM,A>& v) const {
+				float VT::ccw(const VecT<DIM,false>& v) const {
 					return x*v.y - y*v.x;
 				}
-				template float VT::ccw(const VecT<DIM,false>&) const;
-				template float VT::ccw(const VecT<DIM,true>&) const;
+				#define _Vec3 VecT<3,ALIGNB>
+				_Vec3 VT::asVec3(float z) const {
+					return _Vec3(x,y,z);
+				}
 			#endif
 		}
 	#else
@@ -429,7 +436,7 @@
 
 			#define DEF_MULOP(z,align,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(2,5, DEF_MULOPA, align) DEF_MULOPA_2(dummy,dummy,align)
 			BOOST_PP_REPEAT(2, DEF_MULOP, NOTHING)
-			
+
 			#if DIM==3
 				VT& VT::operator *= (const QuatT<ALIGNB>& q) {
 					*this = (*this * q);
@@ -457,7 +464,7 @@
 					float distb = p.dot(v);
 					if(distf * distb >= 0.0f)
 						return std::make_tuple(VecT(),false);
-					
+
 					float ratio = fabs(distf) / (fabs(distf) + fabs(distb));
 					// 平面と線分の交点 -> tv
 					Vec3 tv = v - (*this);

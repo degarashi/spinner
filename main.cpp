@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
 	MyStack stk;
 	stk.push(Mat33(mrX));
 
-	APose2D p2(AVec2(100,200), 128, AVec2(1,1)),
+	Pose2D p2(AVec2(100,200), 128, AVec2(1,1)),
 			p3(AVec2(1,2), 64, AVec2(3,3));
 	auto p4 = p2.lerp(p3, 0.5f);
 
