@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(dgmath)
+project(spinner)
 set(CMAKE_CXX_COMPILER "clang++")
 include_directories(${PROJECT_SOURCE_DIR})
 set(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -g -O0 -msse2")

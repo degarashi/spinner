@@ -7,7 +7,7 @@ Current Build Directory Index=0
 ProjectRootRelative=./
 
 [CMake][CMake Build Directory 0]
-Build Directory Path=file:///home/slice/projects/dgmath/build
+Build Directory Path=file:///tmp/spinner_build
 Build Type=Debug
 CMake Binary=file:///usr/local/bin/cmake
 Environment Profile=
@@ -30,7 +30,7 @@ Dependency Action=Nothing
 EnvironmentGroup=default
 Executable=
 External Terminal=konsole --noclose --workdir %workdir -e %exe
-Project Target=dgmath,spn_test
+Project Target=spinner,spn_test
 Use External Terminal=false
 Working Directory=
 isExecutable=false
