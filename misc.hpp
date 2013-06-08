@@ -9,6 +9,17 @@
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
 
 namespace spn {
+	//! 4つの8bit値から32bitチャンクを生成
+	inline static long MakeChunk(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3) {
+		return (c3 << 24) | (c2 << 16) | (c1 << 8) | c0; }
+
+	inline uint64_t U64FromU32(uint32_t hv, uint32_t lv) {
+		uint64_t ret(hv);
+		ret <<= 32;
+		ret |= lv;
+		return ret;
+	}
+
 	struct Text {
 		// エンコードタイプ
 		enum class CODETYPE {
@@ -25,19 +36,10 @@ namespace spn {
 		static int sjis_strlen(const char* str);
 		//! エンコードタイプと判定に使った文字数を返す
 		static std::pair<CODETYPE, int> GetEncodeType(const void* ptr);
-		//! 32bitの4文字チャンクを生成
-		inline static long MakeChunk(char c0, char c1, char c2, char c3) {
-			return (c3 << 24) | (c2 << 16) | (c1 << 8) | c0; }
 		//! 文字列の先頭4文字から32bitチャンクを生成
 		inline static long MakeChunk(const char* str) {
-			return MakeChunk(str[0], str[1], str[2], str[3]); }
+			return ::spn::MakeChunk(str[0], str[1], str[2], str[3]); }
 	};
-	inline uint64_t U64FromU32(uint32_t hv, uint32_t lv) {
-		uint64_t ret(hv);
-		ret <<= 32;
-		ret |= lv;
-		return ret;
-	}
 
 	//! フリーリストでオブジェクト管理
 	template <class T>
@@ -102,16 +104,16 @@ namespace spn {
 			static T* ms_singleton;
 		public:
 			Singleton() {
-				assert(!ms_singleton || !_T("initializing error - already initialized"));
+				assert(!ms_singleton || !"initializing error - already initialized");
 				int offset = (int)(T*)1 - (int)(Singleton<T>*)(T*)1;
 				ms_singleton = (T*)((int)this + offset);
 			}
 			virtual ~Singleton() {
-				assert(ms_singleton || !_T("destructor error"));
+				assert(ms_singleton || !"destructor error");
 				ms_singleton = 0;
 			}
 			static T& _ref() {
-				assert(ms_singleton || !_T("reference error"));
+				assert(ms_singleton || !"reference error");
 				return *ms_singleton;
 			}
 	};

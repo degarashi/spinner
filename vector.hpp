@@ -164,6 +164,13 @@
 				VecT<N,ALIGNB> operator * (const MatT<DIM,N,A>& m) const;
 				template <int N, bool A>
 				VecT& operator *= (const MatT<DIM,N,A>& m);
+
+				#if DIM>=3
+					//! パックされた32bit数値から色を取り出す
+					static VecT FromPacked(uint32_t val);
+					//! 32bit数値に値をパック (1.0が255)
+					uint32_t toPacked() const;
+				#endif
 			};
 			#undef Vec
 			// 使いやすいようにクラスの別名を定義
@@ -338,6 +345,29 @@
 			}
 			template VT VT::l_intp(const VecT<DIM,false>&, float) const;
 			template VT VT::l_intp(const VecT<DIM,true>&, float) const;
+
+			#if DIM>=3
+				VT VT::FromPacked(uint32_t val) {
+					alignas(16) const uint32_t tmp[4] = {val, val>>8, val>>16, val>>24};
+					alignas(16) const uint32_t mask[4] = {0xff,0xff,0xff,0xff};
+
+					__m128 x = _mm_and_ps(_mm_load_ps((const float*)mask), _mm_load_ps((const float*)tmp));
+					x = _mm_cvtepi32_ps(x);
+
+					const float f255 = 1.f/255;
+					x = _mm_mul_ps(x, _mm_load1_ps(&f255));
+					return VecT(x);
+				}
+				uint32_t VT::toPacked() const {
+					__m128 x = _mm_mul_ps(_mm_set_ps(255,255,255,255), LOADTHISZ());
+					x = _mm_cvtps_epi32(x);
+					x = _mm_packs_epi32(x,x);
+					x = _mm_packus_epi16(x,x);
+					float ret;
+					_mm_store_ss(&ret, x);
+					return *reinterpret_cast<uint32_t*>(&ret);
+				}
+			#endif
 		}
 	#elif BOOST_PP_ITERATION_FLAGS() == 2
 		// 他次元ベクトルとの演算を定義

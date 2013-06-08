@@ -3,6 +3,7 @@
 #include "matrix.hpp"
 #include "matstack.hpp"
 #include "pose.hpp"
+#include "misc.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
@@ -27,5 +28,7 @@ int main(int argc, char **argv) {
 			p3(AVec2(1,2), 64, AVec2(3,3));
 	auto p4 = p2.lerp(p3, 0.5f);
 
+	auto pc = AVec3::FromPacked(MakeChunk(64,128,192,255));
+	auto pc2 = pc.toPacked();
 	return 0;
 }

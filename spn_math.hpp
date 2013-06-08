@@ -1,16 +1,27 @@
 #pragma once
-#ifdef USE_SSE3
+#ifndef SSE_LEVEL
+	#define SSE_LEVEL 1
+#endif
+
+#if SSE_LEVEL >= 3
 	#include <pmmintrin.h>
-	// rの各要素を足し合わせる
-	#define SUMVEC(r)	{ r = _mm_hadd_ps(r,r); \
-			r = _mm_hadd_ps(r,r); }
+#elif SSE_LEVEL == 2
+	#include <emmintrin.h>
 #else
 	#include <xmmintrin.h>
+#endif
+
+#if SSE_LEVEL <= 2
 	#define SUMVEC(r)	{ __m128 tmp = _mm_shuffle_ps(r, r, _MM_SHUFFLE(0,1,2,3)); \
 			tmp = _mm_add_ps(r, tmp); \
 			r = _mm_shuffle_ps(tmp,tmp, _MM_SHUFFLE(1,0,0,1)); \
 			r = _mm_add_ps(r, tmp); }
+#else
+	// rの各要素を足し合わせる
+	#define SUMVEC(r)	{ r = _mm_hadd_ps(r,r); \
+			r = _mm_hadd_ps(r,r); }
 #endif
+
 #define RCP22BIT(r) { __m128 tmprcp = _mm_rcp_ps(r); \
 	r = _mm_mul_ps(r, _mm_mul_ps(tmprcp, tmprcp)); \
 	tmprcp = _mm_add_ps(tmprcp,tmprcp); \
