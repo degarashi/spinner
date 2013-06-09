@@ -30,5 +30,6 @@ int main(int argc, char **argv) {
 
 	auto pc = AVec3::FromPacked(MakeChunk(64,128,192,255));
 	auto pc2 = pc.toPacked();
+
 	return 0;
 }
