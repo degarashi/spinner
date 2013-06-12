@@ -20,7 +20,7 @@
 	#define MAT44	BOOST_PP_CAT(ALIGNA, Mat44)
 	#define QT		QuatT<ALIGNB>
 	#define EQT		ExpQuatT<ALIGNB>
-	
+
 	#define DIM		4
 	#include "local_macro.hpp"
 
@@ -32,14 +32,14 @@
 				float	x,y,z,w;
 				float	m[4];
 			};
-			
+
 			QuatT() = default;
 			QuatT(const QuatT<false>& q);
 			QuatT(const QuatT<true>& q);
 			QuatT(_TagIdentity);
 			QuatT(float fx, float fy, float fz, float fw);
 			__m128 loadPS() const;
-			
+
 			template <int M, int N, bool A>
 			static QuatT FromMat(const MatT<M,N,A>& m);
 			static QuatT FromAxisF(float f11, float f12, float f13,
@@ -54,7 +54,7 @@
 			static QuatT LookAtLH(const VEC3& dir);
 			static QuatT Rotation(const VEC3& from, const VEC3& to);
 			static QuatT SetLookAt(AXIS_FLAG targetAxis, AXIS_FLAG baseAxis, const VEC3& baseVec, const VEC3& at, const VEC3& pos);
-			
+
 			// This *= Quat::rotateX(ang)
 			void rotateX(float ang);
 			void rotateY(float ang);
@@ -65,7 +65,7 @@
 			void conjugate();
 			void invert();
 			void scale(float s);
-			
+
 			#define DEF_OP0(dummy,align,op)	QuatT& operator BOOST_PP_CAT(op,=) (const QuatT<BOOLNIZE(align)>& q); \
 						QuatT operator op (const QuatT<BOOLNIZE(align)>& q) const; \
 						QuatT&& operator op (QuatT<BOOLNIZE(align)>&& q) const;
@@ -77,7 +77,7 @@
 			BOOST_PP_REPEAT(2, DEF_OP0, *)
 			DEF_OPS(*)
 			DEF_OPS(/)
-			
+
 			// return This * Quat::rotateX(ang)
 			QuatT rotationX(float ang) const;
 			QuatT rotationY(float ang) const;
@@ -94,11 +94,11 @@
 			float dot(const QuatT& q) const;
 			QuatT& operator >>= (const QuatT& q);
 			QuatT lerp(const QuatT& q, float t) const;
-			
+
 			VEC3 getXAxis() const;
 			VEC3 getYAxis() const;
 			VEC3 getZAxis() const;
-			
+
 			float distance(const QuatT& q) const;
 
 			// 行列変換
@@ -139,7 +139,7 @@
 			}
 			if(elem[idx] >= 0)
 				throw std::runtime_error("invalid matrix error");
-				
+
 			// 最大要素の値を算出
 			QuatT res;
 			float* qr = reinterpret_cast<float*>(&res);
@@ -180,7 +180,7 @@
 										template QT QT::FromMat(const MatT<n0,n1,false>&);
 		#define DEF_FROMMAT0(z,n0,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(3, 5, DEF_FROMMAT1, n0)
 		BOOST_PP_REPEAT_FROM_TO(3,5, DEF_FROMMAT0, NOTHING)
-		
+
 		void QT::identity() {
 			STORETHIS(_mm_setr_ps(0,0,0,1));
 		}
@@ -210,7 +210,7 @@
 			__m128 xm = LOADTHIS();
 			xm = _mm_mul_ps(xm, xm);
 			SUMVEC(xm);
-			
+
 			float ret;
 			_mm_store_ss(&ret, xm);
 			return ret;
@@ -238,7 +238,7 @@
 		#define DEF_OP(op, func)		BOOST_PP_REPEAT(2, DEF_OP1, (op,func))
 		DEF_OP(+, _mm_add_ps)
 		DEF_OP(-, _mm_sub_ps)
-		
+
 		QT& QT::operator *= (float s) {
 			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
 			return *this;
@@ -250,7 +250,7 @@
 		}
 		QT& QT::operator /= (float s) { return *this *= _sseRcp22Bit(s); }
 		QT QT::operator / (float s) const { return *this * _sseRcp22Bit(s); }
-		
+
 		QT& QT::operator *= (const QuatT& q) {
 			QuatT t(w*q.x + x*q.w + y*q.z - z*q.y,
 					w*q.y - x*q.z + y*q.w + z*q.x,
@@ -310,7 +310,7 @@
 					VEC3 axis(1,0,0);
 					if(std::fabs(axis.dot(from)) > 1.0f-1e-3f)
 						axis = VEC3(0,1,0);
-					return std::make_tuple(axis, float(PI), true);
+					return std::make_tuple(axis, PI, true);
 				}
 				VEC3 axis = from.cross(to);
 				axis.normalize();

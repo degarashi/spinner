@@ -261,6 +261,7 @@
 				void clmMulAdd(int c0, float s, int c1);
 
 				//! ある行の要素が全てゼロか判定 (誤差=EPSILON込み)
+				bool isZeroRowEps(int n) const;
 				bool isZeroRow(int n) const;
 				//! 零行列か判定
 				bool isZero() const;
@@ -522,11 +523,10 @@
 				setColumn(c1, clm0);
 			}
 			bool MT::isZeroRow(int n) const {
-				__m128 xm0 = LOADPSZ(ma[n]);
-				__m128 xm1 = _mm_cmplt_ps(xm0, xmm_epsilon),
-						xm2 = _mm_cmpnle_ps(xm0, xmm_epsilonM);
-				xm1 = _mm_or_ps(xm1, xm2);
-				return _mm_movemask_ps(xm1) == 0;
+				return _mmIsZero(LOADPSZ(ma[n]));
+			}
+			bool MT::isZeroRowEps(int n) const {
+				return _mmIsZeroEps(LOADPSZ(ma[n]));
 			}
 			bool MT::isZero() const {
 				__m128 accum = _mm_setzero_ps();

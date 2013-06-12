@@ -75,7 +75,22 @@ const static __m128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
 					xmm_tmp1000(_mmSetPs(0,0,0,1)),
 					xmm_tmp1111(_mmSetPs(1)),
 					xmm_epsilon(_mmSetPs(FLOAT_EPSILON)),
-					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON));
+					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON)),
+					xmm_minus0(_mmSetPs(-0.f, -0.f, -0.f, -0.f));
+
+//! レジスタ要素が全てゼロか判定 (+0 or -0)
+inline bool _mmIsZero(__m128 r) {
+	r = _mm_andnot_ps(xmm_minus0, r);
+	r = _mm_cmpeq_ps(r, xmm_tmp0000);
+	return _mm_movemask_ps(r) == 0;
+}
+//! 誤差を含んだゼロ判定
+inline bool _mmIsZeroEps(__m128 r) {
+	__m128 xm0 = _mm_cmplt_ps(r, xmm_epsilon),
+			xm1 = _mm_cmpnle_ps(r, xmm_epsilonM);
+	xm0 = _mm_or_ps(xm0, xm1);
+	return _mm_movemask_ps(xm0) == 0;
+}
 
 template <int A, int B, int C, int D>
 inline __m128 _makeMask() {
@@ -105,7 +120,17 @@ const static __m128 xmm_matI[4] = {
 	_mmSetPs(0,0,1,0),
 	_mmSetPs(0,0,0,1)
 };
-const static float PI = std::atan(1.0f)*4;
+constexpr float PI = 3.1415926535f,		// std::atan(1.0f)*4;
+				SIN0 = 0,
+				SIN30 = 1.f/2,
+				SIN45 = 1.f/1.41421356f,
+				SIN60 = 1.7320508f/2,
+				SIN90 = 1.f,
+				COS0 =  SIN90,
+				COS30 = SIN60,
+				COS45 = SIN45,
+				COS60 = SIN30,
+				COS90 = SIN0;
 template <class T>
 T Square(const T& t0) { return t0*t0; }
 template <class T>
@@ -131,22 +156,22 @@ inline float RADtoDEG(float ang) {
 #define LOADPS_A3(ptr)		LOADPS_A4(ptr)
 #define LOADPS_3(ptr)		LOADPS_4(ptr)
 #define LOADPS_BASE3(ptr,src,lfunc)	_mm_mul_ps(src, lfunc(ptr))
-#define LOADPS_ZA3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_load_ps(ptr))
-#define LOADPS_Z3(ptr)		_mm_mul_ps(xmm_tmp0111, _mm_loadu_ps(ptr))
+#define LOADPS_ZA3(ptr)		_mm_mul_ps(spn::xmm_tmp0111, _mm_load_ps(ptr))
+#define LOADPS_Z3(ptr)		_mm_mul_ps(spn::xmm_tmp0111, _mm_loadu_ps(ptr))
 #define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_matI[3], LOADPS_ZA3(ptr)), \
+										_mm_or_ps(spn::xmm_matI[3], LOADPS_ZA3(ptr)), \
 										LOADPS_ZA3(ptr))
 #define LOADPS_I3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										_mm_or_ps(xmm_matI[3], LOADPS_Z3(ptr)), \
+										_mm_or_ps(spn::xmm_matI[3], LOADPS_Z3(ptr)), \
 										LOADPS_Z3(ptr))
 #define STOREPS_A3(ptr, r)	{ _mm_storel_pi((__m64*)ptr, r); _mm_store_ss(ptr+2, _mm_shuffle_ps(r, r, _MM_SHUFFLE(2,2,2,2))); }
 #define STOREPS_3(ptr, r)	STOREPS_A3(ptr,r)
 
 #define LOADPS_A2(ptr)		LOADPS_A4(ptr)
 #define LOADPS_2(ptr)		LOADPS_4(ptr)
-#define LOADPS_ZA2(ptr)		_mm_loadl_pi(xmm_tmp0000, (const __m64*)ptr)
+#define LOADPS_ZA2(ptr)		_mm_loadl_pi(spn::xmm_tmp0000, (const __m64*)ptr)
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
-#define LOADPS_IA2(ptr,n)	_mm_loadl_pi(xmm_matI[n], (const __m64*)ptr)
+#define LOADPS_IA2(ptr,n)	_mm_loadl_pi(spn::xmm_matI[n], (const __m64*)ptr)
 #define LOADPS_I2(ptr,n)	LOADPS_IA2(ptr,n)
 #define STOREPS_A2(ptr, r)	_mm_storel_pi((__m64*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)

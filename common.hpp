@@ -10,4 +10,5 @@ namespace spn {
 			lesser = (N>M) ? false : true,
 			greater = (N>M) ? true : false};
 	};
+	#define countof(a)	(sizeof((a))/sizeof((a)[0]))
 }
