@@ -36,10 +36,12 @@ namespace spn {
 				return itr - _vec.begin();
 			}
 
-			void pop_front() { _vec.pop_front(); }
+			void pop_front() {
+				_vec.erase(_vec.begin());
+			}
 			T pop_frontR() {
 				T ret(std::move(_vec.front()));
-				_vec.pop_front();
+				_vec.erase(_vec.begin());
 				return std::move(ret);
 			}
 			void pop_back() { _vec.pop_back(); }
@@ -75,6 +77,9 @@ namespace spn {
 			}
 			typename Vec::const_iterator cend() const {
 				return _vec.cend();
+			}
+			bool empty() const {
+				return _vec.empty();
 			}
 	};
 }
