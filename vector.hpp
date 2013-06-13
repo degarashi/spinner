@@ -55,6 +55,7 @@
 				VecT(float a);
 				VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
 				__m128 loadPS() const;
+				__m128 loadPSZ() const;
 
 				//! アラインメント済ベクトルで初期化
 				VecT(const AVec& v);
@@ -191,6 +192,9 @@
 			__m128 VT::loadPS() const {
 				return LOADTHIS();
 			}
+			__m128 VT::loadPSZ() const {
+				return LOADTHISZ();
+			}
 			VT& VT::operator = (__m128 r) {
 				STOREPS(m, r);
 				return *this;
@@ -243,13 +247,13 @@
 
 			template <bool A>
 			float VT::dot(const VecT<DIM,A>& v) const {
-				return _sumup(_mm_mul_ps(LOADTHIS(), v.loadPS()));
+				return _sumup(_mm_mul_ps(LOADTHISZ(), v.loadPSZ()));
 			}
 			template float VT::dot(const VecT<DIM,false>& v) const;
 			template float VT::dot(const VecT<DIM,true>& v) const;
 
 			float VT::average() const {
-				return _sumup(LOADTHIS());
+				return _sumup(LOADTHIS()) * _sseRcp22Bit(DIM);
 			}
 			template <bool A>
 			float VT::distance(const VecT<DIM,A>& v) const {
