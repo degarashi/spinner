@@ -152,7 +152,7 @@
 					VecT operator * (const QuatT<ALIGNB>& q) const;
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
 				#elif DIM==2
-					// ccw
+					//! 時計回りに計算すると正数になる数
 					float ccw(const VecT<DIM,false>& v) const;
 
 					using Vec3 = VecT<3,ALIGNB>;
@@ -432,7 +432,7 @@
 			#elif DIM==2
 				// ccw
 				float VT::ccw(const VecT<DIM,false>& v) const {
-					return x*v.y - y*v.x;
+					return -x*v.y + y*v.x;
 				}
 				#define _Vec3 VecT<3,ALIGNB>
 				_Vec3 VT::asVec3(float z) const {
