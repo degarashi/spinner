@@ -22,7 +22,8 @@ namespace spn {
 
 			//! 要素を追加
 			/*! \return 挿入されたソート後のインデックス */
-			int insert(T&& t) {
+			template <class T2>
+			int insert(T2&& t) {
 				auto itrE = _vec.end();
 				auto itr = _vec.begin();
 				Pred pred;
