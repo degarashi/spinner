@@ -82,5 +82,8 @@ namespace spn {
 			bool empty() const {
 				return _vec.empty();
 			}
+			void clear() {
+				_vec.clear();
+			}
 	};
 }

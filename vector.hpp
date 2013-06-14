@@ -52,8 +52,8 @@
 				// -------------------- ctor --------------------
 				VecT() = default;
 				explicit VecT(__m128 r);
-				VecT(float a);
-				VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
+				explicit VecT(float a);
+				explicit VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
 				__m128 loadPS() const;
 				__m128 loadPSZ() const;
 
@@ -108,7 +108,7 @@
 				template <bool A>
 				bool operator == (const VecT<DIM,A>& v) const;
 
-				void normalize();
+				float normalize();
 				VecT normalization() const;
 				/*! \return ベクトルの長さ */
 				float length() const;
@@ -308,8 +308,10 @@
 			template bool VT::operator == (const VecT<DIM,false>&) const;
 			template bool VT::operator == (const VecT<DIM,true>&) const;
 
-			void VT::normalize() {
-				*this = normalization();
+			float VT::normalize() {
+				float len = length();
+				*this *= _sseRcp22Bit(len);
+				return len;
 			}
 			VT VT::normalization() const {
 				float tmp = length();
