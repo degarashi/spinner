@@ -147,6 +147,19 @@ namespace spn {
 	bool IsInRange(const T& val, const T& vMin, const T& vMax) {
 		return val>=vMin && val<=vMax;
 	}
+	template <class T>
+	bool IsInRange(const T& val, const T& vMin, const T& vMax, const T& vEps) {
+		return IsInRange(val, vMin-vEps, vMax+vEps);
+	}
+
+	//! 値が近いか
+	/*! \param[in] val value to check
+		\param[in] vExcept target value
+		\param[in] vEps value threshold */
+	template <class T>
+	bool IsNear(const T& val, const T& vExcept, const T& vEps) {
+		return IsInRange(val, vExcept-vEps, vExcept+vEps);
+	}
 
 	//! 汎用シングルトン
 	template <typename T>
