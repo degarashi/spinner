@@ -155,7 +155,9 @@
 				#elif DIM==2
 					//! 時計回りに計算すると正数になる数
 					float ccw(const VecT<DIM,false>& v) const;
-
+					#if ALIGN==0
+						static float Ccw(const UVec& v0, const UVec& v1, const UVec& v2);
+					#endif
 					using Vec3 = VecT<3,ALIGNB>;
 					Vec3 asVec3(float z) const;
 				#endif
@@ -437,13 +439,18 @@
 				}
 			#elif DIM==2
 				// ccw
-				float VT::ccw(const VecT<DIM,false>& v) const {
+				float VT::ccw(const UVec& v) const {
 					return -x*v.y + y*v.x;
 				}
 				#define _Vec3 VecT<3,ALIGNB>
 				_Vec3 VT::asVec3(float z) const {
 					return _Vec3(x,y,z);
 				}
+				#if ALIGN==0
+					float VT::Ccw(const UVec& v0, const UVec& v1, const UVec& v2) {
+						return (v0-v1).ccw(v2-v1);
+					}
+				#endif
 			#endif
 		}
 	#else

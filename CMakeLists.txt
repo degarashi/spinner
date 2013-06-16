@@ -6,6 +6,8 @@ include_directories("/usr/local/include/c++/4.8.1")
 include_directories("/usr/local/include/c++/4.8.1/i686-pc-linux-gnu")
 link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.1")
 set(CMAKE_CXX_FLAGS_DEBUG "-std=c++11 -g -O0 -msse2")
+set(CMAKE_CXX_FLAGS_RELEASE "-std=c++1 -O2 -msse2")
+set(CMAKE_BUILD_TYPE "Debug")
 add_library(spinner STATIC spn_math.cpp fpset.cpp pose.cpp)
 
 add_executable(spn_test main.cpp)
