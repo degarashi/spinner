@@ -7,24 +7,25 @@ namespace spn {
 		PRF_OFFSET = 0x01,
 		PRF_ROTATE = 0x02,
 		PRF_SCALE = 0x04,
-		PRF_ALL = 0x07
+		PRF_ALL = ~0,
+		PRF_MAX = PRF_SCALE
 	};
 	//! 2次元姿勢クラス
 	/*! 変換適用順序は[拡縮][回転][平行移動] */
 	class Pose2D {
-		Vec2&			_ofs;
-		Vec2&			_scale;
-
-		mutable AMat32		_finalMat;
-		mutable uint32_t	_rflag;
-		float				_angle;
-		uint32_t			_accum;
-
-		void _refresh() const;
+		GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
+		   ((Vec2 _ofs))
+		   ((Vec2 _scale))
+		   ((float _angle, uint32_t _accum))
+		)
 		protected:
+			mutable uint32_t	_rflag;
+
+			void _refresh() const;
 			const float* _getPtr() const;
 		public:
 			Pose2D();
+			Pose2D(const Pose2D& p);
 			Pose2D(const Vec2& pos, float ang, const Vec2& sc);
 			void identity();
 
@@ -32,6 +33,8 @@ namespace spn {
 			void setScale(float x, float y);
 			void setAngle(float ang);
 			void setOfs(float x, float y);
+			float getAngle() const;
+			const Vec2& getOffset() const;
 
 			const AMat32& getFinal() const;
 			uint32_t getAccum() const;
@@ -44,9 +47,10 @@ namespace spn {
 		AQuat			_rot;
 		AVec3			_scale;
 
-		mutable AMat43		_finalMat;
-		mutable uint32_t	_rflag;
-		uint32_t&			_accum;
+		GAP_MATRIX_DEF(mutable, _finalMat, 4,3,
+			((uint32_t _accum))
+			((mutable uint32_t _rflag))
+		)
 
 		void _refresh() const;
 
@@ -54,6 +58,7 @@ namespace spn {
 			const float* _getPtr() const;
 		public:
 			Pose3D();
+			Pose3D(const Pose3D& p);
 			Pose3D(const AVec3& pos, const AQuat& rot, const AVec3& sc);
 			void identity();
 

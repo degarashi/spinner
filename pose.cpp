@@ -2,8 +2,12 @@
 
 namespace spn {
 	// ------------------------------ Pose2D ------------------------------
-	Pose2D::Pose2D(): _ofs(_finalMat.getAuxRef<Vec2>(0,0)), _scale(_finalMat.getAuxRef<Vec2>(1,0)) {
+	Pose2D::Pose2D(): _finalMat() {
 		identity();
+	}
+	Pose2D::Pose2D(const Pose2D& p): _finalMat() {
+		// trivialなctorばかりなのでmemcpyで済ませる
+		std::memcpy(this, &p, sizeof(p));
 	}
 	Pose2D::Pose2D(const Vec2& pos, float ang, const Vec2& sc): Pose2D() {
 		_ofs = pos;
@@ -71,8 +75,12 @@ namespace spn {
 	}
 
 	// ------------------------------ Pose3D ------------------------------
-	Pose3D::Pose3D(): _accum(_finalMat.getAuxRef<uint32_t>(0,0)) {
+	Pose3D::Pose3D(): _finalMat() {
 		identity();
+	}
+	Pose3D::Pose3D(const Pose3D& p): _finalMat() {
+		// trivialなctorばかりなのでmemcpyで済ませる
+		std::memcpy(this, &p, sizeof(p));
 	}
 	Pose3D::Pose3D(const AVec3& pos, const AQuat& rot, const AVec3& sc): Pose3D() {
 		_ofs = pos;
