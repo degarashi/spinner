@@ -18,10 +18,10 @@ namespace spn {
 		_scale = sc;
 	}
 	void Pose2D::identity() {
+		_finalMat.identity();
 		_accum = std::rand();
 		_angle = 0;
 		_ofs = _scale = Vec2(0,0);
-		_finalMat.identity();
 		_setAsChanged();
 	}
 	void Pose2D::_setAsChanged() {
@@ -114,12 +114,11 @@ namespace spn {
 		_scale = sc;
 	}
 	void Pose3D::identity() {
-		++_accum;
 		_accum = std::rand();
+		_finalMat.identity();
 		_rot.identity();
 		_ofs = AVec3(0,0,0);
 		_scale = AVec3(1,1,1);
-		_finalMat.identity();
 		_setAsChanged();
 	}
 	void Pose3D::_setAsChanged() {
