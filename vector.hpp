@@ -153,10 +153,11 @@
 					VecT operator * (const QuatT<ALIGNB>& q) const;
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
 				#elif DIM==2
-					//! 時計回りに計算すると正数になる数
 					float ccw(const VecT<DIM,false>& v) const;
+					float cw(const VecT<DIM,false>& v) const;
 					#if ALIGN==0
 						static float Ccw(const UVec& v0, const UVec& v1, const UVec& v2);
+						static float Cw(const UVec& v0, const UVec& v1, const UVec& v2);
 					#endif
 					using Vec3 = VecT<3,ALIGNB>;
 					Vec3 asVec3(float z) const;
@@ -438,8 +439,14 @@
 					return _Vec4(x,y,z,w);
 				}
 			#elif DIM==2
-				// ccw
+				//! counter clockwise
+				/*! 半時計回りが正数を返す */
 				float VT::ccw(const UVec& v) const {
+					return x*v.y - y*v.x;
+				}
+				//! clockwise
+				/*! 時計回りが正数を返す */
+				float VT::cw(const UVec& v) const {
 					return -x*v.y + y*v.x;
 				}
 				#define _Vec3 VecT<3,ALIGNB>
@@ -449,6 +456,9 @@
 				#if ALIGN==0
 					float VT::Ccw(const UVec& v0, const UVec& v1, const UVec& v2) {
 						return (v0-v1).ccw(v2-v1);
+					}
+					float VT::Cw(const UVec& v0, const UVec& v1, const UVec& v2) {
+						return (v0-v1).cw(v2-v1);
 					}
 				#endif
 			#endif
