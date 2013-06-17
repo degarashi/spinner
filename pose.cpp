@@ -94,6 +94,12 @@ namespace spn {
 	Pose2D::Value Pose2D::refValue() {
 		return Value(*this);
 	}
+	void Pose2D::apply(const TValue& t) {
+		_ofs = t.ofs;
+		_scale = t.scale;
+		_angle = t.ang;
+		_setAsChanged();
+	}
 
 	// ------------------------------ Pose3D ------------------------------
 	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
@@ -123,6 +129,7 @@ namespace spn {
 	}
 	void Pose3D::_setAsChanged() {
 		_rflag = 0;
+		++_accum;
 	}
 
 	void Pose3D::_refresh() const {
@@ -215,5 +222,11 @@ namespace spn {
 	}
 	Pose3D::Value Pose3D::refValue() {
 		return Value(*this);
+	}
+	void Pose3D::apply(const TValue& t) {
+		_ofs = t.ofs;
+		_scale = t.scale;
+		_rot = t.rot;
+		_setAsChanged();
 	}
 }

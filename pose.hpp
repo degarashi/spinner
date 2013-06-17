@@ -25,6 +25,10 @@ namespace spn {
 			const float* _getPtr() const;
 			void _setAsChanged();
 		public:
+			struct TValue {
+				Vec2	ofs, scale;
+				float	ang;
+			};
 			struct Value {
 				Pose2D	&_pose;
 				Vec2	&ofs, &scale;
@@ -52,6 +56,7 @@ namespace spn {
 			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();
+			void apply(const TValue& t);
 	};
 
 	//! 3次元姿勢クラス
@@ -71,6 +76,10 @@ namespace spn {
 			const float* _getPtr() const;
 			void _setAsChanged();
 		public:
+			struct TValue {
+				Vec3	ofs, scale;
+				Quat	rot;
+			};
 			struct Value {
 				Pose3D	&_pose;
 				AVec3	&ofs, &scale;
@@ -109,5 +118,6 @@ namespace spn {
 
 			Pose3D lerp(const Pose3D& p1, float t) const;
 			Value refValue();
+			void apply(const TValue& t);
 	};
 }
