@@ -2,6 +2,9 @@
 
 namespace spn {
 	// ------------------------------ Pose2D ------------------------------
+	Pose2D::Value::Value(Pose2D& p): _pose(p), ofs(p._ofs), scale(p._scale), ang(p._angle) {}
+	Pose2D::Value::~Value() { _pose._setAsChanged(); }
+
 	Pose2D::Pose2D(): _finalMat() {
 		identity();
 	}
@@ -16,10 +19,19 @@ namespace spn {
 	}
 	void Pose2D::identity() {
 		_accum = std::rand();
-		_rflag = 0;
 		_angle = 0;
 		_ofs = _scale = Vec2(0,0);
 		_finalMat.identity();
+		_setAsChanged();
+	}
+	void Pose2D::_setAsChanged() {
+		_rflag = PRF_ALL;
+	}
+	const Vec2& Pose2D::getOffset() const {
+		return _ofs;
+	}
+	float Pose2D::getAngle() const {
+		return _angle;
 	}
 
 	void Pose2D::_refresh() const {
@@ -45,11 +57,17 @@ namespace spn {
 	const float* Pose2D::_getPtr() const {
 		return reinterpret_cast<const float*>(&_ofs);
 	}
+	void Pose2D::setScale(const Vec2& ofs) {
+		setScale(ofs.x, ofs.y);
+	}
 	void Pose2D::setScale(float x, float y) {
 		_scale.x = x;
 		_scale.y = y;
 		_rflag |= PRF_SCALE;
 		++_accum;
+	}
+	void Pose2D::setOfs(const Vec2& ofs) {
+		setOfs(ofs.x, ofs.y);
 	}
 	void Pose2D::setOfs(float x, float y) {
 		_ofs.x = x;
@@ -73,8 +91,16 @@ namespace spn {
 		ret._scale = _scale.l_intp(p1._scale, t);
 		return ret;
 	}
+	Pose2D::Value Pose2D::refValue() {
+		return Value(*this);
+	}
 
 	// ------------------------------ Pose3D ------------------------------
+	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
+	Pose3D::Value::~Value() {
+		_pose._setAsChanged();
+	}
+
 	Pose3D::Pose3D(): _finalMat() {
 		identity();
 	}
@@ -90,11 +116,14 @@ namespace spn {
 	void Pose3D::identity() {
 		++_accum;
 		_accum = std::rand();
-		_rflag = 0;
 		_rot.identity();
 		_ofs = AVec3(0,0,0);
 		_scale = AVec3(1,1,1);
 		_finalMat.identity();
+		_setAsChanged();
+	}
+	void Pose3D::_setAsChanged() {
+		_rflag = 0;
 	}
 
 	void Pose3D::_refresh() const {
@@ -184,5 +213,8 @@ namespace spn {
 		ret._rot = _rot.lerp(p1._rot, t);
 		ret._scale = _scale.l_intp(p1._scale, t);
 		return ret;
+	}
+	Pose3D::Value Pose3D::refValue() {
+		return Value(*this);
 	}
 }

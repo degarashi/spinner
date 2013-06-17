@@ -23,7 +23,17 @@ namespace spn {
 
 			void _refresh() const;
 			const float* _getPtr() const;
+			void _setAsChanged();
 		public:
+			struct Value {
+				Pose2D	&_pose;
+				Vec2	&ofs, &scale;
+				float	&ang;
+
+				Value(Pose2D& p);
+				~Value();
+			};
+
 			Pose2D();
 			Pose2D(const Pose2D& p);
 			Pose2D(const Vec2& pos, float ang, const Vec2& sc);
@@ -31,14 +41,17 @@ namespace spn {
 
 			void setAll(const Vec2& ofs, float ang, const Vec2& sc);
 			void setScale(float x, float y);
+			void setScale(const Vec2& ofs);
 			void setAngle(float ang);
 			void setOfs(float x, float y);
+			void setOfs(const Vec2& ofs);
 			float getAngle() const;
 			const Vec2& getOffset() const;
 
 			const AMat32& getFinal() const;
 			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
+			Value refValue();
 	};
 
 	//! 3次元姿勢クラス
@@ -56,7 +69,17 @@ namespace spn {
 
 		protected:
 			const float* _getPtr() const;
+			void _setAsChanged();
 		public:
+			struct Value {
+				Pose3D	&_pose;
+				AVec3	&ofs, &scale;
+				AQuat	&rot;
+
+				Value(Pose3D& p);
+				~Value();
+			};
+
 			Pose3D();
 			Pose3D(const Pose3D& p);
 			Pose3D(const AVec3& pos, const AQuat& rot, const AVec3& sc);
@@ -85,5 +108,6 @@ namespace spn {
 			AVec3 getDir() const;
 
 			Pose3D lerp(const Pose3D& p1, float t) const;
+			Value refValue();
 	};
 }
