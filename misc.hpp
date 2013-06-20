@@ -151,6 +151,31 @@ namespace spn {
 	bool IsInRange(const T& val, const T& vMin, const T& vMax, const T& vEps) {
 		return IsInRange(val, vMin-vEps, vMax+vEps);
 	}
+	//! aがbより大きかったらaからsizeを引いた値を返す
+	inline int CndSub(int a, int b, int size) {
+		return a - (size & ((b - a) >> 31));
+	}
+	//! aがbより大きかったらaからbを引いた値を返す
+	inline int CndSub(int a, int b) {
+		return CndSub(a, b, b);
+	}
+	//! aがbより小さかったらaにsizeを足した値を返す
+	inline int CndAdd(int a, int b, int size) {
+		return a + (size & ((a - b) >> 31));
+	}
+	//! aが0より小さかったらaにsizeを足した値を返す
+	inline int CndAdd(int a, int size) {
+		return CndAdd(a, 0, size);
+	}
+	//! aがlowerより小さかったらsizeを足し、upperより大きかったらsizeを引く
+	inline int CndRange(int a, int lower, int upper, int size) {
+		return a + (size & ((a - lower) >> 31))
+					- (size & ((upper - a) >> 31));
+	}
+	//! aが0より小さかったらsizeを足し、sizeより大きかったらsizeを引く
+	inline int CndRange(int a, int size) {
+		return CndRange(a, 0, size, size);
+	}
 
 	//! 値が近いか
 	/*! \param[in] val value to check
