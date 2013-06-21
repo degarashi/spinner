@@ -129,7 +129,7 @@
 				#if DIM==4
 					using Vec3 = VecT<3,ALIGNB>;
 					/*! \return x,y,z成分 */
-					Vec3 asVec3() const;
+					const Vec3& asVec3() const;
 					/*! \return x,y,zそれぞれをwで割った値 */
 					Vec3 asVec3Coord() const;
 				#elif DIM==3
@@ -152,6 +152,8 @@
 					VecT& operator *= (const QuatT<ALIGNB>& q);
 					VecT operator * (const QuatT<ALIGNB>& q) const;
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
+					/*! \return x,y 成分 */
+					const VecT<2,ALIGNB>& asVec2() const;
 				#elif DIM==2
 					float ccw(const VecT<DIM,false>& v) const;
 					float cw(const VecT<DIM,false>& v) const;
@@ -389,8 +391,8 @@
 			#if DIM==4
 				#define _Vec3 VecT<3,ALIGNB>
 				/*! \return x,y,z成分 */
-				_Vec3 VT::asVec3() const {
-					return _Vec3(x,y,z);
+				const _Vec3& VT::asVec3() const {
+					return reinterpret_cast<const _Vec3&>(*this);
 				}
 				/*! \return x,y,zそれぞれをwで割った値 */
 				_Vec3 VT::asVec3Coord() const {
@@ -398,6 +400,9 @@
 					return _Vec3(_mm_mul_ps(LOADTHIS(), r0));
 				}
 			#elif DIM==3
+				const VecT<2,ALIGNB>& VT::asVec2() const {
+					return reinterpret_cast<const VecT<2,ALIGNB>&>(*this);
+				}
 				/*! \return this X v の外積ベクトル */
 				template <bool A>
 				VT VT::cross(const VecT<DIM,A>& v) const {
