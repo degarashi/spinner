@@ -176,6 +176,23 @@ namespace spn {
 	inline int CndRange(int a, int size) {
 		return CndRange(a, 0, size, size);
 	}
+	//! ポインタの読み替え
+	template <class T, class T2>
+	T* ReinterpretPtr(T2* ptr) {
+		using TD = typename std::decay<T2>::type;
+		static_assert(std::is_integral<TD>::value || std::is_floating_point<TD>::value, "typename T must number");
+		return reinterpret_cast<T*>(ptr);
+	}
+	//! リファレンスの読み替え
+	template <class T, class T2>
+	T& ReinterpretRef(T2& val) {
+		return *reinterpret_cast<T*>(&val);
+	}
+	//! 値の読み替え
+	template <class T, class T2>
+	T ReinterpretValue(const T2& val) {
+		return *reinterpret_cast<const T*>(&val);
+	}
 
 	//! 値が近いか
 	/*! \param[in] val value to check
