@@ -193,7 +193,28 @@ namespace spn {
 	T ReinterpretValue(const T2& val) {
 		return *reinterpret_cast<const T*>(&val);
 	}
-
+	//! dirAを基準に時計回りに増加する値を返す
+	/*! \param[in] dir 値を算出したい単位ベクトル
+		\param[in] dirA 基準の単位ベクトル
+		\param[in] dirB dirAを90度右周りに回転させた単位ベクトル
+		\return 角度に応じた0〜4の値(一様ではない) */
+	inline float AngleValue(const Vec2& dir, const Vec2& dirA, const Vec2& dirB) {
+		float d0 = dir.dot(dirA),
+			d1 = dir.dot(dirB);
+		if(d1 <= -1e-6f)
+			return d0+1 + 2;
+		return 2.f-(d0+1);
+	}
+	inline float AngleValue(const Vec2& dir, const Vec2& dirA) {
+		return AngleValue(dir, dirA, Vec2(dirA.y, -dirA.x));
+	}
+	//! 上方向を基準としたdirの角度を返す
+	inline float Angle(const Vec2& dir) {
+		float ac0 = std::acos(dir.y);
+		if(dir.x <= -1e-6f)
+			return 2*spn::PI - ac0;
+		return ac0;
+	}
 	//! 値が近いか
 	/*! \param[in] val value to check
 		\param[in] vExcept target value
