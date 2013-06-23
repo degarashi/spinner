@@ -338,10 +338,10 @@
 					float s = std::sin(ang),
 							c = std::cos(ang);
 					MatT mt(TagIdentity);
-					mt.ma[0][0] = s;
-					mt.ma[0][1] = c;
-					mt.ma[1][0] = c;
-					mt.ma[1][1] = -s;
+					mt.ma[0][0] = c;
+					mt.ma[0][1] = -s;
+					mt.ma[1][0] = s;
+					mt.ma[1][1] = c;
 					return mt;
 				}
 				#if DIM_M == 3
