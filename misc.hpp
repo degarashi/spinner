@@ -151,11 +151,11 @@ namespace spn {
 	bool IsInRange(const T& val, const T& vMin, const T& vMax, const T& vEps) {
 		return IsInRange(val, vMin-vEps, vMax+vEps);
 	}
-	//! aがbより大きかったらaからsizeを引いた値を返す
+	//! aがb以上だったらaからsizeを引いた値を返す
 	inline int CndSub(int a, int b, int size) {
-		return a - (size & ((b - a) >> 31));
+		return a - (size & ((b - a - 1) >> 31));
 	}
-	//! aがbより大きかったらaからbを引いた値を返す
+	//! aがb以上だったらaからbを引いた値を返す
 	inline int CndSub(int a, int b) {
 		return CndSub(a, b, b);
 	}
@@ -167,12 +167,12 @@ namespace spn {
 	inline int CndAdd(int a, int size) {
 		return CndAdd(a, 0, size);
 	}
-	//! aがlowerより小さかったらsizeを足し、upperより大きかったらsizeを引く
+	//! aがlowerより小さかったらsizeを足し、upper以上だったらsizeを引く
 	inline int CndRange(int a, int lower, int upper, int size) {
 		return a + (size & ((a - lower) >> 31))
-					- (size & ((upper - a) >> 31));
+					- (size & ((upper - a - 1) >> 31));
 	}
-	//! aが0より小さかったらsizeを足し、sizeより大きかったらsizeを引く
+	//! aが0より小さかったらsizeを足し、size以上だったらsizeを引く
 	inline int CndRange(int a, int size) {
 		return CndRange(a, 0, size, size);
 	}
