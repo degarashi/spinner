@@ -193,6 +193,64 @@ namespace spn {
 	T ReinterpretValue(const T2& val) {
 		return *reinterpret_cast<const T*>(&val);
 	}
+
+	template <class T>
+	T* AAllocBase(int nAlign, int n) {
+		void* ptr;
+		if(posix_memalign(&ptr, nAlign, sizeof(T)*n) != 0)
+			throw std::bad_alloc();
+		return reinterpret_cast<T*>(ptr);
+	}
+	//! バイトアラインメント付きのメモリ確保
+	/*! 解放はdeleteで行う
+		----------------------
+		これだと解放の時に死ぬ為
+		void* ptr = std::malloc(sizeof(T) + 15);
+		ptr = (void*)(((uintptr_t)ptr + 15) & ~0x0f); */
+	template <class T, class... Args>
+	T* AAlloc(int n, Args... args) {
+		return new(AAllocBase<T>(n,1)) T(std::forward<Args>(args)...);
+	}
+	//! デフォルトコンストラクタによる初期化
+	template <class T>
+	T* AAlloc(int n) {
+		return new(AAllocBase<T>(n,1)) T();
+	}
+	//! initializer_listによる初期化
+	template <class T, class A>
+	T* AAlloc(int n, std::initializer_list<A>&& w) {
+		return new(AAllocBase<T>(n,1)) T(std::forward<std::initializer_list<A>>(w));
+	}
+	//! バイトアラインメント付きの配列メモリ確保
+	template <class T>
+	T* AArray(int nAlign, int n) {
+		T* ptr = AAllocBase<T>(nAlign, n);
+		for(int i=0 ; i<n ; i++)
+			new(ptr+i) T();
+		return ptr;
+	}
+	//! アラインメントチェッカ
+	template <int N, class T>
+	class CheckAlign {
+		protected:
+			CheckAlign() {
+				// 16byteアラインメントチェック
+				assert((((uintptr_t)this)&(N-1)) == 0);
+			}
+		public:
+			static T* New() {
+				return AAlloc<T>(N);
+			}
+			template <class A>
+			static T* New(std::initializer_list<A>&& w) {
+				return AAlloc<T>(N, std::forward<std::initializer_list<A>>(w));
+			}
+			template <class... Args>
+			static T* New(Args... args) {
+				return AAlloc<T>(N, std::forward<Args>(args)...);
+			}
+	};
+
 	//! dirAを基準に時計回りに増加する値を返す
 	/*! \param[in] dir 値を算出したい単位ベクトル
 		\param[in] dirA 基準の単位ベクトル
