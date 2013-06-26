@@ -21,7 +21,8 @@ namespace spn {
 		_finalMat.identity();
 		_accum = std::rand();
 		_angle = 0;
-		_ofs = _scale = Vec2(0,0);
+		_ofs = Vec2(0);
+		_scale = Vec2(1);
 		_setAsChanged();
 	}
 	void Pose2D::_setAsChanged() {
@@ -36,8 +37,7 @@ namespace spn {
 
 	void Pose2D::_refresh() const {
 		if(_rflag & (PRF_SCALE|PRF_ROTATE)) {
-			float sc[2] = {_scale.x, _scale.y};
-			_finalMat = AMat32::Scaling(sc[0], sc[1]);
+			_finalMat = AMat32::Scaling(_scale.x, _scale.y);
 			_finalMat *= AMat32::Rotation(_angle);
 			_finalMat.getRow(2) = _ofs;
 		} else if(_rflag & PRF_OFFSET)
@@ -45,6 +45,7 @@ namespace spn {
 		_rflag = 0;
 	}
 	const AMat32& Pose2D::getFinal() const {
+		_refresh();
 		return _finalMat;
 	}
 	void Pose2D::setAll(const Vec2& ofs, float ang, const Vec2& sc) {
