@@ -44,7 +44,7 @@ namespace spn {
 			_finalMat.getRow(2) = _ofs;
 		_rflag = 0;
 	}
-	const AMat32& Pose2D::getFinal() const {
+	const AMat32& Pose2D::getToWorld() const {
 		_refresh();
 		return _finalMat;
 	}
@@ -143,7 +143,7 @@ namespace spn {
 			_finalMat.getRow(3) = _ofs;
 		_rflag = 0;
 	}
-	const AMat43& Pose3D::getFinal() const {
+	const AMat43& Pose3D::getToWorld() const {
 		// 行列の更新
 		if(_rflag != 0)
 			_refresh();

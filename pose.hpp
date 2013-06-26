@@ -52,7 +52,7 @@ namespace spn {
 			float getAngle() const;
 			const Vec2& getOffset() const;
 
-			const AMat32& getFinal() const;
+			const AMat32& getToWorld() const;
 			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();
@@ -98,7 +98,7 @@ namespace spn {
 			const AVec3& getOffset() const;
 			const AQuat& getRot() const;
 			const AVec3& getScale() const;
-			const AMat43& getFinal() const;
+			const AMat43& getToWorld() const;
 			uint32_t getAccum() const;
 			void setAll(const AVec3& ofs, const AQuat& q, const AVec3& sc);
 			// Scaleに変更を加える
