@@ -302,6 +302,7 @@
 				//! 行列との積算 (2 operands)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
+				MT& operator = (const MT& m);
 
 				//! 行列との積算 (右から掛ける)
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
@@ -340,6 +341,11 @@
 					os << m.ma[i][DIM_N-1] << ' ';
 				}
 				return os << ']';
+			}
+			#define DEF_COPY(z,n,dummy)	STORETHISPS(ma[n], LOADTHISPS(m.ma[n]));
+			MT& MT::operator = (const MT& m) {
+				BOOST_PP_REPEAT(DIM_M, DEF_COPY, NOTHING)
+				return *this;
 			}
 			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
 			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
@@ -768,7 +774,7 @@
 			#define MUL_OUTER(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
 				__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
 				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, AU) \
-				BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))(ret.ma[n], accum); }
+				STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
 
 			// 自分との積算でなければ上書き演算
@@ -797,7 +803,7 @@
 			#define MUL_OUTER2(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
 					__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
 					BOOST_PP_REPEAT_FROM_TO(1,DIM_M, MUL_INNER2, AU) \
-					BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))(ma[n], accum); }
+					STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
 		}
 	#else

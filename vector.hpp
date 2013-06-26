@@ -492,11 +492,11 @@
 				}
 			*/
 			#define LOOP_MULOP(z,n,loadf)		{__m128 tmp=_mm_shuffle_ps(ths,ths, _MM_SHUFFLE(n,n,n,n)); \
-						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, loadf(mat.ma[n]))); }
+						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, loadf(mat.ma[n])));}
 			#define DEF_MULOPA(z,n,align)	template <> VecT<n,ALIGNB> VT::operator * (const MatT<DIM,n,BOOLNIZE(align)>& mat) const { \
 						__m128 ths = LOADTHIS(), \
 						accum = _mm_setzero_ps(); \
-						BOOST_PP_REPEAT_##z(n, LOOP_MULOP, BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(AFLAG(align),n))) \
+						BOOST_PP_REPEAT_##z(DIM, LOOP_MULOP, BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(AFLAG(align),n))) \
 						return VecT<n,ALIGNB>(accum); }
 			#define DEF_MULOPA_2(z,n,align)	template <> VT& VT::operator *= (const MatT<DIM,DIM,BOOLNIZE(align)>& mat) { \
 					return *this = *this * mat; }
