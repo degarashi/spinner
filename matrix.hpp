@@ -307,6 +307,8 @@
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
 				template <bool A>
 				VecT<DIM_N,ALIGNB> operator * (const VecT<DIM_N,A>& v) const;
+
+				friend std::ostream& operator << (std::ostream& os, const MT& m);
 			};
 			// 使いやすいように別名を定義 ex. MatT<2,2,true> = AMat22
 			using BOOST_PP_CAT(
@@ -330,7 +332,15 @@
 			void MT::identity() {
 				*this = MatT(1.0f, TagDiagonal);
 			}
-
+			std::ostream& operator << (std::ostream& os, const MT& m) {
+				os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Mat" << DIM_M << DIM_N << '[';
+				for(int i=0 ; i<DIM_M ; i++) {
+					for(int j=0 ; j<DIM_N-1 ; j++)
+						os << m.ma[i][j] << ',';
+					os << m.ma[i][DIM_N-1] << ' ';
+				}
+				return os << ']';
+			}
 			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
 			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 				return MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));

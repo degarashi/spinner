@@ -79,6 +79,8 @@
 				DEF_PRE(*, _mm_mul_ps)
 				DEF_PRE(/, _mmDivPs)
 
+				friend std::ostream& operator << (std::ostream& os, const VT& v);
+
 				// -------------------- others --------------------
 				static float _sumup(__m128 xm);
 				// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
@@ -249,6 +251,13 @@
 			DEF_OP(-, _mm_sub_ps)
 			DEF_OP(*, _mm_mul_ps)
 			DEF_OP(/, _mmDivPs)
+
+			std::ostream& operator << (std::ostream& os, const VT& v) {
+				os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Vec" << DIM << '[';
+				for(int i=0 ; i<DIM-1 ; i++)
+					os << v.m[i] << ',';
+				return os << v.m[DIM-1] << ']';
+			}
 
 			template <bool A>
 			float VT::dot(const VecT<DIM,A>& v) const {
