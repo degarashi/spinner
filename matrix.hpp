@@ -102,10 +102,12 @@
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMUL, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMUL, SET_ARGS0, f)
 				}
-				#define SET_ARGS1(z,n,data)	ma[n][n] = BOOST_PP_CAT(data,n);
+				#define SET_ARGS1(z,n,data)	STOREPS(ma[n], _mm_mul_ps(xmm_matI[n], _mm_load1_ps(&BOOST_PP_CAT(data,n))));
+				#define SET_ARGS2(z,n,dummy) STOREPS(ma[n], _mm_setzero_ps());
 				//! 対角線上
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMIN, SET_ARGS1, f)
+					BOOST_PP_REPEAT_FROM_TO(DMIN, DIM_M, SET_ARGS2, NOTHING)
 				}
 
 				// -------------------- query values --------------------
