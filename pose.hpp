@@ -1,6 +1,7 @@
 #pragma once
 #include "vector.hpp"
 #include "quat.hpp"
+#include "misc.hpp"
 
 namespace spn {
 	enum POSERF {
@@ -12,7 +13,7 @@ namespace spn {
 	};
 	//! 2次元姿勢クラス
 	/*! 変換適用順序は[拡縮][回転][平行移動] */
-	class Pose2D {
+	class Pose2D : public CheckAlign<16,Pose2D> {
 		GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
 		   ((Vec2 _ofs))
 		   ((Vec2 _scale))
@@ -60,7 +61,7 @@ namespace spn {
 	};
 
 	//! 3次元姿勢クラス
-	class Pose3D {
+	class Pose3D : public CheckAlign<16,Pose3D> {
 		AVec3			_ofs;
 		AQuat			_rot;
 		AVec3			_scale;
