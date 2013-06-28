@@ -9,6 +9,10 @@ namespace spn {
 	class AssocVec {
 		using Vec = CT<T, AL>;
 		Vec		_vec;
+		protected:
+			using VecItr = typename Vec::iterator;
+			VecItr _begin() { return _vec.begin(); }
+			VecItr _end() { return _vec.end(); }
 
 		public:
 			AssocVec() = default;
@@ -85,5 +89,49 @@ namespace spn {
 			void clear() {
 				_vec.clear();
 			}
+	};
+	//! std::pairのfirstをless比較
+	struct CmpFirst {
+		template <class K, class T>
+		bool operator()(const std::pair<K,T>& t0, const std::pair<K,T>& t1) const {
+			return t0.first < t1.first;
+		}
+	};
+	//! キー付きソート済みベクタ
+	/*! キーは固定のため、値の編集が可能 */
+	template <class K, class T, class Pred=std::less<K>, template<class,class> class CT=std::vector, class AL=std::allocator<std::pair<K,T>>>
+	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst, CT, AL> {
+		using Entry = std::pair<K,T>;
+		public:
+			using ASV = AssocVec<std::pair<K,T>, CmpFirst, CT, AL>;
+			using typename ASV::AssocVec;
+
+			template <class K2, class T2>
+			int insert(K2&& k, T2&& t) {
+				return ASV::insert(Entry(k,t));
+			}
+			T& back() {
+				const Entry& ent = const_cast<ASV*>(this)->back();
+				return const_cast<Entry&>(ent).second;
+			}
+			T& front() {
+				const Entry& ent = const_cast<ASV*>(this)->front();
+				return const_cast<Entry&>(ent).second;
+			}
+			T& operator [](int n) {
+				const Entry& ent = (*const_cast<ASV*>(this))[n];
+				return const_cast<Entry&>(ent).second;
+			}
+			using ASV::operator [];
+
+			typename ASV::VecItr begin() {
+				return ASV::_begin();
+			}
+			using ASV::begin;
+
+			typename ASV::VecItr end() {
+				return ASV::_end();
+			}
+			using ASV::end;
 	};
 }
