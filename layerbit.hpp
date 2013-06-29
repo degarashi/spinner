@@ -145,7 +145,7 @@ namespace spn {
 				return std::vector<VAL>();
 			}
 			//! 1になっているビットをコールバック関数で巡回
-			void iterateBit(std::function<void (int)> cb) {
+			void iterateBit(std::function<void (int)> cb) const {
 				Callback c(cb);
 				_iterate(c);
 			}

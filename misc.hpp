@@ -193,6 +193,15 @@ namespace spn {
 	T ReinterpretValue(const T2& val) {
 		return *reinterpret_cast<const T*>(&val);
 	}
+	constexpr uint32_t FloatOne = 0x3f800000;
+	//! 引数がプラスなら1, マイナスなら-1を返す
+	float inline PlusMinus1(float val) {
+		auto ival = spn::ReinterpretValue<uint32_t>(val);
+		return spn::ReinterpretValue<float>(FloatOne | (ival & 0x80000000));
+	}
+	float inline PlusMinus1(int val) {
+		return spn::ReinterpretValue<float>(FloatOne | ((val>>31) & 0x80000000));
+	}
 
 	template <class T>
 	T* AAllocBase(int nAlign, int n) {
