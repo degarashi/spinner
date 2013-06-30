@@ -193,15 +193,17 @@ namespace spn {
 	T ReinterpretValue(const T2& val) {
 		return *reinterpret_cast<const T*>(&val);
 	}
-	constexpr uint32_t FloatOne = 0x3f800000;
+	constexpr uint32_t FloatOne = 0x3f800000;		//!< 1.0fの、整数表現
 	//! 引数がプラスなら1, マイナスなら-1を返す
 	float inline PlusMinus1(float val) {
 		auto ival = spn::ReinterpretValue<uint32_t>(val);
 		return spn::ReinterpretValue<float>(FloatOne | (ival & 0x80000000));
 	}
+	//! PlusMinus1(float)の引数がintバージョン
 	float inline PlusMinus1(int val) {
-		return spn::ReinterpretValue<float>(FloatOne | ((val>>31) & 0x80000000));
-	}
+		return spn::ReinterpretValue<float>(FloatOne | ((val>>31) & 0x80000000)); }
+	//! PlusMinus1(float)の引数がunsigned intバージョン
+	float inline PlusMinus1(unsigned int val) { return PlusMinus1(static_cast<int>(val)); }
 
 	template <class T>
 	T* AAllocBase(int nAlign, int n) {
