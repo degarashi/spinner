@@ -4,6 +4,7 @@
 #include "matstack.hpp"
 #include "pose.hpp"
 #include "misc.hpp"
+#include "noseq.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
@@ -31,5 +32,14 @@ int main(int argc, char **argv) {
 	auto pc = AVec3::FromPacked(MakeChunk(64,128,192,255));
 	auto pc2 = pc.toPacked();
 
+	noseq_list<float> ls;
+	auto ret = ls.add(128);
+	auto ret2 = ls.add(256);
+	for(auto& p : ls) {
+		std::cout << p.value << std::endl;
+		std::cout << p.uid << std::endl;
+	}
+	ls.rem(ret2);
+	ls.rem(ret);
 	return 0;
 }
