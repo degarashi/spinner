@@ -111,13 +111,14 @@ namespace spn {
 			}
 		};
 		using NSArray = noseq_vec<RPair>;
-		using NSItr = typename NSArray::iterator;
-		using NSItrC = typename NSArray::const_iterator;
 
 		NSArray		_array;
 		IDPair<ID>	_idList;
 
 		public:
+			using iterator = typename NSArray::iterator;
+			using const_iterator = typename NSArray::const_iterator;
+			using id_type = ID;
 			noseq_list() = default;
 			noseq_list(noseq_list&& sl): _array(std::forward<noseq_vec<T>>(sl._array)), _idList(std::forward<IDPair<ID>>(sl._idList)) {}
 
@@ -132,19 +133,18 @@ namespace spn {
 				// idListから削除対象のnoseqインデックスを受け取る
 				auto index = _idList.put(id);
 				if(index != _array.size()-1) {
-					auto& ar = _array[index];
 					auto& arB = _array.back();
 					// UIDとindex対応の書き換え
 					_idList.rewrite(arB.uid, index);
 				}
 				_array.erase(_array.begin()+index);
 			}
-			NSItr begin() { return _array.begin(); }
-			NSItr end() { return _array.end(); }
-			NSItrC cbegin() const { return _array.cbegin(); }
-			NSItrC cend() const { return _array.cend(); }
-			NSItrC begin() const { return _array.begin(); }
-			NSItrC end() const { return _array.end(); }
+			iterator begin() { return _array.begin(); }
+			iterator end() { return _array.end(); }
+			const_iterator cbegin() const { return _array.cbegin(); }
+			const_iterator cend() const { return _array.cend(); }
+			const_iterator begin() const { return _array.begin(); }
+			const_iterator end() const { return _array.end(); }
 
 			size_t size() const {
 				return _array.size();
@@ -152,6 +152,9 @@ namespace spn {
 			void clear() {
 				_array.clear();
 				_idList.clear();
+			}
+			bool empty() const {
+				return _array.empty();
 			}
 	};
 }
