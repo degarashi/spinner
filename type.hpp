@@ -1,7 +1,29 @@
 #pragma once
+#include <tuple>
+#include "common.hpp"
 
 namespace spn {
-	// 型変換判定
+	//! bool値による型の選択
+	template <int N, class T, class F>
+	struct SelectType {
+		using type = F;
+	};
+	template <class T, class F>
+	struct SelectType<1,T,F> {
+		using type = T;
+	};
+	template <int N, template<class> class T, template<class> class F>
+	struct SelectTypeT {
+		template <class I>
+		using type = F<I>;
+	};
+	template <template<class> class T, template<class> class F>
+	struct SelectTypeT<1,T,F> {
+		template <class I>
+		using type = T<I>;
+	};
+
+	//! 型変換判定
 	template <class T, class U>
 	class Conversion {
 		public:
@@ -73,8 +95,21 @@ namespace spn {
 		template <int N>
 		struct At {
 			static_assert(N<sizeof...(TS),"At: out of index");
-			typedef typename TypeAt<N,TS...>::type type;
+			using type = typename TypeAt<N,TS...>::type;
 		};
+		template <bool flag, int N, class DEFAULT>
+		struct __At {
+			using type = DEFAULT;
+		};
+		template <int N, class DEFAULT>
+		struct __At<true,N,DEFAULT> {
+			using type = typename At<N>::type;
+		};
+		template <int N, class DEFAULT=void>
+		struct _At {
+			using type = typename __At<TValue<N,sizeof...(TS)>::lesser, N,DEFAULT>::type;
+		};
+
 		template <class T>
 		struct _Find {
 			enum { result= TypeFind<T,0,TS...>::result };
@@ -86,6 +121,11 @@ namespace spn {
 		template <class T>
 		struct Has {
 			enum { result= (_Find<T>::result>=0) ? 1:0 };
+		};
+		using AsTuple = std::tuple<TS...>;
+		template <class Dummy=void>
+		struct Another {
+			using result = CType<decltype(TS()())...>;
 		};
 		enum { size= sizeof...(TS) };
 	};

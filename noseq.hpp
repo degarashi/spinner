@@ -2,7 +2,7 @@
 #include <vector>
 #include <type_traits>
 #include <algorithm>
-#include "common.hpp"
+#include "type.hpp"
 #define DEBUG
 namespace spn {
 	template <class T>
