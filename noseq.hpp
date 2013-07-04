@@ -2,75 +2,87 @@
 #include <vector>
 #include <type_traits>
 #include <algorithm>
+#include "common.hpp"
 #define DEBUG
 namespace spn {
 	template <class T>
 	class IDPair {
-		struct Item {
-			T		value;
+		// Tのサイズが32bit以下ならT, それより上ならuint32_tを選択
+		using Index = typename SelectType<TValue<sizeof(T), 32>::greater, uint32_t, T>::type;
+		union ItemU {
+			struct Item {
+				T		value;
 
-			#ifdef DEBUG
-				bool	flag;
-				Item(): flag(false) {}
-				Item(T t): value(t), flag(true) {}
-				void acquire(T t) {
-					value = t;
-					assert(!flag);
-					flag = true;
-				}
-				void release() {
-					assert(flag);
-					flag = false;
-				}
-				bool check() const { return flag; }
-			#else
-				void acquire(T t) {
-					value = t;
-				}
-				void release() {}
-				bool check() const { return true; }
-			#endif
+				#ifdef DEBUG
+					bool	flag;
+					Item(): flag(false) {}
+					Item(T t): value(t), flag(true) {}
+					void acquire(T t) {
+						value = t;
+						assert(!flag);
+						flag = true;
+					}
+					void release() {
+						assert(flag);
+						flag = false;
+					}
+					bool check() const { return flag; }
+				#else
+					void acquire(T t) {
+						value = t;
+					}
+					void release() {}
+					bool check() const { return true; }
+				#endif
+			} item;
+
+			Index	freeIdx;
+
+			ItemU(T t): item(t) {}
 		};
 
-		using ItemVec = std::vector<Item>;
-		using IDVec = std::vector<int>;
+		using ItemVec = std::vector<ItemU>;
 		ItemVec		_array;
-		IDVec		_idStack;
+		Index		_firstFree,		//!< 最初の空きブロックインデックス
+					_nFree = 0;		//!< 空きブロック数
 
 		public:
 			IDPair() {
 				static_assert(std::is_integral<T>::value, "typename T should be Integral type");
 			}
 			IDPair(const IDPair& p) = default;
-			IDPair(IDPair&& p): _array(std::forward<ItemVec>(p._array)), _idStack(std::forward<IDVec>(p._idStack)) {}
-			int take(T t) {
-				if(_idStack.empty()) {
-					int sz = _array.size();
+			IDPair(IDPair&& p): _array(std::forward<ItemVec>(p._array)), _firstFree(p._firstFree), _nFree(p._nFree) {}
+			Index take(T t) {
+				if(_nFree == 0) {
+					Index sz = _array.size();
 					_array.emplace_back(t);
 					return sz;
 				}
-				int ret = _idStack.back();
-				_idStack.pop_back();
-				_array[ret].acquire(t);
+				--_nFree;
+				Index ret = _firstFree;
+				_firstFree = _array[_firstFree].freeIdx;
+				_array[ret].item.acquire(t);
 				return ret;
 			}
-			T put(int idx) {
-				T ret = _array[idx].value;
-				_array[idx].release();
-				_idStack.push_back(idx);
+			T put(Index idx) {
+				T ret = _array[idx].item.value;
+				_array[idx].item.release();
+				if(++_nFree != 1)
+					_array[idx].freeIdx = _firstFree;
+				_firstFree = idx;
 				return ret;
 			}
-			void rewrite(int idx, T newID) {
-				assert(_array[idx].check());
-				_array[idx].value = newID;
+			void rewrite(Index idx, T newID) {
+				assert(_array[idx].item.check());
+				_array[idx].item.value = newID;
 			}
 
 			size_t size() const {
-				return _array.size() - _idStack.size();
+				return _array.size() - _nFree;
 			}
 			void clear() {
 				_array.clear();
-				_idStack.clear();
+				_nFree = 0;
 			}
 	};
 	//! 順序なし配列
