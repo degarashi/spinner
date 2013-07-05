@@ -7,6 +7,7 @@
 		#include <boost/preprocessor.hpp>
 		#include <cstring>
 		#include <stdexcept>
+		#include <cassert>
 		#include "vector.hpp"
 
 		// 定義する行列の次元(M,N)
@@ -634,6 +635,7 @@
 					#endif
 				}
 				bool MT::inversion(MatT& dst) const {
+					assert(this != &dst);
 					return inversion(dst, calcDeterminant());
 				}
 				bool MT::inversion(MatT& dst, float det) const {
@@ -650,16 +652,20 @@
 						const float c_val[2] = {1,-1};
 						for(int i=0 ; i<DIM_M ; i++) {
 							for(int j=0 ; j<DIM_N ; j++) {
-								auto in_mat = cutRC(j,i);
+								auto in_mat = cutRC(i,j);
 								float in_det = in_mat.calcDeterminant();
-								dst.ma[i][j] = c_val[(i+j)&1] * in_det * det;
+								dst.ma[j][i] = c_val[(i+j)&1] * in_det * det;
 							}
 						}
 					#endif
 					return true;
 				}
 				bool MT::invert() {
-					return inversion(*this);
+					MT tmp(*this);
+					bool b = inversion(tmp);
+					if(b)
+						*this = tmp;
+					return b;
 				}
 			#endif
 			#if DMIN > 2

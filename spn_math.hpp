@@ -186,7 +186,8 @@ inline float RADtoDEG(float ang) {
 #define GAP_MATRIX(matname, m, n, seq) GAP_MATRIX_DEF(NOTHING , matname, m, n, seq)
 //! constやmutableを付ける場合の定義
 #define GAP_MATRIX_DEF(prefix, matname, m, n, seq) union { prefix BOOST_PP_CAT(BOOST_PP_CAT(spn::AMat,m),n) matname; struct { BOOST_PP_SEQ_FOR_EACH_I(GAP_TFUNC_OUTER, n, seq) }; };
-#define GAP_TFUNC_OUTER(z,nAr,idx,elem)	BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(float dummy, __LINE__), _), idx)[4-nAr]; BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_INNER, NOTHING, BOOST_PP_TUPLE_TO_SEQ(elem))
+#define GAP_DUMMY(aux,index,amount) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(float dummy, __LINE__), aux), index)[amount];
+#define GAP_TFUNC_OUTER(z,nAr,idx,elem)	GAP_DUMMY(_,idx,4-nAr) BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_INNER, NOTHING, BOOST_PP_TUPLE_TO_SEQ(elem)) GAP_DUMMY(_B,idx,4-nAr-BOOST_PP_TUPLE_SIZE(elem))
 #define GAP_TFUNC_INNER(z,dummy,elem)	elem;
 //! アライン済みベクトルの隙間を埋める定義
 #define GAP_VECTOR(vecname, n, seq) GAP_VECTOR_DEF(NOTHING, vecname, n, seq)
