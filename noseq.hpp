@@ -2,89 +2,10 @@
 #include <vector>
 #include <type_traits>
 #include <algorithm>
+#include <boost/optional.hpp>
+#include <boost/variant.hpp>
 #include "type.hpp"
-#define DEBUG
 namespace spn {
-	template <class T>
-	class IDPair {
-		// Tのサイズが32bit以下ならT, それより上ならuint32_tを選択
-		using Index = typename SelectType<TValue<sizeof(T), 32>::greater, uint32_t, T>::type;
-		union ItemU {
-			struct Item {
-				T		value;
-
-				#ifdef DEBUG
-					bool	flag;
-					Item(): flag(false) {}
-					Item(T t): value(t), flag(true) {}
-					void acquire(T t) {
-						value = t;
-						assert(!flag);
-						flag = true;
-					}
-					void release() {
-						assert(flag);
-						flag = false;
-					}
-					bool check() const { return flag; }
-				#else
-					void acquire(T t) {
-						value = t;
-					}
-					void release() {}
-					bool check() const { return true; }
-				#endif
-			} item;
-
-			Index	freeIdx;
-
-			ItemU(T t): item(t) {}
-		};
-
-		using ItemVec = std::vector<ItemU>;
-		ItemVec		_array;
-		Index		_firstFree,		//!< 最初の空きブロックインデックス
-					_nFree = 0;		//!< 空きブロック数
-
-		public:
-			IDPair() {
-				static_assert(std::is_integral<T>::value, "typename T should be Integral type");
-			}
-			IDPair(const IDPair& p) = default;
-			IDPair(IDPair&& p): _array(std::forward<ItemVec>(p._array)), _firstFree(p._firstFree), _nFree(p._nFree) {}
-			Index take(T t) {
-				if(_nFree == 0) {
-					Index sz = _array.size();
-					_array.emplace_back(t);
-					return sz;
-				}
-				--_nFree;
-				Index ret = _firstFree;
-				_firstFree = _array[_firstFree].freeIdx;
-				_array[ret].item.acquire(t);
-				return ret;
-			}
-			T put(Index idx) {
-				T ret = _array[idx].item.value;
-				_array[idx].item.release();
-				if(++_nFree != 1)
-					_array[idx].freeIdx = _firstFree;
-				_firstFree = idx;
-				return ret;
-			}
-			void rewrite(Index idx, T newID) {
-				assert(_array[idx].item.check());
-				_array[idx].item.value = newID;
-			}
-
-			size_t size() const {
-				return _array.size() - _nFree;
-			}
-			void clear() {
-				_array.clear();
-				_nFree = 0;
-			}
-	};
 	//! 順序なし配列
 	/*! 基本的にはstd::vectorそのまま
 		要素を削除した時に順序を保証しない点だけが異なる */
@@ -106,67 +27,141 @@ namespace spn {
 	};
 	//! 順序なしのID付きリスト
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
-	template <class T, class ID=unsigned int>
+	template <class T, class IDType=unsigned int>
 	class noseq_list {
-		struct RPair {
-			T	value;
-			ID	uid;		//!< ユニークID。要素の削除をする際に使用
+		using ID = typename std::make_unsigned<IDType>::type;
+		//! ユーザーの要素を格納
+		struct UData {
+			using OPValue = boost::optional<T>;
+			OPValue		value;
+			ID			uid;		//!< ユニークID。要素の配列内移動をする際に使用
 
-			RPair(RPair&& rp): value(std::forward<T>(rp.value)) {}
-			RPair(T&& t, ID id): value(std::forward<T>(t)), uid(id) {}
-			RPair(const T& t, ID id): value(t), uid(id) {}
+			UData(UData&& rp): value(std::forward<OPValue>(rp.value)), uid(rp.uid) {}
+			UData(T&& t, ID id): value(std::forward<T>(t)), uid(id) {}
+			UData(const T& t, ID id): value(t), uid(id) {}
 
-			RPair& operator = (RPair&& r) {
+			UData& operator = (UData&& r) {
 				std::swap(value, r.value);
 				std::swap(uid, r.uid);
 				return *this;
 			}
 		};
-		using NSArray = noseq_vec<RPair>;
+		template <int N>
+		struct Wrap {
+			ID value;
+			explicit Wrap(ID id): value(id) {}
+			operator ID () const { return value; }
+			Wrap& operator = (ID id) {
+				value = id;
+				return *this;
+			}
+		};
+		struct FreeID : Wrap<0> {using Wrap<0>::Wrap;};
+		struct ObjID : Wrap<1> {using Wrap<1>::Wrap;};
+		/*! ObjID = UserDataの格納先インデックス
+			FreeID = 次の空きインデックス */
+		using IDS = boost::variant<boost::blank, ObjID, FreeID>;
 
-		NSArray		_array;
-		IDPair<ID>	_idList;
+		struct Entry {
+			UData	udata;
+			IDS		ids;
+
+			Entry(T&& t, ID idx): udata(std::forward<T>(t),idx), ids(ObjID(idx)) {}
+			Entry(const T& t, ID idx): udata(t,idx), ids(ObjID(idx)) {}
+		};
+		using Array = std::vector<Entry>;
+		Array		_array;
+		ID			_nFree = 0,			//!< 空きブロック数
+					_firstFree;		//!< 最初の空きブロックインデックス
 
 		public:
-			using iterator = typename NSArray::iterator;
-			using const_iterator = typename NSArray::const_iterator;
+			class iterator : public Array::iterator {
+				using Itr = typename Array::iterator;
+				public:
+					using Itr::Itr;
+					T& operator * () {
+						auto& ent = *(Itr&)(*this);
+						return ent.udata.value.get();
+					}
+			};
+			class const_iterator : public Array::const_iterator {
+				using Itr = typename Array::const_iterator;
+				public:
+					const_iterator() = default;
+					const_iterator(const typename Array::const_iterator& itr): Array::const_iterator(itr) {}
+					const T& operator * () const {
+						auto& ent = *(Itr&)(*this);
+						return ent.udata.value.get();
+					}
+			};
+
 			using id_type = ID;
-			noseq_list() = default;
-			noseq_list(noseq_list&& sl): _array(std::forward<noseq_vec<T>>(sl._array)), _idList(std::forward<IDPair<ID>>(sl._idList)) {}
+			noseq_list() {
+				static_assert(std::is_integral<IDType>::value, "typename ID should be Integral type");
+			}
+			noseq_list(noseq_list&& sl): _array(std::forward<noseq_vec<T>>(sl._array)), _nFree(sl._nFree), _firstFree(sl._firstFree) {}
 
 			template <class T2>
 			ID add(T2&& t) {
-				auto sz = _array.size();
-				ID id = _idList.take(sz);
-				_array.emplace_back(std::forward<T2>(t), id);
-				return id;
-			}
-			void rem(ID id) {
-				// idListから削除対象のnoseqインデックスを受け取る
-				auto index = _idList.put(id);
-				if(index != _array.size()-1) {
-					auto& arB = _array.back();
-					// UIDとindex対応の書き換え
-					_idList.rewrite(arB.uid, index);
+				if(_nFree == 0) {
+					// 空きが無いので配列の拡張
+					ID sz = _array.size();
+					_array.emplace_back(std::forward<T2>(t), sz);
+					return sz;
 				}
-				_array.erase(_array.begin()+index);
+				ID ret = _firstFree;					// IDPairを書き込む場所
+				ID objI = _array.size() - _nFree;		// ユーザーデータを書き込む場所
+				--_nFree;
+				auto& objE = _array[objI].udata;
+				objE.value = std::forward<T2>(t);		// ユーザーデータの書き込み
+				objE.uid = ret;
+
+				auto& idE = _array[ret].ids;
+				_firstFree = boost::get<FreeID>(idE);	// フリーリストの先頭を書き換え
+				idE = ObjID(objI);						// IDPairの初期化
+				return ret;
 			}
+			void rem(ID uindex) {
+				auto& ids = _array[uindex].ids;
+				auto& objI = boost::get<ObjID>(ids);	// 削除対象のnoseqインデックスを受け取る
+				ID backI = _array.size()-_nFree-1;
+				if(objI != backI) {
+					// 最後尾と削除予定の要素を交換
+					std::swap(_array[backI].udata, _array[objI].udata);
+					// UIDとindex対応の書き換え
+					_array[_array[objI].udata.uid].ids = ObjID(objI);
+				}
+				// 要素を解放
+				_array[backI].udata.value = boost::none;
+				// フリーリストをつなぎ替える
+				ids = FreeID(_firstFree);
+				_firstFree = uindex;
+				++_nFree;
+			}
+			T& get(ID uindex) {
+				ID idx = boost::get<ObjID>(_array[uindex].ids);
+				return _array[idx].udata.value.get();
+			}
+			const T& get(ID uindex) const {
+				return const_cast<noseq_list*>(this)->get(uindex);
+			}
+
 			iterator begin() { return _array.begin(); }
-			iterator end() { return _array.end(); }
+			iterator end() { return _array.end()-_nFree; }
 			const_iterator cbegin() const { return _array.cbegin(); }
-			const_iterator cend() const { return _array.cend(); }
+			const_iterator cend() const { return _array.cend()-_nFree; }
 			const_iterator begin() const { return _array.begin(); }
-			const_iterator end() const { return _array.end(); }
+			const_iterator end() const { return _array.end()-_nFree; }
 
 			size_t size() const {
-				return _array.size();
+				return _array.size() - _nFree;
 			}
 			void clear() {
 				_array.clear();
-				_idList.clear();
+				_nFree = 0;
 			}
 			bool empty() const {
-				return _array.empty();
+				return size() == 0;
 			}
 	};
 }

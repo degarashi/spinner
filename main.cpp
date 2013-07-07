@@ -33,13 +33,12 @@ int main(int argc, char **argv) {
 	auto pc2 = pc.toPacked();
 
 	noseq_list<float> ls;
-	auto ret = ls.add(128);
-	auto ret2 = ls.add(256);
+	auto id0 = ls.add(256);
+	auto id1 = ls.add(512);
+	auto id2 = ls.add(1024);
+	ls.rem(id1);
 	for(auto& p : ls) {
-		std::cout << p.value << std::endl;
-		std::cout << p.uid << std::endl;
+		std::cout << p << std::endl;
 	}
-	ls.rem(ret2);
-	ls.rem(ret);
 	return 0;
 }
