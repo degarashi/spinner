@@ -11,7 +11,9 @@ namespace spn {
 			less_eq = (M<=N) ? 1 : 0,
 			great_eq = (M>=N) ? 1 : 0,
 			lesser = (M<N) ? 1 : 0,
-			greater = (M>N) ? 1 : 0};
+			greater = (M>N) ? 1 : 0,
+			equal = M==N ? 1 : 0
+		};
 	};
 	#define countof(a)	(sizeof((a))/sizeof((a)[0]))
 }

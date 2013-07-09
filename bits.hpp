@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <limits>
+#include "type.hpp"
 
 namespace spn {
 	//! 表現に何ビット使うか計算
@@ -57,6 +59,139 @@ namespace spn {
 	template <>
 	struct BitLength<0> {
 		enum { length = 0 };
+	};
+
+	//! ビットフィールド定義用
+	template <int OFS, int LEN>
+	struct BitF {
+		enum { offset=OFS,
+		length=LEN };
+	};
+	//! 特定のビットを対象として値を取得 & 代入
+	/*! \param T 値を保持する型 (unsigned)
+	 * 	\param OFS ビットオフセット
+	 * 	\param LEN ビット長 */
+	template <class T, int OFS, int LEN>
+	class BitOp {
+		enum { offset=OFS,
+		length=LEN };
+		T&	_value;
+		constexpr static T MASKLOW = ((1 << LEN) - 1),
+		MASK =  MASKLOW << OFS;
+		// Tが非数値型だったりsignedな型ならコンパイルエラーを起こす
+		using Limits = std::numeric_limits<T>;
+		constexpr static int Dummy[Limits::is_specialized && Limits::is_integer && !Limits::is_signed ? 0 : -1] = {};
+
+	public:
+		template <class P>
+		BitOp(P* ptr): _value(*(T*)ptr) {}
+		BitOp(T* ptr): _value(*ptr) {}
+		BitOp(T& ref): _value(ref) {}
+
+		template <class V>
+		BitOp& operator = (const V v) {
+			// ビットクリア
+			_value &= ~MASK;
+			_value |= (T(v)<<OFS & MASK);
+			return *this;
+		}
+
+		operator T () const {
+			return (_value >> OFS) & MASKLOW;
+		}
+	};
+	//! ワードに対するビット操作
+	/*! \param WORD 値を保持する型
+	 * 	\param OFS 下位ビット位置
+	 * 	\param LEN 処理対象ビット幅 */
+	template <class WORD, int OFS, int LEN>
+	class BitSub {
+		const static WORD MASKLOW = ((1 << LEN) - 1),
+		MASK =  MASKLOW << OFS;
+		using Word = WORD;
+		Word&	_word;
+
+	public:
+		BitSub(Word& w): _word(w) {}
+
+		template <class V>
+		BitSub& operator = (const V v) {
+			// ビットクリア
+			_word &= ~MASK;
+			_word |= (Word(v)<<OFS & MASK);
+			return *this;
+		}
+		operator Word() const {
+			return get(_word);
+		}
+		static Word get(const Word& w) {
+			return (w >> OFS) & MASKLOW;
+		}
+		//! 違う基本型やビット位置でも交換可能だが、サイズ違いは駄目
+		template <class T_WORD, int T_OFS>
+		void swap(BitSub<T_WORD, T_OFS, LEN>& bs) noexcept {
+			Word val0(*this);
+			(*this) = Word(bs);
+			bs = val0;
+		}
+	};
+	//! テンプレートにてビットフィールドを定義
+	/*! \param T 値を保持する型
+	 \*param Args ビットフィールドを定義するBitOpクラス */
+	template <class T, class... Ts>
+	struct BitDef : CType<Ts...> {
+		// Tが非数値型だったりsignedな型ならコンパイルエラーを起こす
+		using Limits = std::numeric_limits<T>;
+		constexpr static int UnsignedCheck[Limits::is_specialized && Limits::is_integer && !Limits::is_signed ? 0 : -1] = {};
+
+		using Word = T;
+	};
+	//! ビットフィールドテンプレートクラス
+	/*! \example
+		struct MyDef : BitDef<uint32_t, BitF<0,14>, BitF<14,6>, BitF<20,12>> {	<br>
+				enum { VAL0, VAL1, VAL2 }; };									<br>
+		using Value = BitField<MyDef>;											<br>
+		Value value;															<br>
+		value.at<Value::VAL0>() = 128;											<br>
+		int toGet = value.at<Value::VAL0>();
+
+		\param BF BitDefクラス */
+	template <class BF>
+	struct BitField : BF {
+		// BF(CTypes)から総サイズとオフセット計算
+		enum { maxbit = BF::maxbit,
+		buffsize = ((maxbit-1)/8)+1 };
+		using Word = typename BF::Word;
+		constexpr static int WordCheck[buffsize > sizeof(Word) ? -1 : 0] = {};
+
+		Word _word;
+
+		BitField() {}
+		BitField(const Word& w): _word(w) {}
+		Word& value() { return _word; }
+		const Word& value() const { return _word; }
+
+		template <int N>
+		using BFAt = typename BF::template At<N>::type;
+		template <int N>
+		using BitSubT = BitSub<Word, BFAt<N>::offset, BFAt<N>::length>;
+
+		//! ビット領域参照
+		template <int N>
+		BitSubT<N> at() {
+			return BitSubT<N>(_word);
+		}
+		template <int N>
+		Word at() const {
+			return BitSubT<N>::get(_word);
+		}
+
+		//! ビットマスク取得
+		template <int N>
+		static Word mask() {
+			auto ret = (Word(1) << BFAt<N>::length) - 1;
+			return ret << BFAt<N>::offset;
+		}
 	};
 
 	struct Bit {
@@ -152,4 +287,12 @@ namespace spn {
 			return a|b;
 		}
 	};
+}
+namespace std {
+	template <class W0, int OFS0, class W1, int OFS1, int LEN>
+	inline void swap(spn::BitSub<W0,OFS0,LEN>&& b0, spn::BitSub<W1,OFS1,LEN>&& b1) { b0.swap(b1); }
+	template <class W0, int OFS0, class W1, int OFS1, int LEN>
+	inline void swap(spn::BitSub<W0,OFS0,LEN>&& b0, spn::BitSub<W1,OFS1,LEN>& b1) { b0.swap(b1); }
+	template <class W0, int OFS0, class W1, int OFS1, int LEN>
+	inline void swap(spn::BitSub<W0,OFS0,LEN>& b0, spn::BitSub<W1,OFS1,LEN>&& b1) { b0.swap(b1); }
 }

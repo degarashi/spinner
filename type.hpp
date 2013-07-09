@@ -90,6 +90,25 @@ namespace spn {
 		enum { result=-1 };
 	};
 
+	//! ビットフィールド用: 必要なビット数を計算
+	template <class... TS>
+	struct MaxBit {
+		enum { result=0 };
+	};
+	template <class T, class... TS>
+	struct MaxBit<T,TS...> {
+		enum { result=TValue<T::offset+T::length, MaxBit<TS...>::result>::great };
+	};
+	//! タイプリストの変数を並べた時に消費するメモリ量を計算
+	template <class... TS>
+	struct TypeSum {
+		enum { result=0 };
+	};
+	template <class T, class... TS>
+	struct TypeSum<T, TS...> {
+		enum { result=sizeof(T)+TypeSum<TS...>::result };
+	};
+
 	template <class... TS>
 	struct CType {
 		template <int N>
@@ -127,6 +146,9 @@ namespace spn {
 		struct Another {
 			using result = CType<decltype(TS()())...>;
 		};
-		enum { size= sizeof...(TS) };
+		enum { size= sizeof...(TS),
+				sum= TypeSum<TS...>::result,
+				maxbit= MaxBit<TS...>::result
+		};
 	};
 }

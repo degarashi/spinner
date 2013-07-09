@@ -5,6 +5,7 @@
 #include "pose.hpp"
 #include "misc.hpp"
 #include "noseq.hpp"
+#include "bits.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
@@ -40,5 +41,13 @@ int main(int argc, char **argv) {
 	for(auto& p : ls) {
 		std::cout << p << std::endl;
 	}
+
+	struct MyDef : BitDef<uint32_t, BitF<0,14>, BitF<14,6>, BitF<20,12>> {
+		enum { VAL0, VAL1, VAL2 }; };
+	using Value = BitField<MyDef>;
+	Value value(0);
+	value.at<Value::VAL2>() = ~0;
+	auto mask = value.mask<Value::VAL1>();
+	auto raw = value.value();
 	return 0;
 }
