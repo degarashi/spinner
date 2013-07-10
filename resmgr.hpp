@@ -207,11 +207,15 @@ namespace spn {
 				{}
 
 				Entry& operator = (Entry&& e) {
+					data = std::move(e.data);
+					count = e.count;
+					w_magic = e.w_magic;
+					#ifdef DEBUG
+						magic = e.magic;
+					#endif
 					return *this;
 				}
-				Entry& operator = (const Entry& e) {
-					return *this;
-				}
+				Entry& operator = (const Entry& e) = default;
 			};
 		private:
 			friend SHdl;
