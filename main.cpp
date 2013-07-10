@@ -6,6 +6,7 @@
 #include "misc.hpp"
 #include "noseq.hpp"
 #include "bits.hpp"
+#include "resmgr.hpp"
 
 using namespace spn;
 int main(int argc, char **argv) {
@@ -49,5 +50,15 @@ int main(int argc, char **argv) {
 	value.at<Value::VAL2>() = ~0;
 	auto mask = value.mask<Value::VAL1>();
 	auto raw = value.value();
+
+	ResMgrN<double> rmN;
+	auto lhdl = rmN.acquire(128.0);
+	auto ldhl2 = lhdl;
+
+	auto lh2 = rmN.acquire("tekito", 256).first;
+	auto lh3 = rmN.getFromKey("tekito");
+	auto val0 = lh2.get().getValue();
+	auto val1 = lh3.get().getValue();
+	auto bbs = lh2 == lh3;
 	return 0;
 }
