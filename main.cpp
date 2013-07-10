@@ -55,10 +55,12 @@ int main(int argc, char **argv) {
 	auto lhdl = rmN.acquire(128.0);
 	auto ldhl2 = lhdl;
 
-	auto lh2 = rmN.acquire("tekito", 256).first;
+	auto lh2 = rmN.emplace("tekito", 256).first;
 	auto lh3 = rmN.getFromKey("tekito");
 	auto val0 = lh2.get().getValue();
 	auto val1 = lh3.get().getValue();
 	auto bbs = lh2 == lh3;
+	auto lh4 = rmN.replace_emplace("tekito", 1000);
+	std::cout << lh4.get().ref() << std::endl;
 	return 0;
 }

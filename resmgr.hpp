@@ -362,46 +362,74 @@ namespace spn {
 		using base_type = ResMgrA<ResWrap<DAT>>;
 		using NameMap = std::unordered_map<std::string, typename base_type::SHdl>;
 		using LHdl = typename base_type::LHdl;
+		using SHdl = typename base_type::SHdl;
 		NameMap		_nameMap;
+
+		template <class KEY, class CB>
+		LHdl _replace(KEY&& key, CB cb) {
+			auto itr = _nameMap.find(key);
+			if(itr != _nameMap.end()) {
+				// 古いリソースは名前との関連付けを外す
+				SHdl h = itr->second;
+				base_type::_refSH(h).data.stp = nullptr;
+				// 古いハンドルの所有権は外部が持っているのでここでは何もしない
+
+				auto lh = cb();
+				itr->second = lh.get();
+				base_type::_refSH(lh.get()).data.stp = &(itr->first);
+				// 名前ポインタはそのまま流用
+				return std::move(lh);
+			}
+			// エントリの新規作成
+			auto lh = cb();
+			itr = _nameMap.insert(std::make_pair(std::forward<KEY>(key), lh.get())).first;
+			// 名前登録
+			auto& ent = lh.get().ref();
+			ent.stp = &itr->first;
+			return std::move(lh);
+		}
+		template <class KEY, class CB>
+		std::pair<LHdl,bool> _acquire(KEY&& key, CB cb) {
+			// 既に同じ名前が登録されていたら既存のハンドルを返す
+			auto itr = _nameMap.find(key);
+			if(itr != _nameMap.end())
+				return std::make_pair(LHdl(itr->second), false);
+
+			auto lh = cb();
+			itr = _nameMap.emplace(std::forward<KEY>(key), lh.get()).first;
+			auto& ent = lh.get().ref();
+			ent.stp = &(itr->first);
+			return std::make_pair(std::move(lh), true);
+		}
 
 		public:
 			using base_type::acquire;
+
+			template <class KEY, class... Args>
+			LHdl replace_emplace(KEY&& key, Args&&... args) {
+				auto fn = [&](){ return base_type::acquire(std::forward<Args>(args)...); };
+				return _replace(std::forward<KEY>(key), fn);
+			}
 			//! 同じ要素が存在したら置き換え
 			template <class KEY, class DATA>
 			LHdl replace(KEY&& key, DATA&& dat) {
-				auto itr = _nameMap.find(key);
-				if(itr != _nameMap.end()) {
-					// 既存のエントリを上書き
-					itr->second.release();
-					auto lh = base_type::acquire(std::forward<DATA>(dat));
-					itr->second = lh.get();
-					// 名前ポインタはそのまま流用
-					return std::move(lh);
-				}
-				// エントリの新規作成
-				auto lh = base_type::acquire(std::forward<DATA>(dat));
-				itr = _nameMap.insert(std::make_pair(std::forward<KEY>(key), lh.get())).first;
-				// 名前登録
-				auto& ent = lh.get().ref();
-				ent.stp = &itr->first;
-				return std::move(lh);
+				auto fn = [&](){ return base_type::acquire(std::forward<DAT>(dat)); };
+				return _replace(std::forward<KEY>(key), fn);
 			}
 			//! 名前付きリソースの作成
 			/*! \return [リソースハンドル,
 			 *			新たにエントリが作成されたらtrue, 既存のキーが使われたらfalse] */
 			template <class KEY, class DATA>
 			std::pair<LHdl,bool> acquire(KEY&& key, DATA&& dat) {
-				// 既に同じ名前が登録されていたら既存のハンドルを返す
-				auto itr = _nameMap.find(key);
-				if(itr != _nameMap.end())
-					return std::make_pair(LHdl(itr->second), false);
-
-				auto lh = base_type::acquire(std::forward<DATA>(dat));
-				itr = _nameMap.emplace(std::forward<KEY>(key), lh.get()).first;
-				auto& ent = lh.get().ref();
-				ent.stp = &(itr->first);
-				return std::make_pair(std::move(lh), true);
+				auto fn = [&]() { return base_type::acquire(std::forward<DAT>(dat)); };
+				return _acquire(std::forward<KEY>(key), fn);
 			}
+			template <class KEY, class... Args>
+			std::pair<LHdl,bool> emplace(KEY&& key, Args&&... args) {
+				auto fn = [&](){ return base_type::acquire(std::forward<Args>(args)...); };
+				return _acquire(std::forward<KEY>(key), fn);
+			}
+
 			//! キーを指定してハンドルを取得
 			LHdl getFromKey(const std::string& key) const {
 				auto itr = _nameMap.find(key);
@@ -415,7 +443,6 @@ namespace spn {
 				const std::string* stp = ent.data.stp;
 				if(stp) {
 					return base_type::releaseWithCallback(sh, [this, stp](typename base_type::Entry&){
-						std::cout << _nameMap.size() << std::endl;
 						// 名前も消す
 						_nameMap.erase(_nameMap.find(*stp));
 					});
