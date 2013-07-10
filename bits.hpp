@@ -185,11 +185,15 @@ namespace spn {
 		Word at() const {
 			return BitSubT<N>::get(_word);
 		}
-
+		//! ビット幅マスク取得
+		template <int N>
+		static Word length_mask() {
+			return (Word(1) << BFAt<N>::length) - 1;
+		}
 		//! ビットマスク取得
 		template <int N>
 		static Word mask() {
-			auto ret = (Word(1) << BFAt<N>::length) - 1;
+			auto ret = length_mask<N>();
 			return ret << BFAt<N>::offset;
 		}
 	};

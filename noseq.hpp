@@ -25,6 +25,107 @@ namespace spn {
 				vector::pop_back();
 			}
 	};
+	//! noseq_listでboost::optionalを使おうとしたらよくわからないエラーが出たので自作してしまった
+	template <class T>
+	class Optional {
+		private:
+			uint8_t	_buffer[sizeof(T)];
+			bool	_bInit;
+
+			void _release() {
+				if(_bInit) {
+					reinterpret_cast<T*>(_buffer)->~T();
+					_bInit = false;
+				}
+			}
+			T* _castT() { return reinterpret_cast<T*>(_buffer); }
+			const T* _castT() const { return reinterpret_cast<const T*>(_buffer); }
+
+		public:
+			Optional(): _bInit(false) {}
+			Optional(boost::none_t): _bInit(false) {}
+			template <class T2>
+			Optional(T2&& t): _bInit(true) {
+				new(_buffer) T(std::forward<T2>(t)); }
+			Optional(Optional<T>&& t): _bInit(t) {
+				if(t) {
+					new(_buffer) T(std::move(*t._castT()));
+					t._bInit = false;
+				}
+			}
+			Optional(const Optional<T>& t): _bInit(t) {
+				if(t)
+					new(_buffer) T(*t._castT());
+			}
+			~Optional() {
+				_release();
+			}
+
+			T& get() {
+				if(!*this)
+					throw boost::bad_get();
+				return *_castT();
+			}
+			const T& get() const {
+				return const_cast<Optional<T>*>(this)->get();
+			}
+			T& operator * () {
+				return get();
+			}
+			const T& operator * () const {
+				return get();
+			}
+			operator bool () const {
+				return _bInit;
+			}
+
+			template <class T2>
+			Optional& operator = (T2&& t) {
+				_release();
+				new(_buffer) T(std::forward<T2>(t));
+				_bInit = true;
+				return *this;
+			}
+			Optional& operator = (boost::none_t) noexcept {
+				_release();
+				return *this;
+			}
+			Optional& operator = (const Optional<T>& t) {
+				_release();
+				if(t) {
+					new(_buffer) T(t.value);
+					_bInit = true;
+				}
+				return *this;
+			}
+			Optional& operator = (Optional<T>&& t) noexcept {
+				_release();
+				if(t) {
+					new(_buffer) T(std::move(*t._castT()));
+					t._bInit = false;
+					_bInit = true;
+				}
+				return *this;
+			}
+	};
+	//! 同じ型を(Nを変えて)違う型として扱う為のラップクラス
+	template <class T, int N>
+	struct TypeWrap {
+		T value;
+
+		explicit TypeWrap(const T& id): value(id) {}
+		explicit TypeWrap(T&& id): value(std::forward<T>(id)) {}
+		operator T& () { return value; }
+		operator const T& () const { return value; }
+		TypeWrap& operator = (const T& id) {
+			value = id;
+			return *this;
+		}
+		TypeWrap& operator = (T&& id) {
+			value = std::forward<T>(id);
+			return *this;
+		}
+	};
 	//! 順序なしのID付きリスト
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
 	template <class T, class IDType=unsigned int>
@@ -32,7 +133,7 @@ namespace spn {
 		using ID = typename std::make_unsigned<IDType>::type;
 		//! ユーザーの要素を格納
 		struct UData {
-			using OPValue = boost::optional<T>;
+			using OPValue = Optional<T>;
 			OPValue		value;
 			ID			uid;		//!< ユニークID。要素の配列内移動をする際に使用
 
@@ -46,18 +147,8 @@ namespace spn {
 				return *this;
 			}
 		};
-		template <int N>
-		struct Wrap {
-			ID value;
-			explicit Wrap(ID id): value(id) {}
-			operator ID () const { return value; }
-			Wrap& operator = (ID id) {
-				value = id;
-				return *this;
-			}
-		};
-		struct FreeID : Wrap<0> {using Wrap<0>::Wrap;};
-		struct ObjID : Wrap<1> {using Wrap<1>::Wrap;};
+		struct FreeID : TypeWrap<ID,0> {using TypeWrap<ID,0>::TypeWrap;};
+		struct ObjID : TypeWrap<ID,1> {using TypeWrap<ID,1>::TypeWrap;};
 		/*! ObjID = UserDataの格納先インデックス
 			FreeID = 次の空きインデックス */
 		using IDS = boost::variant<boost::blank, ObjID, FreeID>;
@@ -67,11 +158,10 @@ namespace spn {
 			IDS		ids;
 
 			Entry(T&& t, ID idx): udata(std::forward<T>(t),idx), ids(ObjID(idx)) {}
-			Entry(const T& t, ID idx): udata(t,idx), ids(ObjID(idx)) {}
 		};
 		using Array = std::vector<Entry>;
 		Array		_array;
-		ID			_nFree = 0,			//!< 空きブロック数
+		ID			_nFree = 0,		//!< 空きブロック数
 					_firstFree;		//!< 最初の空きブロックインデックス
 
 		public:
@@ -81,7 +171,7 @@ namespace spn {
 					using Itr::Itr;
 					T& operator * () {
 						auto& ent = *(Itr&)(*this);
-						return ent.udata.value.get();
+						return *ent.udata.value;
 					}
 			};
 			class const_iterator : public Array::const_iterator {
@@ -91,7 +181,7 @@ namespace spn {
 					const_iterator(const typename Array::const_iterator& itr): Array::const_iterator(itr) {}
 					const T& operator * () const {
 						auto& ent = *(Itr&)(*this);
-						return ent.udata.value.get();
+						return *ent.udata.value;
 					}
 			};
 
@@ -140,7 +230,7 @@ namespace spn {
 			}
 			T& get(ID uindex) {
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
-				return _array[idx].udata.value.get();
+				return *_array[idx].udata.value;
 			}
 			const T& get(ID uindex) const {
 				return const_cast<noseq_list*>(this)->get(uindex);

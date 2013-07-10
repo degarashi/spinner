@@ -1,4 +1,5 @@
 #pragma once
+#include "vector.hpp"
 #include <cassert>
 #include <cstring>
 #include <cwchar>
