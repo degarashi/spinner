@@ -56,7 +56,8 @@ int main(int argc, char **argv) {
 		int first, second;
 	};
 	ResMgrN<MyClass> rmN;
-	auto ldhl2 = rmN.acquire("hello", MyClass{100,200});
+	MyClass abc{100,200};
+	auto ldhl2 = rmN.acquire("hello", abc);
 	auto lhdl = rmN.acquire(MyClass{12,21});
 
 	for(auto itr=rmN.cbegin() ; itr!=rmN.cend() ; itr++) {

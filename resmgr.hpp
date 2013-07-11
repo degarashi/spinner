@@ -181,6 +181,7 @@ namespace spn {
 		T 					value;
 		const std::string*	stp;
 
+ 		ResWrap(const T& t): value(t), stp(nullptr) {}
 		ResWrap(T&& t): value(std::forward<T>(t)), stp(nullptr) {}
 		operator T&() { return value; }
 		operator const T&() const { return value; }
@@ -454,7 +455,7 @@ namespace spn {
 			//! 同じ要素が存在したら置き換え
 			template <class KEY, class DATA>
 			LHdl replace(KEY&& key, DATA&& dat) {
-				auto fn = [&](){ return base_type::acquire(std::forward<DAT>(dat)); };
+				auto fn = [&](){ return base_type::acquire(std::forward<DATA>(dat)); };
 				return _replace(std::forward<KEY>(key), fn);
 			}
 			//! 名前付きリソースの作成
@@ -462,7 +463,7 @@ namespace spn {
 			 *			新たにエントリが作成されたらtrue, 既存のキーが使われたらfalse] */
 			template <class KEY, class DATA>
 			std::pair<LHdl,bool> acquire(KEY&& key, DATA&& dat) {
-				auto fn = [&]() { return base_type::acquire(std::forward<DAT>(dat)); };
+				auto fn = [&]() { return base_type::acquire(std::forward<DATA>(dat)); };
 				return _acquire(std::forward<KEY>(key), fn);
 			}
 			template <class KEY, class... Args>
