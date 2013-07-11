@@ -15,5 +15,5 @@ namespace spn {
 			equal = M==N ? 1 : 0
 		};
 	};
-	#define countof(a)	(sizeof((a))/sizeof((a)[0]))
+	#define countof(a)	static_cast<int>(sizeof((a))/sizeof((a)[0]))
 }
