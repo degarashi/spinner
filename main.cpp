@@ -50,17 +50,17 @@ int main(int argc, char **argv) {
 	value.at<Value::VAL2>() = ~0;
 	auto mask = value.mask<Value::VAL1>();
 	auto raw = value.value();
+	std::cout << std::endl;
 
-	ResMgrN<double> rmN;
-	auto lhdl = rmN.acquire(128.0);
-	auto ldhl2 = lhdl;
+	struct MyClass {
+		int first, second;
+	};
+	ResMgrN<MyClass> rmN;
+	auto ldhl2 = rmN.acquire("hello", MyClass{100,200});
+	auto lhdl = rmN.acquire(MyClass{12,21});
 
-	auto lh2 = rmN.emplace("tekito", 256).first;
-	auto lh3 = rmN.getFromKey("tekito");
-	auto val0 = lh2.get().getValue();
-	auto val1 = lh3.get().getValue();
-	auto bbs = lh2 == lh3;
-	auto lh4 = rmN.replace_emplace("tekito", 1000);
-	std::cout << lh4.get().ref() << std::endl;
+	for(auto itr=rmN.cbegin() ; itr!=rmN.cend() ; itr++) {
+		std::cout << (*itr).first << std::endl;
+	}
 	return 0;
 }

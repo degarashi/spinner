@@ -1,6 +1,7 @@
 #pragma once
 #include "misc.hpp"
 #include "bits.hpp"
+#include "macro.hpp"
 #include "noseq.hpp"
 #include <unordered_map>
 #include <string>
@@ -175,12 +176,29 @@ namespace spn {
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
 	};
+	template <class T>
+	struct ResWrap {
+		T 					value;
+		const std::string*	stp;
 
+		ResWrap(T&& t): value(std::forward<T>(t)), stp(nullptr) {}
+		operator T&() { return value; }
+		operator const T&() const { return value; }
+	};
+	template <class T>
+	struct DecayWrap {
+		using result = T;
+	};
+	template <class T>
+	struct DecayWrap<ResWrap<T>> {
+		using result = T;
+	};
 	//! 名前なしリソース (anonymous-only)
 	template <class DAT>
 	class ResMgrA : public Singleton<ResMgrA<DAT>>, public ResMgrBase {
 		public:
 			using data_type = DAT;
+			using raw_type = typename DecayWrap<DAT>::result;
 			using ThisType = ResMgrA<DAT>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
@@ -216,6 +234,9 @@ namespace spn {
 					return *this;
 				}
 				Entry& operator = (const Entry& e) = default;
+
+				operator raw_type& () { return data; }
+				operator const raw_type& () const { return data; }
 			};
 		private:
 			friend SHdl;
@@ -262,6 +283,29 @@ namespace spn {
 			}
 
 		public:
+			class iterator : public AdaptItrBase<raw_type, typename AVec::iterator> {
+				public:
+					using Itr = AdaptItrBase<raw_type, typename AVec::iterator>;
+					using Itr::Itr;
+			};
+			class const_iterator : public AdaptItrBase<const raw_type, typename AVec::const_iterator> {
+				public:
+					using Itr = AdaptItrBase<const raw_type, typename AVec::const_iterator>;
+					using Itr::Itr;
+			};
+			class reverse_iterator : public AdaptItrBase<raw_type, typename AVec::reverse_iterator> {
+				public:
+					using Itr = AdaptItrBase<raw_type, typename AVec::reverse_iterator>;
+					using Itr::Itr;
+			};
+			class const_reverse_iterator : public AdaptItrBase<const raw_type, std::reverse_iterator<typename AVec::const_iterator>> {
+				public:
+					using Itr = AdaptItrBase<const raw_type, std::reverse_iterator<typename AVec::const_iterator>>;
+					using Itr::Itr;
+			};
+
+			BOOST_PP_REPEAT(16, ITERATOR_ADAPTOR, _dataVec)
+
 			ResMgrA() {
 				// リポジトリへ登録
 				_resID = _addManager(this);
@@ -350,15 +394,6 @@ namespace spn {
 				const auto& ent = _refSH(sh);
 				return ent.data;
 			}
-	};
-	template <class T>
-	struct ResWrap {
-		T 					value;
-		const std::string*	stp;
-
-		ResWrap(T&& t): value(std::forward<T>(t)), stp(nullptr) {}
-		operator T&() { return value; }
-		operator const T&() const { return value; }
 	};
 	//! 名前付きリソース (with anonymous)
 	template <class DAT>

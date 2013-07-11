@@ -1,4 +1,6 @@
 #pragma once
+#include "macro.hpp"
+
 #ifndef SSE_LEVEL
 	#define SSE_LEVEL 1
 #endif
@@ -176,9 +178,6 @@ inline float RADtoDEG(float ang) {
 #define STOREPS_A2(ptr, r)	_mm_storel_pi((__m64*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)
 
-#define BOOST_PP_VARIADICS 1
-#include <boost/preprocessor.hpp>
-#define NOTHING
 #define BOOLNIZE(b) BOOST_PP_IF(b,true,false)
 #define AFLAG(a) BOOST_PP_IF(a,A,NOTHING)
 

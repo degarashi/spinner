@@ -126,6 +126,22 @@ namespace spn {
 			return *this;
 		}
 	};
+	template <class DT, class REV>
+	class AdaptItrBase : public REV {
+		using Itr = REV;
+		public:
+			using Itr::Itr;
+			using value_type = typename std::decay<DT>::type;
+			using pointer = DT*;
+			using reference = DT&;
+
+			AdaptItrBase() = default;
+			AdaptItrBase(const Itr& itr): Itr(itr) {}
+			DT& operator *() {
+				return Itr::operator*();
+			}
+	};
+
 	//! 順序なしのID付きリスト
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
 	template <class T, class IDType=unsigned int>
@@ -158,6 +174,8 @@ namespace spn {
 			IDS		ids;
 
 			Entry(T&& t, ID idx): udata(std::forward<T>(t),idx), ids(ObjID(idx)) {}
+			operator T& () { return *udata.value; }
+			operator const T& () const { return *udata.value; }
 		};
 		using Array = std::vector<Entry>;
 		Array		_array;
@@ -165,25 +183,10 @@ namespace spn {
 					_firstFree;		//!< 最初の空きブロックインデックス
 
 		public:
-			class iterator : public Array::iterator {
-				using Itr = typename Array::iterator;
-				public:
-					using Itr::Itr;
-					T& operator * () {
-						auto& ent = *(Itr&)(*this);
-						return *ent.udata.value;
-					}
-			};
-			class const_iterator : public Array::const_iterator {
-				using Itr = typename Array::const_iterator;
-				public:
-					const_iterator() = default;
-					const_iterator(const typename Array::const_iterator& itr): Array::const_iterator(itr) {}
-					const T& operator * () const {
-						auto& ent = *(Itr&)(*this);
-						return *ent.udata.value;
-					}
-			};
+			using iterator = AdaptItrBase<T, typename Array::iterator>;
+			using const_iterator = AdaptItrBase<const T, typename Array::const_iterator>;
+			using reverse_iterator = AdaptItrBase<T, std::reverse_iterator<typename Array::iterator>>;
+			using const_reverse_iterator = AdaptItrBase<const T, std::reverse_iterator<typename Array::const_iterator>>;
 
 			using id_type = ID;
 			noseq_list() {
@@ -238,10 +241,14 @@ namespace spn {
 
 			iterator begin() { return _array.begin(); }
 			iterator end() { return _array.end()-_nFree; }
+			reverse_iterator rbegin() { return _array.rbegin()+_nFree; }
+			reverse_iterator rend() { return _array.rend(); }
 			const_iterator cbegin() const { return _array.cbegin(); }
 			const_iterator cend() const { return _array.cend()-_nFree; }
 			const_iterator begin() const { return _array.begin(); }
 			const_iterator end() const { return _array.end()-_nFree; }
+			const_reverse_iterator crbegin() const { return const_cast<noseq_list*>(this)->rbegin(); }
+			const_reverse_iterator crend() const { return const_cast<noseq_list*>(this)->rend(); }
 
 			size_t size() const {
 				return _array.size() - _nFree;
