@@ -72,23 +72,46 @@ namespace spn {
 			bool operator == (const WHandle& sh) const;
 	};
 
-	template <class MGR>
+	template <class MGR, class DATA>
 	class SHandleT;
-	template <class MGR>
+	template <class MGR, class DATA>
 	class WHandleT;
 
 	//! 強参照スマートハンドル
 	template <class HDL>
 	class HdlLock {
 		HDL _hdl;
+		#define DOWNCAST	typename std::enable_if<std::is_base_of<typename HDL::data_type, DATA>::value>::type
+		#define UPCAST		typename std::enable_if<std::is_base_of<DATA,typename HDL::data_type>::value>::type
+		#define SAMETYPE	typename std::enable_if<!std::is_same<DATA, typename HDL::data_type>::value>::type
+
+		friend typename HDL::mgr_type;
+		private:
+			//! 参照インクリメント(down cast)
+			template <class DATA, class = DOWNCAST, class = SAMETYPE>
+			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
+			template <class DATA, class = DOWNCAST, class = SAMETYPE>
+			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) {
+				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
+				_hdl.swap(*(HDL*)&hl);
+			}
+
 		public:
 			HdlLock() = default;
 			//! 参照ムーブ(カウント変更なし)
-			HdlLock(HdlLock&& hl) noexcept {
-				swap(hl);
+			template <class DATA, class = UPCAST>
+			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) noexcept {
+				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
+				_hdl.swap(*(HDL*)&hl);
 			}
-			//! 参照インクリメント
-			HdlLock(const HdlLock& hl): HdlLock(hl.get()) {}
+			//! 参照インクリメント(up cast)
+			template <class DATA, class = UPCAST>
+			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
+
+			#undef DOWNCAST
+			#undef UPCAST
+			#undef SAMETYPE
+
 			//! 参照インクリメント
 			HdlLock(HDL hdl): _hdl(hdl) {
 				if(_hdl.valid())
@@ -122,33 +145,76 @@ namespace spn {
 				return _hdl == hl.get();
 			}
 	};
+
 	//! 強参照ハンドル
-	template <class MGR>
+	template <class MGR, class DATA = typename MGR::data_type>
 	class SHandleT : public SHandle {
+		using mgr_data = typename MGR::data_type;
+		using DownCast = std::is_base_of<mgr_data, DATA>;
+		using UpCast = std::is_base_of<DATA, mgr_data>;
+
+		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップキャストかダウンキャスト出来なければならない
+		constexpr static int StaticAssertion[(DownCast::value || UpCast::value) ? 0 : -1] = {};
+
+		friend MGR;
+		friend class HdlLock<SHandleT>;
+		private:
+			// データ型をダウンキャストする場合はMGRからしか許可しない
+			template <class DAT, class = typename std::enable_if<DownCast::value>::type,
+								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
+			SHandleT(const SHandleT<MGR,DAT>& sh): SHandle(sh) {}
+
 		public:
-			using WHdl = WHandleT<MGR>;
-			using data_type = typename MGR::data_type;
+			using WHdl = WHandleT<MGR, DATA>;
+			using mgr_type = MGR;
+			using data_type = DATA;
 			using SHandle::SHandle;
 			SHandleT() = default;
 			SHandleT(const SHandle& hdl): SHandle(hdl) {}
+			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップキャスト可能ならば暗黙的な変換を許可する
+			template <class DAT, class = typename std::enable_if<UpCast::value>::type>
+			SHandleT(const SHandleT<MGR, DAT>& hdl): SHandle(hdl) {}
 
 			void release() { MGR::_ref().release(*this); }
 			void increment() { MGR::_ref().increment(*this); }
-			data_type& ref() { return MGR::_ref().ref(*this); }
-			const data_type& cref() const { return MGR::_ref().cref(*this); }
+			data_type& ref() {
+				// Managerの保管している型とこのハンドルが返す型が異なる場合があるので明示的にキャストする
+				return reinterpret_cast<data_type&>(MGR::_ref().ref(*this));
+			}
+			const data_type& cref() const {
+				// ref()と同じ理由でキャスト
+				return reinterpret_cast<const data_type&>(MGR::_ref().cref(*this));
+			}
 			//! 弱参照ハンドルを得る
 			WHdl weak() const { return MGR::_ref().weak(*this); }
 			uint32_t count() const { return MGR::_ref().count(*this); }
 	};
 	//! 弱参照ハンドル
-	template <class MGR>
+	template <class MGR, class DATA = typename MGR::data_type>
 	class WHandleT : public WHandle {
+		using mgr_data = typename MGR::data_type;
+		using DownCast = std::is_base_of<mgr_data, DATA>;
+		using UpCast = std::is_base_of<DATA, mgr_data>;
+
+		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップキャストかダウンキャスト出来なければならない
+		constexpr static int StaticAssertion[(DownCast::value || UpCast::value) ? 0 : -1] = {};
+
+		friend MGR;
+		private:
+			// データ型をダウンキャストする場合はMGRからしか許可しない
+			template <class DAT, class = typename std::enable_if<DownCast::value>::type,
+								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
+			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 		public:
-			using SHdl = SHandleT<MGR>;
-			using data_type = typename MGR::data_type;
+			using SHdl = SHandleT<MGR, DATA>;
+			using mgr_type = MGR;
+			using data_type = DATA;
 			using WHandle::WHandle;
 			WHandleT() = default;
 			WHandleT(const WHandle& wh): WHandle(wh) {}
+			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップキャスト可能ならば暗黙的な変換を許可する
+			template <class DAT, class = typename std::enable_if<UpCast::value>::type>
+			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 
 			//! リソース参照
 			/*!	参照が無効なら例外を投げる
@@ -176,6 +242,7 @@ namespace spn {
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
 	};
+	//! 名前付きリソース管理の為のラッパ
 	template <class T>
 	struct ResWrap {
 		T 					value;
@@ -186,6 +253,7 @@ namespace spn {
 		operator T&() { return value; }
 		operator const T&() const { return value; }
 	};
+	//! ResWrap<>を取り除く
 	template <class T>
 	struct DecayWrap {
 		using result = T;
@@ -198,8 +266,7 @@ namespace spn {
 	template <class DAT>
 	class ResMgrA : public Singleton<ResMgrA<DAT>>, public ResMgrBase {
 		public:
-			using data_type = DAT;
-			using raw_type = typename DecayWrap<DAT>::result;
+			using data_type = typename DecayWrap<DAT>::result;
 			using ThisType = ResMgrA<DAT>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
@@ -236,8 +303,8 @@ namespace spn {
 				}
 				Entry& operator = (const Entry& e) = default;
 
-				operator raw_type& () { return data; }
-				operator const raw_type& () const { return data; }
+				operator data_type& () { return data; }
+				operator const data_type& () const { return data; }
 			};
 		private:
 			friend SHdl;
@@ -284,24 +351,24 @@ namespace spn {
 			}
 
 		public:
-			class iterator : public AdaptItrBase<raw_type, typename AVec::iterator> {
+			class iterator : public AdaptItrBase<data_type, typename AVec::iterator> {
 				public:
-					using Itr = AdaptItrBase<raw_type, typename AVec::iterator>;
+					using Itr = AdaptItrBase<data_type, typename AVec::iterator>;
 					using Itr::Itr;
 			};
-			class const_iterator : public AdaptItrBase<const raw_type, typename AVec::const_iterator> {
+			class const_iterator : public AdaptItrBase<const data_type, typename AVec::const_iterator> {
 				public:
-					using Itr = AdaptItrBase<const raw_type, typename AVec::const_iterator>;
+					using Itr = AdaptItrBase<const data_type, typename AVec::const_iterator>;
 					using Itr::Itr;
 			};
-			class reverse_iterator : public AdaptItrBase<raw_type, typename AVec::reverse_iterator> {
+			class reverse_iterator : public AdaptItrBase<data_type, typename AVec::reverse_iterator> {
 				public:
-					using Itr = AdaptItrBase<raw_type, typename AVec::reverse_iterator>;
+					using Itr = AdaptItrBase<data_type, typename AVec::reverse_iterator>;
 					using Itr::Itr;
 			};
-			class const_reverse_iterator : public AdaptItrBase<const raw_type, std::reverse_iterator<typename AVec::const_iterator>> {
+			class const_reverse_iterator : public AdaptItrBase<const data_type, std::reverse_iterator<typename AVec::const_iterator>> {
 				public:
-					using Itr = AdaptItrBase<const raw_type, std::reverse_iterator<typename AVec::const_iterator>>;
+					using Itr = AdaptItrBase<const data_type, std::reverse_iterator<typename AVec::const_iterator>>;
 					using Itr::Itr;
 			};
 
@@ -387,13 +454,31 @@ namespace spn {
 				auto& ent = _refSH(sh);
 				return ent.count;
 			}
-			DAT& ref(SHandle sh) {
+			data_type& ref(SHandle sh) {
 				auto& ent = _refSH(sh);
 				return ent.data;
 			}
-			const DAT& cref(SHandle sh) const {
+			const data_type& cref(SHandle sh) const {
 				const auto& ent = _refSH(sh);
 				return ent.data;
+			}
+			//! 同じリソース機構を使用する別のハンドル型を生成
+			template <class NDATA>
+			using AnotherSHandle = SHandleT<ThisType, NDATA>;
+			template <class NDATA>
+			using AnotherWHandle = WHandleT<ThisType, NDATA>;
+			template <class NDATA>
+			using AnotherLHandle = HdlLock<AnotherSHandle<NDATA>>;
+
+			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
+			template <class NDATA, template<class,class> class Handle, class DATA>
+			static Handle<ThisType,NDATA> Cast(Handle<ThisType, DATA>&& h) {
+				// Handleのprivateなコンストラクタを経由して変換
+				return Handle<ThisType,NDATA>(std::forward<Handle<ThisType, DATA>>(h));
+			}
+			template <class NDATA, template<class> class HL, class DATA>
+			static HL<AnotherSHandle<NDATA>> Cast(HL<AnotherSHandle<DATA>>&& lh) {
+				return HL<AnotherSHandle<NDATA>>(std::forward<HL<AnotherSHandle<DATA>>>(lh));
 			}
 	};
 	//! 名前付きリソース (with anonymous)
@@ -426,8 +511,8 @@ namespace spn {
 				auto lh = cb();
 				itr = _nameMap.insert(std::make_pair(std::forward<KEY>(key), lh.get())).first;
 				// 名前登録
-				auto& ent = lh.get().ref();
-				ent.stp = &itr->first;
+				auto& ent = base_type::_refSH(lh.get());
+				ent.data.stp = &itr->first;
 				return std::move(lh);
 			}
 			template <class KEY, class CB>
@@ -439,8 +524,8 @@ namespace spn {
 
 				auto lh = cb();
 				itr = _nameMap.emplace(std::forward<KEY>(key), lh.get()).first;
-				auto& ent = lh.get().ref();
-				ent.stp = &(itr->first);
+				auto& ent = base_type::_refSH(lh.get());
+				ent.data.stp = &(itr->first);
 				return std::make_pair(std::move(lh), true);
 			}
 

@@ -55,12 +55,24 @@ int main(int argc, char **argv) {
 	struct MyClass {
 		int first, second;
 	};
-	ResMgrN<MyClass> rmN;
-	MyClass abc{100,200};
-	auto ldhl2 = rmN.acquire("hello", abc);
-	auto lhdl = rmN.acquire(MyClass{12,21});
+	struct MyDerived : MyClass {
+		MyDerived(int v0, int v1) {
+			first = v0;
+			second = v1;
+		}
+	};
+	struct MyMgr : ResMgrN<MyClass> {
+		using Hdl = ResMgrN<MyClass>::AnotherLHandle<MyDerived>;
+		LHdl doit() {
+			auto ldhl = ResMgrN<MyClass>::acquire(MyClass{123,321});
+			Hdl hl = Cast<MyDerived>(std::move(ldhl));
+			return SHdl(hl.get());
+		}
+	};
+	MyMgr mm;
+	auto hdl = mm.doit();
 
-	for(auto itr=rmN.cbegin() ; itr!=rmN.cend() ; itr++) {
+	for(auto itr=mm.cbegin() ; itr!=mm.cend() ; itr++) {
 		std::cout << (*itr).first << std::endl;
 	}
 	return 0;
