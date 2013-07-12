@@ -61,10 +61,10 @@ int main(int argc, char **argv) {
 			second = v1;
 		}
 	};
-	struct MyMgr : ResMgrN<MyClass> {
-		using Hdl = ResMgrN<MyClass>::AnotherLHandle<MyDerived>;
+	struct MyMgr : ResMgrN<MyClass, MyMgr> {
+		using Hdl = ResMgrN<MyClass, MyMgr>::AnotherLHandle<MyDerived>;
 		LHdl doit() {
-			auto ldhl = ResMgrN<MyClass>::acquire(MyClass{123,321});
+			auto ldhl = ResMgrN<MyClass, MyMgr>::acquire(MyClass{123,321});
 			Hdl hl = Cast<MyDerived>(std::move(ldhl));
 			return SHdl(hl.get());
 		}

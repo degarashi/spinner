@@ -272,11 +272,11 @@ namespace spn {
 		using result = T;
 	};
 	//! 名前なしリソース (anonymous-only)
-	template <class DAT>
-	class ResMgrA : public Singleton<ResMgrA<DAT>>, public ResMgrBase {
+	template <class DAT, class DERIVED>
+	class ResMgrA : public Singleton<DERIVED>, public ResMgrBase {
 		public:
 			using data_type = typename DecayWrap<DAT>::result;
-			using ThisType = ResMgrA<DAT>;
+			using ThisType = ResMgrA<DAT,DERIVED>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
 			using LHdl = HdlLock<SHdl>;
@@ -491,10 +491,10 @@ namespace spn {
 			}
 	};
 	//! 名前付きリソース (with anonymous)
-	template <class DAT>
-	class ResMgrN : public ResMgrA<ResWrap<DAT>> {
+	template <class DAT, class DERIVED>
+	class ResMgrN : public ResMgrA<ResWrap<DAT>, DERIVED> {
 		public:
-			using base_type = ResMgrA<ResWrap<DAT>>;
+			using base_type = ResMgrA<ResWrap<DAT>, DERIVED>;
 			using LHdl = typename base_type::LHdl;
 			using SHdl = typename base_type::SHdl;
 		private:
