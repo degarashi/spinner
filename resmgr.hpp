@@ -85,6 +85,8 @@ namespace spn {
 		#define UPCONV		typename std::enable_if<std::is_convertible<DATA,typename HDL::data_type>::value>::type
 		#define SAMETYPE	typename std::enable_if<!std::is_same<DATA, typename HDL::data_type>::value>::type
 
+		using data_type = typename HDL::data_type;
+		using WHdl = typename HDL::WHdl;
 		friend typename HDL::mgr_type;
 		private:
 			//! 参照インクリメント(down convert)
@@ -144,6 +146,13 @@ namespace spn {
 			bool operator == (const HdlLock& hl) const {
 				return _hdl == hl.get();
 			}
+
+			// ---- SHandleのメソッドを仲立ち ----
+			data_type& ref() { return _hdl.ref(); }
+			const data_type& cref() const { return _hdl.cref(); }
+			bool valid() const { return _hdl.valid(); }
+			WHdl weak() const { return _hdl.weak(); }
+			uint32_t count() const { return _hdl.count(); }
 	};
 
 	//! 強参照ハンドル
