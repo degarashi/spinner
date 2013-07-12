@@ -273,7 +273,7 @@ namespace spn {
 	};
 	//! 名前なしリソース (anonymous-only)
 	template <class DAT>
-	class ResMgrA : public Singleton<ResMgrA<DAT>>, public ResMgrBase {
+	class ResMgrA : public ResMgrBase {
 		public:
 			using data_type = typename DecayWrap<DAT>::result;
 			using ThisType = ResMgrA<DAT>;
