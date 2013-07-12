@@ -81,16 +81,16 @@ namespace spn {
 	template <class HDL>
 	class HdlLock {
 		HDL _hdl;
-		#define DOWNCAST	typename std::enable_if<std::is_base_of<typename HDL::data_type, DATA>::value>::type
-		#define UPCAST		typename std::enable_if<std::is_base_of<DATA,typename HDL::data_type>::value>::type
+		#define DOWNCONV	typename std::enable_if<std::is_convertible<typename HDL::data_type, DATA>::value>::type
+		#define UPCONV		typename std::enable_if<std::is_convertible<DATA,typename HDL::data_type>::value>::type
 		#define SAMETYPE	typename std::enable_if<!std::is_same<DATA, typename HDL::data_type>::value>::type
 
 		friend typename HDL::mgr_type;
 		private:
-			//! 参照インクリメント(down cast)
-			template <class DATA, class = DOWNCAST, class = SAMETYPE>
+			//! 参照インクリメント(down convert)
+			template <class DATA, class = DOWNCONV, class = SAMETYPE>
 			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
-			template <class DATA, class = DOWNCAST, class = SAMETYPE>
+			template <class DATA, class = DOWNCONV, class = SAMETYPE>
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) {
 				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
 				_hdl.swap(*(HDL*)&hl);
@@ -99,17 +99,17 @@ namespace spn {
 		public:
 			HdlLock() = default;
 			//! 参照ムーブ(カウント変更なし)
-			template <class DATA, class = UPCAST>
+			template <class DATA, class = UPCONV>
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) noexcept {
 				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
 				_hdl.swap(*(HDL*)&hl);
 			}
-			//! 参照インクリメント(up cast)
-			template <class DATA, class = UPCAST>
+			//! 参照インクリメント(up convert)
+			template <class DATA, class = UPCONV>
 			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
 
-			#undef DOWNCAST
-			#undef UPCAST
+			#undef DOWNCONV
+			#undef UPCONV
 			#undef SAMETYPE
 
 			//! 参照インクリメント
@@ -150,17 +150,17 @@ namespace spn {
 	template <class MGR, class DATA = typename MGR::data_type>
 	class SHandleT : public SHandle {
 		using mgr_data = typename MGR::data_type;
-		using DownCast = std::is_base_of<mgr_data, DATA>;
-		using UpCast = std::is_base_of<DATA, mgr_data>;
+		using DownConv = std::is_convertible<mgr_data, DATA>;
+		using UpConv = std::is_convertible<DATA, mgr_data>;
 
-		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップキャストかダウンキャスト出来なければならない
-		constexpr static int StaticAssertion[(DownCast::value || UpCast::value) ? 0 : -1] = {};
+		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
+		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
 
 		friend MGR;
 		friend class HdlLock<SHandleT>;
 		private:
-			// データ型をダウンキャストする場合はMGRからしか許可しない
-			template <class DAT, class = typename std::enable_if<DownCast::value>::type,
+			// データ型をダウンコンバートする場合はMGRからしか許可しない
+			template <class DAT, class = typename std::enable_if<DownConv::value>::type,
 								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
 			SHandleT(const SHandleT<MGR,DAT>& sh): SHandle(sh) {}
 
@@ -171,8 +171,8 @@ namespace spn {
 			using SHandle::SHandle;
 			SHandleT() = default;
 			SHandleT(const SHandle& hdl): SHandle(hdl) {}
-			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップキャスト可能ならば暗黙的な変換を許可する
-			template <class DAT, class = typename std::enable_if<UpCast::value>::type>
+			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップコンバート可能ならば暗黙的な変換を許可する
+			template <class DAT, class = typename std::enable_if<UpConv::value>::type>
 			SHandleT(const SHandleT<MGR, DAT>& hdl): SHandle(hdl) {}
 
 			void release() { MGR::_ref().release(*this); }
@@ -193,16 +193,16 @@ namespace spn {
 	template <class MGR, class DATA = typename MGR::data_type>
 	class WHandleT : public WHandle {
 		using mgr_data = typename MGR::data_type;
-		using DownCast = std::is_base_of<mgr_data, DATA>;
-		using UpCast = std::is_base_of<DATA, mgr_data>;
+		using DownConv = std::is_convertible<mgr_data, DATA>;
+		using UpConv = std::is_convertible<DATA, mgr_data>;
 
-		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップキャストかダウンキャスト出来なければならない
-		constexpr static int StaticAssertion[(DownCast::value || UpCast::value) ? 0 : -1] = {};
+		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
+		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
 
 		friend MGR;
 		private:
-			// データ型をダウンキャストする場合はMGRからしか許可しない
-			template <class DAT, class = typename std::enable_if<DownCast::value>::type,
+			// データ型をダウンコンバートする場合はMGRからしか許可しない
+			template <class DAT, class = typename std::enable_if<DownConv::value>::type,
 								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 		public:
@@ -212,8 +212,8 @@ namespace spn {
 			using WHandle::WHandle;
 			WHandleT() = default;
 			WHandleT(const WHandle& wh): WHandle(wh) {}
-			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップキャスト可能ならば暗黙的な変換を許可する
-			template <class DAT, class = typename std::enable_if<UpCast::value>::type>
+			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップコンバート可能ならば暗黙的な変換を許可する
+			template <class DAT, class = typename std::enable_if<UpConv::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 
 			//! リソース参照
