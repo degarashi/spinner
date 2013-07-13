@@ -147,12 +147,18 @@ namespace spn {
 				return _hdl == hl.get();
 			}
 
+			operator bool () const { return valid(); }
+
 			// ---- SHandleのメソッドを仲立ち ----
 			data_type& ref() { return _hdl.ref(); }
 			const data_type& cref() const { return _hdl.cref(); }
 			bool valid() const { return _hdl.valid(); }
 			WHdl weak() const { return _hdl.weak(); }
 			uint32_t count() const { return _hdl.count(); }
+
+			// ---- データにダイレクトアクセス ----
+			const data_type* operator -> () const { return &_hdl.cref(); }
+			data_type* operator -> () { return &_hdl.ref(); }
 	};
 
 	//! 強参照ハンドル
@@ -197,6 +203,10 @@ namespace spn {
 			//! 弱参照ハンドルを得る
 			WHdl weak() const { return MGR::_ref().weak(*this); }
 			uint32_t count() const { return MGR::_ref().count(*this); }
+
+			operator bool () const { return valid(); }
+			data_type* operator -> () { return &ref(); }
+			const data_type* operator -> () const { return &cref(); }
 	};
 	//! 弱参照ハンドル
 	template <class MGR, class DATA = typename MGR::data_type>
