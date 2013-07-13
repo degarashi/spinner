@@ -99,7 +99,11 @@ namespace spn {
 			}
 
 		public:
-			HdlLock() = default;
+			HdlLock() {}
+			HdlLock(const HdlLock& hdl): _hdl(hdl.get()) {
+				if(_hdl)
+					_hdl.increment();
+			}
 			//! 参照ムーブ(カウント変更なし)
 			template <class DATA, class = UPCONV>
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) noexcept {
