@@ -15,9 +15,9 @@ namespace spn {
 	/*! 変換適用順序は[拡縮][回転][平行移動] */
 	class Pose2D : public CheckAlign<16,Pose2D> {
 		GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
-		   ((Vec2 _ofs))
-		   ((Vec2 _scale))
-		   ((float _angle, uint32_t _accum))
+			((Vec2, _ofs))
+			((Vec2, _scale))
+			((float, _angle, uint32_t, _accum))
 		)
 		protected:
 			mutable uint32_t	_rflag;
@@ -67,8 +67,8 @@ namespace spn {
 		AVec3			_scale;
 
 		GAP_MATRIX_DEF(mutable, _finalMat, 4,3,
-			((uint32_t _accum))
-			((mutable uint32_t _rflag))
+			((uint32_t, _accum))
+			((mutable uint32_t, _rflag))
 		)
 
 		void _refresh() const;

@@ -186,8 +186,18 @@ inline float RADtoDEG(float ang) {
 //! constやmutableを付ける場合の定義
 #define GAP_MATRIX_DEF(prefix, matname, m, n, seq) union { prefix BOOST_PP_CAT(BOOST_PP_CAT(spn::AMat,m),n) matname; struct { BOOST_PP_SEQ_FOR_EACH_I(GAP_TFUNC_OUTER, n, seq) }; };
 #define GAP_DUMMY(aux,index,amount) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(float dummy, __LINE__), aux), index)[amount];
-#define GAP_TFUNC_OUTER(z,nAr,idx,elem)	GAP_DUMMY(_,idx,4-nAr) BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_INNER, NOTHING, BOOST_PP_TUPLE_TO_SEQ(elem)) GAP_DUMMY(_B,idx,4-nAr-BOOST_PP_TUPLE_SIZE(elem))
-#define GAP_TFUNC_INNER(z,dummy,elem)	elem;
+//! Tupleの奇数要素のsizeofを足し合わせる
+#define COUNT_SIZE(tup)			((BOOST_PP_REPEAT(BOOST_PP_TUPLE_SIZE(tup), COUNT_SIZE2, tup)+3)/4)
+#define COUNT_SIZE2(z,idx,data)	BOOST_PP_IF(BOOST_PP_MOD(idx,2), +sizeof(BOOST_PP_TUPLE_ELEM(idx,data)), NOTHING)
+//! 要素のサイズを考慮しつつ, 16byte alignedになるよう前後に適切なパディングを入れる
+#define GAP_TFUNC_OUTER(z,nAr,idx,elem) \
+		GAP_DUMMY(_,idx,4-nAr) \
+		BOOST_PP_REPEAT(BOOST_PP_TUPLE_SIZE(elem), GAP_TFUNC_INNER, elem) \
+		GAP_DUMMY(_B,idx,4-nAr-COUNT_SIZE(elem))
+//! 奇数要素と偶数要素を連結して変数宣言とする
+#define GAP_TFUNC_INNER(z,idx,data) BOOST_PP_IF(BOOST_PP_MOD(idx,2), NOTHING_ARG, ARGPAIR)(BOOST_PP_TUPLE_ELEM(idx,data), BOOST_PP_TUPLE_ELEM(BOOST_PP_INC(idx),data))
+#define ARGPAIR(a,b)	a b;
+
 //! アライン済みベクトルの隙間を埋める定義
 #define GAP_VECTOR(vecname, n, seq) GAP_VECTOR_DEF(NOTHING, vecname, n, seq)
 #define GAP_VECTOR_DEF(prefix, vecname, n, seq)	union { prefix BOOST_PP_CAT(spn::AVec, n) vecname; struct { float _dummy[4-n]; BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_VEC, NOTHING, seq) }; };
