@@ -159,8 +159,8 @@ namespace spn {
 	template <class BF>
 	struct BitField : BF {
 		// BF(CTypes)から総サイズとオフセット計算
-		enum { maxbit = BF::maxbit,
-		buffsize = ((maxbit-1)/8)+1 };
+		constexpr static int maxbit = BF::template Size<>::maxbit,
+							buffsize = ((maxbit-1)/8)+1;
 		using Word = typename BF::Word;
 		constexpr static int WordCheck[buffsize > sizeof(Word) ? -1 : 0] = {};
 

@@ -271,7 +271,6 @@ namespace spn {
 		T 					value;
 		const std::string*	stp;
 
- 		ResWrap(const T& t): value(t), stp(nullptr) {}
 		ResWrap(T&& t): value(std::forward<T>(t)), stp(nullptr) {}
 		operator T&() { return value; }
 		operator const T&() const { return value; }
@@ -300,7 +299,7 @@ namespace spn {
 				uint32_t				count;
 				typename WHdl::VWord	w_magic;
 
-				Entry(DAT&& dat, typename WHdl::VWord wmagic): data(dat), count(0), w_magic(wmagic) {}
+				Entry(DAT&& dat, typename WHdl::VWord wmagic): data(std::forward<DAT>(dat)), count(0), w_magic(wmagic) {}
 				#ifdef DEBUG
 					typename SHdl::VWord	magic;
 					// デバッグ版では簡易マジックナンバーチェックが入る
