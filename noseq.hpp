@@ -173,7 +173,8 @@ namespace spn {
 			UData	udata;
 			IDS		ids;
 
-			Entry(T&& t, ID idx): udata(std::forward<T>(t),idx), ids(ObjID(idx)) {}
+			template <class T2>
+			Entry(T2&& t, ID idx): udata(std::forward<T2>(t),idx), ids(ObjID(idx)) {}
 			operator T& () { return *udata.value; }
 			operator const T& () const { return *udata.value; }
 		};

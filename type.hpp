@@ -146,9 +146,12 @@ namespace spn {
 		struct Another {
 			using result = CType<decltype(TS()())...>;
 		};
-		enum { size= sizeof...(TS),
-				sum= TypeSum<TS...>::result,
-				maxbit= MaxBit<TS...>::result
+		constexpr static int size = sizeof...(TS);
+		// 型がimcompleteなケースを考えてテンプレートクラスとしてある
+		template <class Dummy=void>
+		struct Size {
+			constexpr static int sum = TypeSum<TS...>::result,
+								maxbit = MaxBit<TS...>::result;
 		};
 	};
 }
