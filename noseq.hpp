@@ -116,6 +116,10 @@ namespace spn {
 		Array		_array;
 		ID			_nFree = 0,		//!< 空きブロック数
 					_firstFree;		//!< 最初の空きブロックインデックス
+		//! 現在削除処理中かのフラグ
+		bool		_bRemoving = false;
+		using RemList = std::vector<ID>;
+		RemList		_remList;
 
 		public:
 			using iterator = AdaptItrBase<T, typename Array::iterator>;
@@ -150,21 +154,33 @@ namespace spn {
 				return ret;
 			}
 			void rem(ID uindex) {
-				auto& ids = _array[uindex].ids;
-				auto& objI = boost::get<ObjID>(ids);	// 削除対象のnoseqインデックスを受け取る
-				ID backI = _array.size()-_nFree-1;
-				if(objI != backI) {
-					// 最後尾と削除予定の要素を交換
-					std::swap(_array[backI].udata, _array[objI].udata);
-					// UIDとindex対応の書き換え
-					_array[_array[objI].udata.uid].ids = ObjID(objI);
-				}
-				// 要素を解放
-				_array[backI].udata.value = boost::none;
-				// フリーリストをつなぎ替える
-				ids = FreeID(_firstFree);
-				_firstFree = uindex;
-				++_nFree;
+				if(!_bRemoving) {
+					_bRemoving = true;
+
+					auto& ids = _array[uindex].ids;
+					auto& objI = boost::get<ObjID>(ids);	// 削除対象のnoseqインデックスを受け取る
+					ID backI = _array.size()-_nFree-1;
+					if(objI != backI) {
+						// 最後尾と削除予定の要素を交換
+						std::swap(_array[backI].udata, _array[objI].udata);
+						// UIDとindex対応の書き換え
+						_array[_array[objI].udata.uid].ids = ObjID(objI);
+					}
+					// 要素を解放
+					_array[backI].udata.value = boost::none;
+					// フリーリストをつなぎ替える
+					ids = FreeID(_firstFree);
+					_firstFree = uindex;
+					++_nFree;
+
+					_bRemoving = false;
+					while(!_remList.empty()) {
+						ID tmp = _remList[0];
+						_remList.erase(_remList.begin());
+						rem(tmp);
+					}
+				} else
+					_remList.push_back(uindex);
 			}
 			decltype(*_array[0].udata.value) get(ID uindex) {
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
