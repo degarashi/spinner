@@ -251,6 +251,20 @@ namespace spn {
 			const_reverse_iterator crbegin() const { return const_cast<noseq_list*>(this)->rbegin(); }
 			const_reverse_iterator crend() const { return const_cast<noseq_list*>(this)->rend(); }
 
+			//! 主にResMgrから開放時の処理をする為に使用
+			template <class CB>
+			void iterate(CB cb) {
+				int n = _array.size();
+				for(int i=0 ; i<n ; i++) {
+					auto& ent = _array[i];
+					// エントリが有効な場合のみコールバックを呼ぶ
+					if(ent.ids.which() == 1) {
+						ID id = boost::get<ObjID>(ent.ids);
+						cb(_array[id].udata.value);
+					}
+				}
+			}
+
 			size_t size() const {
 				return _array.size() - _nFree;
 			}

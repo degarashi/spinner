@@ -401,9 +401,20 @@ namespace spn {
 				_resID = _addManager(this);
 			}
 			~ResMgrA() {
+				// 全ての現存リソースに対して1回ずつデクリメントすれば全て解放される筈
+				int count = 0;
+				_dataVec.iterate([&count,this](Optional<Entry>& ent){
+					if(--(*ent).count == 0) {
+						// オブジェクトの解放
+						// 巡回中はエントリを消すと不具合が出るのでデストラクタを呼ぶのみ
+						ent = boost::none;
+						++count;
+					}
+				});
 				// 明示的に解放されてないリソースがある場合は警告を出す
-				if(!_dataVec.empty())
-					std::cerr << "ResMgr: there are some unreleased resources..." << std::endl;
+				int remain = static_cast<int>(_dataVec.size()) - count;
+				if(remain > 0)
+					std::cerr << "ResMgr: there are some unreleased resources...(remaining " << remain << ')' << std::endl;
 			}
 			//! 参照カウンタをインクリメント
 			void increment(SHandle sh) override {
