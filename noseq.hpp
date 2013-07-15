@@ -46,19 +46,32 @@ namespace spn {
 			return *this;
 		}
 	};
+	template <class T>
+	struct TheType {
+		using T2 = typename std::remove_reference<T>::type;
+		using ctype = const typename std::remove_const<T2>::type&;
+		using type = T2&;
+		using pointer = T2*;
+	};
+	template <class T>
+	struct TheType<T*> {
+		using ctype = const typename std::remove_const<T>::type*;
+		using type = T*&;
+		using pointer = T**;
+	};
 	template <class DT, class REV>
 	class AdaptItrBase : public REV {
 		using Itr = REV;
 		public:
 			using Itr::Itr;
-			using value_type = typename std::decay<DT>::type;
-			using pointer = DT*;
-			using reference = DT&;
+			using value_type = DT;
+			using pointer = typename TheType<DT>::pointer;
+			using reference = typename TheType<DT>::type;
 
 			AdaptItrBase() = default;
 			AdaptItrBase(const Itr& itr): Itr(itr) {}
-			DT& operator *() {
-				return Itr::operator*();
+			reference operator *() const {
+				return (reference)Itr::operator*();
 			}
 	};
 
@@ -67,6 +80,7 @@ namespace spn {
 	template <class T, class IDType=unsigned int>
 	class noseq_list {
 		using ID = typename std::make_unsigned<IDType>::type;
+		using RT = typename std::remove_reference<T>::type;
 		//! ユーザーの要素を格納
 		struct UData {
 			using OPValue = Optional<T>;
@@ -74,8 +88,8 @@ namespace spn {
 			ID			uid;		//!< ユニークID。要素の配列内移動をする際に使用
 
 			UData(UData&& rp): value(std::forward<OPValue>(rp.value)), uid(rp.uid) {}
-			UData(T&& t, ID id): value(std::forward<T>(t)), uid(id) {}
-			UData(const T& t, ID id): value(t), uid(id) {}
+			template <class T2>
+			UData(T2&& t, ID id): value(std::forward<T2>(t)), uid(id) {}
 
 			UData& operator = (UData&& r) {
 				std::swap(value, r.value);
@@ -95,8 +109,8 @@ namespace spn {
 
 			template <class T2>
 			Entry(T2&& t, ID idx): udata(std::forward<T2>(t),idx), ids(ObjID(idx)) {}
-			operator T& () { return *udata.value; }
-			operator const T& () const { return *udata.value; }
+			operator typename TheType<T>::type () { return *udata.value; }
+			operator typename TheType<T>::ctype () const { return *udata.value; }
 		};
 		using Array = std::vector<Entry>;
 		Array		_array;
@@ -152,11 +166,11 @@ namespace spn {
 				_firstFree = uindex;
 				++_nFree;
 			}
-			T& get(ID uindex) {
+			decltype(*_array[0].udata.value) get(ID uindex) {
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
 				return *_array[idx].udata.value;
 			}
-			const T& get(ID uindex) const {
+			const decltype(*_array[0].udata.value) get(ID uindex) const {
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
 

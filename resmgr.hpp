@@ -248,10 +248,11 @@ namespace spn {
 
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
-		using RMList = std::vector<ResMgrBase*>;
+		using RMList = noseq_list<ResMgrBase*, int>;
 		static RMList s_rmList;
 		protected:
 			int _addManager(ResMgrBase* p);
+			void _remManager(int id);
 		public:
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
@@ -325,8 +326,8 @@ namespace spn {
 				}
 				Entry& operator = (const Entry& e) = default;
 
-				operator data_type& () { return data; }
-				operator const data_type& () const { return data; }
+				operator typename TheType<data_type>::type () { return data; }
+				operator typename TheType<data_type>::ctype () const { return data; }
 			};
 		private:
 			friend SHdl;
@@ -403,7 +404,7 @@ namespace spn {
 			~ResMgrA() {
 				// 全ての現存リソースに対して1回ずつデクリメントすれば全て解放される筈
 				int count = 0;
-				_dataVec.iterate([&count,this](Optional<Entry>& ent){
+				_dataVec.iterate([&count](Optional<Entry>& ent){
 					if(--(*ent).count == 0) {
 						// オブジェクトの解放
 						// 巡回中はエントリを消すと不具合が出るのでデストラクタを呼ぶのみ
@@ -415,6 +416,8 @@ namespace spn {
 				int remain = static_cast<int>(_dataVec.size()) - count;
 				if(remain > 0)
 					std::cerr << "ResMgr: there are some unreleased resources...(remaining " << remain << ')' << std::endl;
+
+				_remManager(_resID);
 			}
 			//! 参照カウンタをインクリメント
 			void increment(SHandle sh) override {

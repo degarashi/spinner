@@ -72,6 +72,16 @@ int main(int argc, char **argv) {
 	MyMgr mm;
 	auto hdl = mm.doit();
 
+	int tekito = 100;
+	noseq_list<int&> asd;
+	auto id = asd.add(&tekito);
+	int& dd = *asd.begin();
+	std::cout << *asd.begin() << std::endl;
+	dd = 200;
+	std::cout << *asd.begin() << std::endl;
+	*asd.rbegin();
+	*asd.crbegin();
+
 	for(auto itr=mm.cbegin() ; itr!=mm.cend() ; itr++) {
 		std::cout << (*itr).first << std::endl;
 	}

@@ -23,7 +23,8 @@ namespace spn {
 		T*		_buffer;
 
 		_OptionalBuff() = default;
-		_OptionalBuff(T& t): _buffer(&t) {}
+		template <class T2>
+		_OptionalBuff(T2&& t): _buffer(t) {}
 		void operator = (T&& t) { _buffer = &t; }
 		void operator = (T& t) { _buffer = &t; }
 		T& castT() { return *_buffer; }
@@ -37,8 +38,8 @@ namespace spn {
 		_OptionalBuff() = default;
 		_OptionalBuff(T* t): _buffer(t) {}
 		void operator = (T* t) { _buffer = t; }
-		T* castT() { return _buffer; }
-		const T* castCT() const { return _buffer; }
+		T*& castT() { return _buffer; }
+		const T*& castCT() const { return _buffer; }
 		void dtor() {}
 	};
 
@@ -93,6 +94,12 @@ namespace spn {
 				return _bInit;
 			}
 
+			typename std::add_pointer<decltype(_buffer.castT())>::type operator -> () {
+				return &_buffer.castT();
+			}
+			typename std::add_pointer<decltype(_buffer.castCT())>::type operator -> () const {
+				return &_buffer.castCT();
+			}
 			template <class T2>
 			Optional& operator = (T2&& t) {
 				_release();
