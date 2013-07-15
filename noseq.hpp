@@ -5,6 +5,8 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 #include "type.hpp"
+#include "optional.hpp"
+
 namespace spn {
 	//! 順序なし配列
 	/*! 基本的にはstd::vectorそのまま
@@ -25,89 +27,7 @@ namespace spn {
 				vector::pop_back();
 			}
 	};
-	//! noseq_listでboost::optionalを使おうとしたらよくわからないエラーが出たので自作してしまった
-	template <class T>
-	class Optional {
-		private:
-			uint8_t	_buffer[sizeof(T)];
-			bool	_bInit;
 
-			void _release() {
-				if(_bInit) {
-					reinterpret_cast<T*>(_buffer)->~T();
-					_bInit = false;
-				}
-			}
-			T* _castT() { return reinterpret_cast<T*>(_buffer); }
-			const T* _castT() const { return reinterpret_cast<const T*>(_buffer); }
-
-		public:
-			Optional(): _bInit(false) {}
-			Optional(boost::none_t): _bInit(false) {}
-			template <class T2>
-			Optional(T2&& t): _bInit(true) {
-				new(_buffer) T(std::forward<T2>(t)); }
-			Optional(Optional<T>&& t): _bInit(t) {
-				if(t) {
-					new(_buffer) T(std::move(*t._castT()));
-					t._bInit = false;
-				}
-			}
-			Optional(const Optional<T>& t): _bInit(t) {
-				if(t)
-					new(_buffer) T(*t._castT());
-			}
-			~Optional() {
-				_release();
-			}
-
-			T& get() {
-				if(!*this)
-					throw boost::bad_get();
-				return *_castT();
-			}
-			const T& get() const {
-				return const_cast<Optional<T>*>(this)->get();
-			}
-			T& operator * () {
-				return get();
-			}
-			const T& operator * () const {
-				return get();
-			}
-			operator bool () const {
-				return _bInit;
-			}
-
-			template <class T2>
-			Optional& operator = (T2&& t) {
-				_release();
-				new(_buffer) T(std::forward<T2>(t));
-				_bInit = true;
-				return *this;
-			}
-			Optional& operator = (boost::none_t) noexcept {
-				_release();
-				return *this;
-			}
-			Optional& operator = (const Optional<T>& t) {
-				_release();
-				if(t) {
-					new(_buffer) T(t.value);
-					_bInit = true;
-				}
-				return *this;
-			}
-			Optional& operator = (Optional<T>&& t) noexcept {
-				_release();
-				if(t) {
-					new(_buffer) T(std::move(*t._castT()));
-					t._bInit = false;
-					_bInit = true;
-				}
-				return *this;
-			}
-	};
 	//! 同じ型を(Nを変えて)違う型として扱う為のラップクラス
 	template <class T, int N>
 	struct TypeWrap {
