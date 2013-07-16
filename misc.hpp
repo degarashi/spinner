@@ -220,7 +220,7 @@ namespace spn {
 		void* ptr = std::malloc(sizeof(T) + 15);
 		ptr = (void*)(((uintptr_t)ptr + 15) & ~0x0f); */
 	template <class T, class... Args>
-	T* AAlloc(int n, Args... args) {
+	T* AAlloc(int n, Args&&... args) {
 		return new(AAllocBase<T>(n,1)) T(std::forward<Args>(args)...);
 	}
 	//! デフォルトコンストラクタによる初期化
@@ -258,7 +258,7 @@ namespace spn {
 				return AAlloc<T>(N, std::forward<std::initializer_list<A>>(w));
 			}
 			template <class... Args>
-			static T* New(Args... args) {
+			static T* New(Args&&... args) {
 				return AAlloc<T>(N, std::forward<Args>(args)...);
 			}
 	};
