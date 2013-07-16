@@ -613,4 +613,9 @@ namespace spn {
 				return base_type::release(sh);
 			}
 	};
+	//! 互換ハンドル一式を定義するマクロ
+	#define DEF_HANDLE(mgr, suffix, sp) \
+		using HL##suffix = mgr::AnotherLHandle<sp>; \
+		using H##suffix = mgr::AnotherSHandle<sp>; \
+		using W##suffix = mgr::AnotherWHandle<sp>;
 }
