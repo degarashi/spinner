@@ -52,12 +52,15 @@ namespace spn {
 			void setOfs(const Vec2& ofs);
 			float getAngle() const;
 			const Vec2& getOffset() const;
+			const Vec2& getScale() const;
 
 			const AMat32& getToWorld() const;
 			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();
 			void apply(const TValue& t);
+
+			Pose2D& operator = (const Pose2D& ps);
 	};
 
 	//! 3次元姿勢クラス
@@ -120,5 +123,7 @@ namespace spn {
 			Pose3D lerp(const Pose3D& p1, float t) const;
 			Value refValue();
 			void apply(const TValue& t);
+
+			Pose3D& operator = (const Pose3D& ps);
 	};
 }

@@ -55,7 +55,7 @@ namespace spn {
 			}
 		};
 		struct Setter {
-			static void proc(T& val, const T mask, const T prev) { val |= mask; }
+			static void proc(T& val, const T mask, const T /*prev*/) { val |= mask; }
 			static void count(int& cnt, const T e, const T mask) { cnt += ~Bit::ZeroOrFull(e & mask) & 1; }
 		};
 		struct Clearer {

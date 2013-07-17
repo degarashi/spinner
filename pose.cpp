@@ -34,6 +34,13 @@ namespace spn {
 	float Pose2D::getAngle() const {
 		return _angle;
 	}
+	const Vec2& Pose2D::getScale() const {
+		return _scale;
+	}
+	Pose2D& Pose2D::operator = (const Pose2D& ps) {
+		std::memcpy(this, &ps, sizeof(ps));
+		return *this;
+	}
 
 	void Pose2D::_refresh() const {
 		if(_rflag & (PRF_SCALE|PRF_ROTATE)) {
@@ -229,5 +236,9 @@ namespace spn {
 		_scale = t.scale;
 		_rot = t.rot;
 		_setAsChanged();
+	}
+	Pose3D& Pose3D::operator = (const Pose3D& ps) {
+		std::memcpy(this, &ps, sizeof(ps));
+		return *this;
 	}
 }
