@@ -4,6 +4,20 @@ namespace spn {
 	// ------------------------------ Pose2D ------------------------------
 	Pose2D::Value::Value(Pose2D& p): _pose(p), ofs(p._ofs), scale(p._scale), ang(p._angle) {}
 	Pose2D::Value::~Value() { _pose._setAsChanged(); }
+	Pose2D::Value::Value(const Pose2D::Value& v): _pose(v._pose), ofs(v.ofs), scale(v.scale), ang(v.ang) {}
+	Pose2D::Value& Pose2D::Value::operator = (const TValue& tv) {
+		ofs = tv.ofs;
+		scale = tv.scale;
+		ang = tv.ang;
+		return *this;
+	}
+	Pose2D::TValue::TValue(const Value& v): ofs(v.ofs), scale(v.scale), ang(v.ang) {}
+	Pose2D::TValue& Pose2D::TValue::operator = (const Value& v) {
+		ofs = v.ofs;
+		scale = v.scale;
+		ang = v.ang;
+		return *this;
+	}
 
 	Pose2D::Pose2D(): _finalMat() {
 		identity();
@@ -111,8 +125,20 @@ namespace spn {
 
 	// ------------------------------ Pose3D ------------------------------
 	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
-	Pose3D::Value::~Value() {
-		_pose._setAsChanged();
+	Pose3D::Value::~Value() { _pose._setAsChanged(); }
+	Pose3D::Value::Value(const Value& v): _pose(v._pose), ofs(v.ofs), scale(v.scale), rot(v.rot) {}
+	Pose3D::Value& Pose3D::Value::operator = (const TValue& tv) {
+		ofs = tv.ofs;
+		scale = tv.scale;
+		rot = tv.rot;
+		return *this;
+	}
+	Pose3D::TValue::TValue(const Value& v): ofs(v.ofs), scale(v.scale), rot(v.rot) {}
+	Pose3D::TValue& Pose3D::TValue::operator = (const Value& v) {
+		ofs = v.ofs;
+		scale = v.scale;
+		rot = v.rot;
+		return *this;
 	}
 
 	Pose3D::Pose3D(): _finalMat() {

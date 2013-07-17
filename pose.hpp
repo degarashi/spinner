@@ -26,9 +26,15 @@ namespace spn {
 			const float* _getPtr() const;
 			void _setAsChanged();
 		public:
+			struct Value;
 			struct TValue {
 				Vec2	ofs, scale;
 				float	ang;
+
+				TValue() = default;
+				TValue(const Value& v);
+				TValue& operator = (const TValue& tv) = default;
+				TValue& operator = (const Value& v);
 			};
 			struct Value {
 				Pose2D	&_pose;
@@ -37,6 +43,9 @@ namespace spn {
 
 				Value(Pose2D& p);
 				~Value();
+				Value(const Value& v);
+				Value& operator = (const TValue& tv);
+				void operator = (const Value& v) = delete;
 			};
 
 			Pose2D();
@@ -80,9 +89,15 @@ namespace spn {
 			const float* _getPtr() const;
 			void _setAsChanged();
 		public:
+			struct Value;
 			struct TValue {
 				Vec3	ofs, scale;
 				Quat	rot;
+
+				TValue() = default;
+				TValue(const Value& v);
+				TValue& operator = (const TValue& tv) = default;
+				TValue& operator = (const Value& v);
 			};
 			struct Value {
 				Pose3D	&_pose;
@@ -91,6 +106,9 @@ namespace spn {
 
 				Value(Pose3D& p);
 				~Value();
+				Value(const Value& v);
+				Value& operator = (const TValue& tv);
+				void operator = (const Value& v) = delete;
 			};
 
 			Pose3D();
