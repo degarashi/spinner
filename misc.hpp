@@ -289,6 +289,15 @@ namespace spn {
 		return IsInRange(val, vExcept-vEps, vExcept+vEps);
 	}
 
+	//! クラメルの公式で使う行列式を計算
+	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2);
+	float CramerDet(const Vec2& v0, const Vec2& v1);
+	//! 3元1次方程式の解をクラメルの公式を用いて計算
+	/*! @param detInv[in] 行列式(v0,v1,v2)の逆数 */
+	Vec3 CramersRule(const Vec3& v0, const Vec3& v1, const Vec3& v2, const Vec3& a0, float detInv);
+	//! 2元1次方程式を計算
+	Vec2 CramersRule(const Vec2& v0, const Vec2& v1, const Vec2& a0, float detInv);
+
 	//! 汎用シングルトン
 	template <typename T>
 	class Singleton {
