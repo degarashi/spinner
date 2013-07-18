@@ -103,8 +103,8 @@
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMUL, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMUL, SET_ARGS0, f)
 				}
-				#define SET_ARGS1(z,n,data)	STOREPS(ma[n], _mm_mul_ps(xmm_matI[n], _mm_load1_ps(&BOOST_PP_CAT(data,n))));
-				#define SET_ARGS2(z,n,dummy) STOREPS(ma[n], _mm_setzero_ps());
+				#define SET_ARGS1(z,n,data)	STORETHIS(n, _mm_mul_ps(xmm_matI[n], _mm_load1_ps(&BOOST_PP_CAT(data,n))));
+				#define SET_ARGS2(z,n,dummy) STORETHIS(n, _mm_setzero_ps());
 				//! 対角線上
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMIN, SET_ARGS1, f)
@@ -165,8 +165,8 @@
 				BOOST_PP_REPEAT(DIM_M, DEF_GETROW, NOTHING)
 
 				// -------------------- operators --------------------
-				#define FUNC(z,n,func)		STOREPS(ma[n], func(LOADPS(ma[n]), r0));
-				#define FUNC2(z,n,func)		STOREPS(ret.ma[n], func(LOADPS(ma[n]), r0));
+				#define FUNC(z,n,func)		STORETHIS(n, func(LOADTHIS(n), r0));
+				#define FUNC2(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHIS(n), r0));
 				#define DEF_OP(op, func) MatT& operator BOOST_PP_CAT(op,=) (float s) { \
 					__m128 r0 = _mm_load1_ps(&s); \
 					BOOST_PP_REPEAT(DIM_M, FUNC, func) \
@@ -182,8 +182,8 @@
 				DEF_OP(*, _mm_mul_ps)
 				DEF_OP(/, _mmDivPs)
 
-				#define FUNC3(z,n,func)		STOREPS(ma[n], func(LOADPS(m.ma[n]), LOADPS(ma[n])));
-				#define FUNC4(z,n,func)		STOREPS(ret.ma[n], func(LOADPS(m.ma[n]), LOADPS(ma[n])));
+				#define FUNC3(z,n,func)		STORETHIS(n, func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
+				#define FUNC4(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
 				#define DEF_OPM(op, func) MatT& operator BOOST_PP_CAT(op,=) (const MatT& m) { \
 					BOOST_PP_REPEAT(DIM_M, FUNC3, func) \
 					return *this; } \
@@ -513,17 +513,17 @@
 				return !(clmFlagT & clmFlagF);
 			}
 			void MT::rowSwap(int r0, int r1) {
-				__m128 xm0 = LOADPS(ma[r0]),
-						xm1 = LOADPS(ma[r1]);
-				STOREPS(ma[r1], xm0);
-				STOREPS(ma[r0], xm1);
+				__m128 xm0 = LOADTHIS(r0),
+						xm1 = LOADTHIS(r1);
+				STORETHIS(r1, xm0);
+				STORETHIS(r0, xm1);
 			}
 			void MT::rowMul(int r0, float s) {
-				STOREPS(ma[r0], _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)));
+				STORETHIS(r0, _mm_mul_ps(LOADTHIS(r0), _mm_load1_ps(&s)));
 			}
 			void MT::rowMulAdd(int r0, float s, int r1) {
-				__m128 xm0 = _mm_mul_ps(LOADPS(ma[r0]), _mm_load1_ps(&s)),
-						xm1 = LOADPS(ma[r1]);
+				__m128 xm0 = _mm_mul_ps(LOADTHIS(r0), _mm_load1_ps(&s)),
+						xm1 = LOADTHIS(r1);
 				STORETHIS(r1, _mm_add_ps(xm0, xm1));
 			}
 			void MT::clmSwap(int c0, int c1) {
@@ -542,10 +542,10 @@
 				setColumn(c1, clm0);
 			}
 			bool MT::isZeroRow(int n) const {
-				return _mmIsZero(LOADPSZ(ma[n]));
+				return _mmIsZero(LOADTHISZ(n));
 			}
 			bool MT::isZeroRowEps(int n) const {
-				return _mmIsZeroEps(LOADPSZ(ma[n]));
+				return _mmIsZeroEps(LOADTHISZ(n));
 			}
 			bool MT::isZero() const {
 				__m128 accum = _mm_setzero_ps();
@@ -555,12 +555,12 @@
 				return _mm_movemask_ps(accum) == 0;
 			}
 			void MT::rowNormalize() {
-				__m128 xm0 = LOADPS(ma[0]);
+				__m128 xm0 = LOADTHIS(0);
 				for(int i=1 ; i<height ; i++)
-					xm0 = _mm_max_ps(xm0, LOADPS(ma[i]));
+					xm0 = _mm_max_ps(xm0, LOADTHIS(i));
 				RCP22BIT(xm0)
 				for(int i=0 ; i<height ; i++)
-					STOREPS(ma[i], _mm_mul_ps(LOADTHIS(i), xm0));
+					STORETHIS(i, _mm_mul_ps(LOADTHIS(i), xm0));
 			}
 			int MT::rowReduce() {
 				// rowNormalize();
@@ -722,7 +722,7 @@
 					xm[1] = _mm_unpackhi_ps(xmt[0], xmt[1]);
 					xm[2] = _mm_unpacklo_ps(xmt[2], xmt[3]);
 					xm[3] = _mm_unpackhi_ps(xmt[2], xmt[3]);
-					#define BOOST_PP_LOCAL_MACRO(n) STOREPS(ret.ma[n], xm[n]);
+					#define BOOST_PP_LOCAL_MACRO(n) STORETHISPS(ret.ma[n], xm[n]);
 					#define BOOST_PP_LOCAL_LIMITS (0,DIM_N)
 					#include BOOST_PP_LOCAL_ITERATE()
 				#endif
