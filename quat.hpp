@@ -105,9 +105,14 @@
 			MAT33 asMat33() const;
 			MAT44 asMat44() const;
 			EQT asExpQuat() const;
+
+			friend std::ostream& operator << (std::ostream&, const QuatT&);
 		};
 		using BOOST_PP_CAT(ALIGNA, Quat) = QT;
 	#elif BOOST_PP_ITERATION_FLAGS() == 1
+		std::ostream& operator << (std::ostream& os, const QT& q) {
+			return os << "Quat: [" << q.x << ", " << q.y << ", " << q.z << ", " << q.w << ']';
+		}
 		QT::QuatT(const QuatT<false>& q) { STORETHIS(LOADPSU(q.m)); }
 		QT::QuatT(const QuatT<true>& q) { STORETHIS(LOADPS(q.m)); }
 		QT::QuatT(_TagIdentity) { STORETHIS(_mm_setr_ps(0,0,0,1)); }

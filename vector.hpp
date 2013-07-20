@@ -39,7 +39,7 @@
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
 		namespace spn {
 			template <>
-			struct Vec : boost::equality_comparable<VT>, boost::multipliable<VT> {
+			struct Vec : boost::equality_comparable<VT> {
 				enum { width = DIM };
 				using AVec = VecT<DIM,true>;
 				using UVec = VecT<DIM,false>;
@@ -49,6 +49,7 @@
 					};
 					float m[DIM];
 				};
+
 				// -------------------- ctor --------------------
 				VecT() = default;
 				explicit VecT(__m128 r);

@@ -122,6 +122,11 @@ namespace spn {
 		_angle = t.ang;
 		_setAsChanged();
 	}
+	std::ostream& operator << (std::ostream& os, const Pose2D& ps) {
+		return os << "Pose2D [ offset: " << ps._ofs << std::endl
+				<< "angle: " << ps._angle << std::endl
+				<< "scale: " << ps._scale << ']';
+	}
 
 	// ------------------------------ Pose3D ------------------------------
 	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
@@ -266,5 +271,10 @@ namespace spn {
 	Pose3D& Pose3D::operator = (const Pose3D& ps) {
 		std::memcpy(this, &ps, sizeof(ps));
 		return *this;
+	}
+	std::ostream& operator << (std::ostream& os, const Pose3D& ps) {
+		return os << "Pose3D [ offset:" << ps._ofs << std::endl
+				<< "rotation: " << ps._rot << std::endl
+				<< "scale: " << ps._scale << ']';
 	}
 }

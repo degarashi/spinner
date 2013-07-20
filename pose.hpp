@@ -70,7 +70,9 @@ namespace spn {
 			void apply(const TValue& t);
 
 			Pose2D& operator = (const Pose2D& ps);
+			friend std::ostream& operator << (std::ostream&, const Pose2D&);
 	};
+	std::ostream& operator << (std::ostream& os, const Pose2D& ps);
 
 	//! 3次元姿勢クラス
 	class Pose3D : public CheckAlign<16,Pose3D> {
@@ -143,5 +145,7 @@ namespace spn {
 			void apply(const TValue& t);
 
 			Pose3D& operator = (const Pose3D& ps);
+			friend std::ostream& operator << (std::ostream&, const Pose3D&);
 	};
+	std::ostream& operator << (std::ostream& os, const Pose3D& ps);
 }
