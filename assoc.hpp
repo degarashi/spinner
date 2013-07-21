@@ -44,12 +44,14 @@ namespace spn {
 			void pop_front() {
 				_vec.erase(_vec.begin());
 			}
+			//! pop_frontと同じだが、消去される要素の値を返す
 			T pop_frontR() {
 				T ret(std::move(_vec.front()));
 				_vec.erase(_vec.begin());
 				return std::move(ret);
 			}
 			void pop_back() { _vec.pop_back(); }
+			//! pop_backと同じだが、消去される要素の値を返す
 			T pop_backR() {
 				T ret(std::move(_vec.back()));
 				_vec.pop_back();

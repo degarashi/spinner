@@ -1,4 +1,5 @@
-/*! 予め次のマクロを定義してからインクルードする
+/*! vector.hppやmatrix.hppで使用するレジスタ読み書きマクロ定義
+	予め次のマクロを定義してからインクルードする
 	DIM:			次元(number)
 	ALIGN:			アラインメント(0 or 1)
 	DEFINE_MATRIX:	行列用なら定義 */
@@ -7,6 +8,7 @@
 #ifndef DEFINE_MATRIX
 	//! 自身のベクトル要素をレジスタに読み出し
 	#define LOADTHIS()		BASE_LOADPS(NOTHING, (this->m))
+	//! LOADTHISと同じだが、余り要素はゼロで埋める
 	#define LOADTHISZ()		BASE_LOADPS(Z, (this->m))
 	//! レジスタを自分のメモリ領域へ書き出し
 	#define STORETHIS(r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN), DIM))(this->m,r)
@@ -19,6 +21,7 @@
 
 //! 同次元のベクトルをレジスタへ書き出し
 #define STOREPS(ptr,r)	BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(A, DIM))(ptr,r)
+//! STOREPSのUnAligned版
 #define STOREPSU(ptr,r)	BOOST_PP_CAT(STOREPS_, DIM)(ptr,r)
 //! 自身と同じアラインメント指定の要素を読み出し
 #define LOADTHISPS(ptr)		BASE_LOADPS(NOTHING, ptr)

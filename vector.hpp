@@ -189,7 +189,7 @@
 		// 同次元ベクトルとの演算を定義
 		namespace spn {
 			VT::VecT(__m128 r){
-				BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(ALIGN)), DIM)(m, r);
+				STORETHIS(r);
 			}
 			VT::VecT(float a) {
 				STORETHIS(_mm_load1_ps(&a));
@@ -204,7 +204,7 @@
 				return LOADTHISZ();
 			}
 			VT& VT::operator = (__m128 r) {
-				STOREPS(m, r);
+				STORETHIS(r);
 				return *this;
 			}
 			float VT::_sumup(__m128 xm) {

@@ -11,7 +11,7 @@ namespace spn {
 		int32_t t_exp = int32_t(fp.exp) - 127 + 15;
 		// 負数ならビットが全部1になり、それ以外は全部0
 		int32_t mask = (t_exp >> 31);
-		
+
 		// 指数のマイナス飽和
 		t_exp &= ~mask;
 		// 指数のプラス飽和

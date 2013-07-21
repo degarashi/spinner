@@ -181,6 +181,7 @@ namespace spn {
 		BitSubT<N> at() {
 			return BitSubT<N>(_word);
 		}
+		//! ビットフィールド値取得
 		template <int N>
 		Word at() const {
 			return BitSubT<N>::get(_word);
@@ -208,11 +209,13 @@ namespace spn {
 		static void Set(uint32_t& val, uint32_t flag) {
 			val |= flag;
 		}
+		//! ビットチェックした結果を返し、ビットは消去する
 		static bool ChClear(uint32_t& val, uint32_t flag) {
 			bool bRet = Check(val, flag);
 			Clear(val, flag);
 			return bRet;
 		}
+		//! 入力値の一番左のビットだけを残す
 		static uint32_t LowClear(uint32_t x) {
 			x = x | (x >> 1);
 			x = x | (x >> 2);
@@ -221,6 +224,7 @@ namespace spn {
 			x = x | (x >>16);
 			return x & ~(x>>1);
 		}
+		//! ビットが幾つ立っているか数える
 		static int Count(uint32_t v) {
 			uint32_t tmp = v & 0xaaaaaaaa;
 			v &= 0x55555555;
@@ -239,6 +243,7 @@ namespace spn {
 			v = v + (tmp >> 16);
 			return v;
 		}
+		//! 入力値が0なら0, それ以外は~0を返す
 		static int32_t ZeroOrFull(int32_t v) {
 			return (v | -v) >> 31;
 		}
@@ -269,15 +274,19 @@ namespace spn {
 			}
 		#else
 			const static char NLRZ_TABLE[33];
+			//! most significant bit を取得
+			/*! もし入力値が0の場合は0を返す */
 			static uint32_t MSB_N(uint32_t x) {
 				return NLRZ_TABLE[0x0aec7cd2U * LowClear(x) >> 27];
 			}
+			//! least significant bit を取得
+			/*! もし入力値が0の場合は31を返す */
 			static uint32_t LSB_N(uint32_t x) {
 				return NLRZ_TABLE[0x0aec7cd2U * (x & -x) >> 27];
 			}
 		#endif
 
-		// エンディアン変換
+		//! 32bit値のエンディアン変換 [little -> bit]
 		static uint32_t LtoB32(uint32_t v) {
 			uint32_t a = v<<24,
 				b = (v&0xff00)<<8,
@@ -285,6 +294,7 @@ namespace spn {
 				d = v>>24;
 			return a|b|c|d;
 		}
+		//! 16bit値のエンディアン変換 [little -> bit]
 		static uint32_t LtoB16(uint32_t v) {
 			uint32_t a = (v>>8)&0xff,
 				b = (v&0xff)<<8;

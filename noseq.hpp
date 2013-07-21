@@ -46,6 +46,7 @@ namespace spn {
 			return *this;
 		}
 	};
+	// TODO: 間に合わせの名前なので後でちゃんとした名前にする
 	template <class T>
 	struct TheType {
 		using T2 = typename std::remove_reference<T>::type;
@@ -190,6 +191,7 @@ namespace spn {
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
 
+			// イテレータの範囲はフリー要素を勘定に入れる
 			iterator begin() { return _array.begin(); }
 			iterator end() { return _array.end()-_nFree; }
 			reverse_iterator rbegin() { return _array.rbegin()+_nFree; }

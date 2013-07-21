@@ -29,7 +29,7 @@ namespace spn {
 		using MStack = std::vector<MT>;
 		MStack	_mstk;
 		MT		_curMat;
-		
+
 		public:
 			MatStack() {
 				clear();
@@ -70,7 +70,7 @@ namespace spn {
 			const MT& top() const {
 				return _curMat;
 			}
-			
+
 			//! popと同時にfrontを出力
 			MatStack& operator >> (MT& dst) {
 				dst = top();
