@@ -315,7 +315,7 @@
 
 			template <bool A>
 			bool VT::operator == (const VecT<DIM,A>& v) const {
-				__m128 r0 = _mm_cmpeq_ps(LOADTHIS(), v.loadPS());
+				__m128 r0 = _mm_cmpeq_ps(LOADTHISZ(), v.loadPSZ());
 				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(1,0,3,2)));
 				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,2,3)));
 				return _mm_cvttss_si32(r0) != 0;
