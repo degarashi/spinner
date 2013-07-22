@@ -39,6 +39,8 @@ int main(int argc, char **argv) {
 	auto id1 = ls.add(512);
 	auto id2 = ls.add(1024);
 	ls.rem(id1);
+	auto re = ls.alloc();
+	re.second = 1.234f;
 	for(auto& p : ls) {
 		std::cout << p << std::endl;
 	}

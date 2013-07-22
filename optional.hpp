@@ -42,7 +42,6 @@ namespace spn {
 		const T*& castCT() const { return _buffer; }
 		void dtor() {}
 	};
-
 	//! noseq_listでboost::optionalを使おうとしたらよくわからないエラーが出たので自作してしまった
 	template <class T>
 	class Optional {
@@ -58,6 +57,11 @@ namespace spn {
 			}
 
 		public:
+			const static struct _AsInitialized {} AsInitialized;
+			//! コンストラクタは呼ばないけど初期化された物として扱う
+			/*! ユーザーが自分でコンストラクタを呼ばないとエラーになる */
+			Optional(_AsInitialized): _bInit(true) {}
+
 			Optional(): _bInit(false) {}
 			Optional(boost::none_t): _bInit(false) {}
 			template <class T2>
@@ -128,5 +132,13 @@ namespace spn {
 				}
 				return *this;
 			}
+			Optional& operator = (_AsInitialized) noexcept {
+				if(_bInit)
+					_release();
+				_bInit = true;
+				return *this;
+			}
 	};
+	template <class T>
+	const typename Optional<T>::_AsInitialized Optional<T>::AsInitialized{};
 }

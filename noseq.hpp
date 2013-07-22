@@ -183,11 +183,17 @@ namespace spn {
 				} else
 					_remList.push_back(uindex);
 			}
-			decltype(*_array[0].udata.value) get(ID uindex) {
+			using Ref = decltype(*_array[0].udata.value);
+			//! 要素の領域を先に取得
+			std::pair<ID,Ref> alloc() {
+				ID id = add(UData::OPValue::AsInitialized);
+				return std::pair<ID,Ref>(id, get(id));
+			}
+			Ref get(ID uindex) {
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
 				return *_array[idx].udata.value;
 			}
-			const decltype(*_array[0].udata.value) get(ID uindex) const {
+			const Ref get(ID uindex) const {
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
 
