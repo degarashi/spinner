@@ -33,6 +33,8 @@ namespace spn {
 
 				TValue() = default;
 				TValue(const Value& v);
+				TValue(const Pose2D& p);
+				TValue& operator = (const Pose2D& p);
 				TValue& operator = (const TValue& tv) = default;
 				TValue& operator = (const Value& v);
 			};
@@ -98,8 +100,10 @@ namespace spn {
 
 				TValue() = default;
 				TValue(const Value& v);
+				TValue(const Pose3D& p);
 				TValue& operator = (const TValue& tv) = default;
 				TValue& operator = (const Value& v);
+				TValue& operator = (const Pose3D& p);
 			};
 			struct Value {
 				Pose3D	&_pose;

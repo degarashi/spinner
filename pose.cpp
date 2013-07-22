@@ -18,6 +18,13 @@ namespace spn {
 		ang = v.ang;
 		return *this;
 	}
+	Pose2D::TValue::TValue(const Pose2D& p): ofs(p.getOffset()), scale(p.getScale()), ang(p.getAngle()) {}
+	Pose2D::TValue& Pose2D::TValue::operator = (const Pose2D& p) {
+		ofs = p.getOffset();
+		scale = p.getScale();
+		ang = p.getAngle();
+		return *this;
+	}
 
 	Pose2D::Pose2D(): _finalMat() {
 		identity();
@@ -143,6 +150,13 @@ namespace spn {
 		ofs = v.ofs;
 		scale = v.scale;
 		rot = v.rot;
+		return *this;
+	}
+	Pose3D::TValue::TValue(const Pose3D& p): ofs(p.getOffset()), scale(p.getScale()), rot(p.getRot()) {}
+	Pose3D::TValue& Pose3D::TValue::operator = (const Pose3D& p) {
+		ofs = p.getOffset();
+		scale = p.getScale();
+		rot = p.getRot();
 		return *this;
 	}
 
