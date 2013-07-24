@@ -53,6 +53,7 @@ namespace spn {
 			Pose2D();
 			Pose2D(const Pose2D& p);
 			Pose2D(const Vec2& pos, float ang, const Vec2& sc);
+			Pose2D(const TValue& tv);
 			void identity();
 
 			void setAll(const Vec2& ofs, float ang, const Vec2& sc);
@@ -72,6 +73,7 @@ namespace spn {
 			void apply(const TValue& t);
 
 			Pose2D& operator = (const Pose2D& ps);
+			Pose2D& operator = (const TValue& tv);
 			friend std::ostream& operator << (std::ostream&, const Pose2D&);
 	};
 	std::ostream& operator << (std::ostream& os, const Pose2D& ps);
@@ -120,6 +122,7 @@ namespace spn {
 			Pose3D();
 			Pose3D(const Pose3D& p);
 			Pose3D(const AVec3& pos, const AQuat& rot, const AVec3& sc);
+			Pose3D(const TValue& tv);
 			void identity();
 
 			// 各種変数取得
@@ -149,6 +152,7 @@ namespace spn {
 			void apply(const TValue& t);
 
 			Pose3D& operator = (const Pose3D& ps);
+			Pose3D& operator = (const TValue& tv);
 			friend std::ostream& operator << (std::ostream&, const Pose3D&);
 	};
 	std::ostream& operator << (std::ostream& os, const Pose3D& ps);

@@ -38,16 +38,18 @@ namespace spn {
 		_angle = ang;
 		_scale = sc;
 	}
+	Pose2D::Pose2D(const TValue& tv): _ofs(tv.ofs), _scale(tv.scale), _angle(tv.ang), _accum(std::rand()), _rflag(PRF_ALL) {}
+
 	void Pose2D::identity() {
 		_finalMat.identity();
 		_accum = std::rand();
-		_angle = 0;
+		_angle = _rflag = 0;
 		_ofs = Vec2(0);
 		_scale = Vec2(1);
-		_setAsChanged();
 	}
 	void Pose2D::_setAsChanged() {
 		_rflag = PRF_ALL;
+		++_accum;
 	}
 	const Vec2& Pose2D::getOffset() const {
 		return _ofs;
@@ -60,6 +62,13 @@ namespace spn {
 	}
 	Pose2D& Pose2D::operator = (const Pose2D& ps) {
 		std::memcpy(this, &ps, sizeof(ps));
+		return *this;
+	}
+	Pose2D& Pose2D::operator = (const TValue& tv) {
+		_ofs = tv.ofs;
+		_scale = tv.scale;
+		_angle = tv.ang;
+		_setAsChanged();
 		return *this;
 	}
 
@@ -172,7 +181,10 @@ namespace spn {
 		_rot = rot;
 		_scale = sc;
 	}
+	Pose3D::Pose3D(const TValue& tv): _ofs(tv.ofs), _rot(tv.rot), _scale(tv.scale), _rflag(PRF_ALL) {}
+
 	void Pose3D::identity() {
+		_rflag = 0;
 		_accum = std::rand();
 		_finalMat.identity();
 		_rot.identity();
@@ -181,7 +193,7 @@ namespace spn {
 		_setAsChanged();
 	}
 	void Pose3D::_setAsChanged() {
-		_rflag = 0;
+		_rflag = PRF_ALL;
 		++_accum;
 	}
 
@@ -284,6 +296,13 @@ namespace spn {
 	}
 	Pose3D& Pose3D::operator = (const Pose3D& ps) {
 		std::memcpy(this, &ps, sizeof(ps));
+		return *this;
+	}
+	Pose3D& Pose3D::operator = (const TValue& tv) {
+		_ofs = tv.ofs;
+		_rot = tv.rot;
+		_scale = tv.scale;
+		_setAsChanged();
 		return *this;
 	}
 	std::ostream& operator << (std::ostream& os, const Pose3D& ps) {
