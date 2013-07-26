@@ -81,6 +81,7 @@ namespace spn {
 	template <class T, class IDType=unsigned int>
 	class noseq_list {
 		using ID = typename std::make_unsigned<IDType>::type;
+		constexpr static ID INVALID_ID = std::numeric_limits<ID>::max();
 		using RT = typename std::remove_reference<T>::type;
 		//! ユーザーの要素を格納
 		struct UData {
@@ -155,6 +156,7 @@ namespace spn {
 				return ret;
 			}
 			void rem(ID uindex) {
+				assert(uindex != INVALID_ID);
 				if(!_bRemoving) {
 					_bRemoving = true;
 
@@ -190,10 +192,12 @@ namespace spn {
 				return std::pair<ID,Ref>(id, get(id));
 			}
 			Ref get(ID uindex) {
+				assert(uindex != INVALID_ID);
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
 				return *_array[idx].udata.value;
 			}
 			const Ref get(ID uindex) const {
+				assert(uindex != INVALID_ID);
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
 
