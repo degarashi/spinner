@@ -1,3 +1,4 @@
+#pragma once
 //! classes of floating-point 16bit
 
 namespace spn {

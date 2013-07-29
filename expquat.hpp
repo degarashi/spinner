@@ -10,7 +10,7 @@
 		#include BOOST_PP_ITERATE()
 		#undef INCLUDE_EXPQUAT_LEVEL
 	#endif
-	
+
 #elif BOOST_PP_ITERATION_DEPTH() == 1
 	#define ALIGN	BOOST_PP_ITERATION()
 	#define ALIGNA	AFLAG(ALIGN)
@@ -19,10 +19,10 @@
 	#define QT		QuatT<ALIGNB>
 	#define EQT		ExpQuatT<ALIGNB>
 	#define	VEC3	VecT<3, ALIGNB>
-	
+
 	#define DIM		3
 	#include "local_macro.hpp"
-	
+
 	namespace spn {
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		template <>
@@ -40,7 +40,7 @@
 			ExpQuatT(float x, float y, float z);
 			__m128 loadPS() const;
 			QT asQuat() const;
-			
+
 			#define DEF_OP0(z,align,op)		ExpQuatT operator op (const ExpQuatT<BOOLNIZE(align)>& q) const; \
 							ExpQuatT& operator BOOST_PP_CAT(op,=) (const ExpQuatT<BOOLNIZE(align)>& q);
 			#define DEF_OP(op)	BOOST_PP_REPEAT(2, DEF_OP0, op)
@@ -69,7 +69,7 @@
 		template EQT::ExpQuatT(const QuatT<false>&);
 		template EQT::ExpQuatT(const QuatT<true>&);
 		__m128 EQT::loadPS() const { return LOADTHIS(); }
-		
+
 		EQT::ExpQuatT(float fx, float fy, float fz) {
 			x = fx;
 			y = fy;
@@ -89,7 +89,7 @@
 		#define DEF_OP1(dummy,align,ops)	DEF_OP0(align,BOOST_PP_TUPLE_ELEM(0,ops), BOOST_PP_TUPLE_ELEM(1,ops))
 		BOOST_PP_REPEAT(2,DEF_OP1,(+,_mm_add_ps))
 		BOOST_PP_REPEAT(2,DEF_OP1,(-,_mm_sub_ps))
-		
+
 		EQT EQT::operator * (float s) const {
 			EQT eq;
 			STORETHISPS(eq.m, _mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
@@ -109,7 +109,7 @@
 		float EQT::len_sq() const {
 			__m128 xm = LOADTHISZ();
 			SUMVEC(xm)
-			
+
 			float ret;
 			_mm_store_ss(&ret, xm);
 			return ret;

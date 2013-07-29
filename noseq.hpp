@@ -2,6 +2,7 @@
 #include <vector>
 #include <type_traits>
 #include <algorithm>
+#define BOOST_PP_VARIADICS 1
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 #include "type.hpp"

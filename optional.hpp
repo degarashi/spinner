@@ -1,3 +1,4 @@
+#pragma once
 
 namespace spn {
 	template <class T>
