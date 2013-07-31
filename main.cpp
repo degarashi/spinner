@@ -67,8 +67,7 @@ int main(int argc, char **argv) {
 		using Hdl = ResMgrN<MyClass, MyMgr>::AnotherLHandle<MyDerived>;
 		LHdl doit() {
 			auto ldhl = ResMgrN<MyClass, MyMgr>::acquire(MyClass{123,321});
-			Hdl hl = Cast<MyDerived>(std::move(ldhl));
-			return SHdl(hl.get());
+			return ldhl;
 		}
 	};
 	MyMgr mm;

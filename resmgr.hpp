@@ -169,8 +169,8 @@ namespace spn {
 	template <class MGR, class DATA = typename MGR::data_type>
 	class SHandleT : public SHandle {
 		using mgr_data = typename MGR::data_type;
-		using DownConv = std::is_convertible<mgr_data, DATA>;
-		using UpConv = std::is_convertible<DATA, mgr_data>;
+		using DownConv = std::is_convertible<DATA, mgr_data>;
+		using UpConv = std::is_convertible<mgr_data, DATA>;
 
 		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
 		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
@@ -179,8 +179,9 @@ namespace spn {
 		friend class HdlLock<SHandleT>;
 		private:
 			// データ型をダウンコンバートする場合はMGRからしか許可しない
-			template <class DAT, class = typename std::enable_if<DownConv::value>::type,
-								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
+			template <class DAT,
+						class = typename std::enable_if<std::is_convertible<DATA, DAT>::value>::type,
+						class = typename std::enable_if<!std::is_same<DAT, DATA>::value>::type>
 			SHandleT(const SHandleT<MGR,DAT>& sh): SHandle(sh) {}
 
 		public:
@@ -190,8 +191,9 @@ namespace spn {
 			using SHandle::SHandle;
 			SHandleT() = default;
 			SHandleT(const SHandle& hdl): SHandle(hdl) {}
-			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップコンバート可能ならば暗黙的な変換を許可する
-			template <class DAT, class = typename std::enable_if<UpConv::value>::type>
+			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
+			template <class DAT,
+					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
 			SHandleT(const SHandleT<MGR, DAT>& hdl): SHandle(hdl) {}
 
 			void release() { MGR::_ref().release(*this); }
@@ -216,8 +218,8 @@ namespace spn {
 	template <class MGR, class DATA = typename MGR::data_type>
 	class WHandleT : public WHandle {
 		using mgr_data = typename MGR::data_type;
-		using DownConv = std::is_convertible<mgr_data, DATA>;
-		using UpConv = std::is_convertible<DATA, mgr_data>;
+		using DownConv = std::is_convertible<DATA, mgr_data>;
+		using UpConv = std::is_convertible<mgr_data, DATA>;
 
 		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
 		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
@@ -225,8 +227,9 @@ namespace spn {
 		friend MGR;
 		private:
 			// データ型をダウンコンバートする場合はMGRからしか許可しない
-			template <class DAT, class = typename std::enable_if<DownConv::value>::type,
-								class = typename std::enable_if<!std::is_same<DATA,mgr_data>::value>::type>
+			template <class DAT,
+						class = typename std::enable_if<std::is_convertible<DATA, DAT>::value>::type,
+						class = typename std::enable_if<!std::is_same<DAT, DATA>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 		public:
 			using SHdl = SHandleT<MGR, DATA>;
@@ -235,8 +238,9 @@ namespace spn {
 			using WHandle::WHandle;
 			WHandleT() = default;
 			WHandleT(const WHandle& wh): WHandle(wh) {}
-			// data_typeが異なっていてもManagerが同じでMGR::data_typeへアップコンバート可能ならば暗黙的な変換を許可する
-			template <class DAT, class = typename std::enable_if<UpConv::value>::type>
+			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
+			template <class DAT,
+					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 
 			//! リソース参照
@@ -294,7 +298,7 @@ namespace spn {
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
 			using LHdl = HdlLock<SHdl>;
-		protected:
+		public:
 			struct Entry {
 				DAT						data;
 				uint32_t				count;
@@ -438,8 +442,9 @@ namespace spn {
 				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
 				return LHdl(sh);
 			}
+			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
-			bool releaseWithCallback(SHandle sh, CB cb=[](Entry&){}) {
+			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
 				auto& ent = _refSH(sh);
 				#ifdef DEBUG
 					// 簡易マジックナンバーチェック
@@ -506,16 +511,22 @@ namespace spn {
 			template <class NDATA>
 			using AnotherLHandle = HdlLock<AnotherSHandle<NDATA>>;
 
+		protected:
 			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
 			template <class NDATA, template<class,class> class Handle, class DATA>
 			static Handle<ThisType,NDATA> Cast(Handle<ThisType, DATA>&& h) {
 				// Handleのprivateなコンストラクタを経由して変換
-				return Handle<ThisType,NDATA>(std::forward<Handle<ThisType, DATA>>(h));
-			}
+				return Handle<ThisType,NDATA>(std::move(h)); }
+			template <class NDATA, template<class,class> class Handle, class DATA>
+			static Handle<ThisType,NDATA> Cast(const Handle<ThisType, DATA>& h) {
+				return Handle<ThisType,NDATA>(h); }
+
 			template <class NDATA, template<class> class HL, class DATA>
 			static HL<AnotherSHandle<NDATA>> Cast(HL<AnotherSHandle<DATA>>&& lh) {
-				return HL<AnotherSHandle<NDATA>>(std::forward<HL<AnotherSHandle<DATA>>>(lh));
-			}
+				return HL<AnotherSHandle<NDATA>>(std::move(lh)); }
+			template <class NDATA, template<class> class HL, class DATA>
+			static HL<AnotherSHandle<NDATA>> Cast(const HL<AnotherSHandle<DATA>>& lh) {
+				return HL<AnotherSHandle<NDATA>>(lh); }
 	};
 	//! 名前付きリソース (with anonymous)
 	template <class DAT, class DERIVED>
@@ -570,7 +581,7 @@ namespace spn {
 
 			template <class KEY, class... Args>
 			LHdl replace_emplace(KEY&& key, Args&&... args) {
-				auto fn = [&](){ return base_type::acquire(std::forward<Args>(args)...); };
+				auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
 				return _replace(std::forward<KEY>(key), fn);
 			}
 			//! 同じ要素が存在したら置き換え
@@ -589,7 +600,7 @@ namespace spn {
 			}
 			template <class KEY, class... Args>
 			std::pair<LHdl,bool> emplace(KEY&& key, Args&&... args) {
-				auto fn = [&](){ return base_type::acquire(std::forward<Args>(args)...); };
+				auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
 				return _acquire(std::forward<KEY>(key), fn);
 			}
 
