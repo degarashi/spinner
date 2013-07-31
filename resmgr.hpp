@@ -528,6 +528,9 @@ namespace spn {
 			static HL<AnotherSHandle<NDATA>> Cast(const HL<AnotherSHandle<DATA>>& lh) {
 				return HL<AnotherSHandle<NDATA>>(lh); }
 	};
+	template <class DAT, class DERIVED>
+	const std::function<void (typename ResMgrA<DAT,DERIVED>::Entry&)> ResMgrA<DAT,DERIVED>::cs_defCB = [](Entry&){};
+
 	//! 名前付きリソース (with anonymous)
 	template <class DAT, class DERIVED>
 	class ResMgrN : public ResMgrA<ResWrap<DAT>, DERIVED> {
