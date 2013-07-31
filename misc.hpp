@@ -7,8 +7,11 @@
 #include <cwchar>
 #include <stack>
 #include <deque>
-#include <atomic>
-#include <thread>
+// #include <atomic>
+// #include <thread>
+#include <malloc.h>
+#include <cstdlib>
+#include <memory>
 
 //! 32bitの4文字チャンクを生成
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
@@ -36,7 +39,8 @@ namespace spn {
 		return _RRef<T&&>(std::forward<T>(t));
 	}
 
-	//! スピンロックによるmutex
+	// MinGWだとstd::threadが動かないらしいのでコメントアウト
+/*	//! スピンロックによるmutex
 	class Synchro {
 		private:
 			using AThID = std::atomic<std::thread::id>;
@@ -71,7 +75,7 @@ namespace spn {
 				if(--_iLockNum == 0)
 					_abLock.store(false, std::memory_order_relaxed);
 			}
-	};
+	};*/
 
 	//! 何もしないダミーmutex
 	class PseudoSynch {
@@ -314,13 +318,13 @@ namespace spn {
 	//! PlusMinus1(float)の引数がunsigned intバージョン
 	float inline PlusMinus1(unsigned int val) { return PlusMinus1(static_cast<int>(val)); }
 
-	template <class T>
+/*	template <class T>
 	T* AAllocBase(int nAlign, int n) {
 		void* ptr;
-		if(posix_memalign(&ptr, nAlign, sizeof(T)*n) != 0)
+		if(_(&ptr, nAlign, sizeof(T)*n) != 0)
 			throw std::bad_alloc();
 		return reinterpret_cast<T*>(ptr);
-	}
+	} */
 	/*! \param[in] nAlign	バイト境界 (2byte以上128byte以下)
 		\param[in] size		確保したいバイト数 */
 	inline void* AlignedAlloc(size_t nAlign, size_t size) {
@@ -371,14 +375,14 @@ namespace spn {
 	T* AAlloc(int n, std::initializer_list<A>&& w) {
 		return new(AlignedAlloc(n, sizeof(T))) T(std::forward<std::initializer_list<A>>(w));
 	}
-	//! バイトアラインメント付きの配列メモリ確保
+/*	//! バイトアラインメント付きの配列メモリ確保
 	template <class T>
 	T* AArray(int nAlign, int n) {
 		T* ptr = AAllocBase<T>(nAlign, n);
 		for(int i=0 ; i<n ; i++)
 			new(ptr+i) T();
 		return ptr;
-	}
+	} */
 	template <class T>
 	void DefaultDelete(void* ptr) {
 		delete reinterpret_cast<T*>(ptr);
