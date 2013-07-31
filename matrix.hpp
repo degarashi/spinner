@@ -110,6 +110,7 @@
 					BOOST_PP_REPEAT(DMIN, SET_ARGS1, f)
 					BOOST_PP_REPEAT_FROM_TO(DMIN, DIM_M, SET_ARGS2, NOTHING)
 				}
+				#undef SET_ARGS2
 
 				// -------------------- query values --------------------
 				#if ALIGN==1 && BOOST_PP_LESS(DIM_N,4)==1
@@ -181,6 +182,7 @@
 				DEF_OP(-, _mm_sub_ps)
 				DEF_OP(*, _mm_mul_ps)
 				DEF_OP(/, _mmDivPs)
+				#undef DEF_OP
 
 				#define FUNC3(z,n,func)		STORETHIS(n, func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
 				#define FUNC4(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
@@ -296,14 +298,16 @@
 				// SEQ_MATDEFの組み合わせを生成 + (Aligned | UnAligned)
 				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)() const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
-
+				#undef DEF_CONV
 				//! 行列との積算 (3 operands)
 				#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
+				#undef DEF_MUL
 				//! 行列との積算 (2 operands)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
 				MT& operator = (const MT& m);
+				#undef DEF_MULE
 
 				//! 行列との積算 (右から掛ける)
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
@@ -352,6 +356,7 @@
 			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 				return MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
 			}
+			#undef SET_ARGS2
 			#if DMIN == 2
 				MT MT::Rotation(float ang) {
 					float s = std::sin(ang),
@@ -826,12 +831,14 @@
 				auto tmpM = BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(transposition().convert, AFLAG(ALIGN)), DIM_N), DIM_N)(); \
 				return v * tmpM; }
 			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
+			#undef DEF_MULOP
 		}
 	#endif
 	#include "local_unmacro.hpp"
 	#undef TUP
 	#undef DIM_M
 	#undef DIM_N
+	#undef DIM
 	#undef ALIGN
 	#undef ALIGNB
 	#undef ALIGN16

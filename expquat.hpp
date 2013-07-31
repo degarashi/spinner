@@ -46,10 +46,14 @@
 			#define DEF_OP(op)	BOOST_PP_REPEAT(2, DEF_OP0, op)
 			DEF_OP(+)
 			DEF_OP(-)
+			#undef DEF_OP0
+			#undef DEF_OP
 			#define DEF_OPS(op)	ExpQuatT operator op (float s) const; \
 							ExpQuatT& operator BOOST_PP_CAT(op,=) (float s);
 			DEF_OPS(*)
 			DEF_OPS(/)
+			#undef DEF_OPS
+			#undef DEF_OP
 
 			float len_sq() const;
 			float length() const;
@@ -89,6 +93,8 @@
 		#define DEF_OP1(dummy,align,ops)	DEF_OP0(align,BOOST_PP_TUPLE_ELEM(0,ops), BOOST_PP_TUPLE_ELEM(1,ops))
 		BOOST_PP_REPEAT(2,DEF_OP1,(+,_mm_add_ps))
 		BOOST_PP_REPEAT(2,DEF_OP1,(-,_mm_sub_ps))
+		#undef DEF_OP1
+		#undef DEF_OP0
 
 		EQT EQT::operator * (float s) const {
 			EQT eq;

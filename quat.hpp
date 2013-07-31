@@ -77,6 +77,8 @@
 			BOOST_PP_REPEAT(2, DEF_OP0, *)
 			DEF_OPS(*)
 			DEF_OPS(/)
+			#undef DEF_OPS
+			#undef DEF_OP0
 
 			// return This * Quat::rotateX(ang)
 			QuatT rotationX(float ang) const;
@@ -243,6 +245,8 @@
 		#define DEF_OP(op, func)		BOOST_PP_REPEAT(2, DEF_OP1, (op,func))
 		DEF_OP(+, _mm_add_ps)
 		DEF_OP(-, _mm_sub_ps)
+		#undef DEF_OP1
+		#undef DEF_OP0
 
 		QT& QT::operator *= (float s) {
 			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));

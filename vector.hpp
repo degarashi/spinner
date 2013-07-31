@@ -504,6 +504,7 @@
 
 			#define DEF_MULOP(z,align,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(2,5, DEF_MULOPA, align) DEF_MULOPA_2(dummy,dummy,align)
 			BOOST_PP_REPEAT(2, DEF_MULOP, NOTHING)
+			#undef DEF_MULOP
 
 			#if DIM==3
 				VT& VT::operator *= (const QuatT<ALIGNB>& q) {
