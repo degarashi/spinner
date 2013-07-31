@@ -143,6 +143,30 @@ inline float DEGtoRAD(float ang) {
 inline float RADtoDEG(float ang) {
 	return ang*_sseRcp22Bit(PI) * 180.f;
 }
+
+//! Tをtrivialなctorでラップ
+template <class T>
+struct TrivialWrapper {
+	uint8_t _buff[sizeof(T)];
+
+	operator T& () { return *reinterpret_cast<T*>(_buff); }
+	operator const T& () const { return *reinterpret_cast<const T*>(_buff); }
+	T* operator -> () { return reinterpret_cast<T*>(_buff); }
+	const T* operator -> () const { return reinterpret_cast<const T*>(_buff); }
+	TrivialWrapper<T>& operator = (const T& t) {
+		((T&)(*this)) = t;
+		return *this;
+	}
+};
+template <class T, int N>
+struct TrivialWrapper<T[N]> {
+	T _buff[N];
+	using AR = T (&)[N];
+
+	operator AR () { return _buff; }
+	T& operator [] (int n) { return _buff[n]; }
+	const T& operator [] (int n) const { return _buff[n]; }
+};
 }
 // 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
@@ -186,17 +210,20 @@ inline float RADtoDEG(float ang) {
 //! constやmutableを付ける場合の定義
 #define GAP_MATRIX_DEF(prefix, matname, m, n, seq) union { prefix BOOST_PP_CAT(BOOST_PP_CAT(spn::AMat,m),n) matname; struct { BOOST_PP_SEQ_FOR_EACH_I(GAP_TFUNC_OUTER, n, seq) }; };
 #define GAP_DUMMY(aux,index,amount) BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(float dummy, __LINE__), aux), index)[amount];
-//! Tupleの奇数要素のsizeofを足し合わせる
+//! Tupleの要素最後尾のsizeofを足し合わせる
 #define COUNT_SIZE(tup)			((BOOST_PP_REPEAT(BOOST_PP_TUPLE_SIZE(tup), COUNT_SIZE2, tup)+3)/4)
-#define COUNT_SIZE2(z,idx,data)	BOOST_PP_IF(BOOST_PP_MOD(idx,2), +sizeof(BOOST_PP_TUPLE_ELEM(idx,data)), NOTHING)
+#define COUNT_SIZE2(z,idx,data)	+sizeof(GET_LAST(BOOST_PP_TUPLE_ELEM(idx,data)))
+#define GET_LAST(tup) BOOST_PP_TUPLE_ELEM(BOOST_PP_DEC(BOOST_PP_TUPLE_SIZE(tup)), tup)
 //! 要素のサイズを考慮しつつ, 16byte alignedになるよう前後に適切なパディングを入れる
 #define GAP_TFUNC_OUTER(z,nAr,idx,elem) \
 		GAP_DUMMY(_,idx,4-nAr) \
 		BOOST_PP_REPEAT(BOOST_PP_TUPLE_SIZE(elem), GAP_TFUNC_INNER, elem) \
 		GAP_DUMMY(_B,idx,4-nAr-COUNT_SIZE(elem))
 //! 奇数要素と偶数要素を連結して変数宣言とする
-#define GAP_TFUNC_INNER(z,idx,data) BOOST_PP_IF(BOOST_PP_MOD(idx,2), NOTHING_ARG, ARGPAIR)(BOOST_PP_TUPLE_ELEM(idx,data), BOOST_PP_TUPLE_ELEM(BOOST_PP_INC(idx),data))
-#define ARGPAIR(a,b)	a b;
+#define GAP_TFUNC_INNER(z,idx,data) BOOST_PP_IF(BOOST_PP_EQUAL(BOOST_PP_TUPLE_SIZE(BOOST_PP_TUPLE_ELEM(idx,data)),2), GAP_TFUNC_INNER2, GAP_TFUNC_INNER3)(BOOST_PP_TUPLE_ELEM(idx,data))
+#define GAP_TFUNC_INNER2(tup) ARGPAIR(BOOST_PP_TUPLE_ELEM(0,tup), BOOST_PP_TUPLE_ELEM(1,tup))
+#define GAP_TFUNC_INNER3(tup) BOOST_PP_TUPLE_ELEM(0,tup) ARGPAIR(BOOST_PP_TUPLE_ELEM(1,tup), BOOST_PP_TUPLE_ELEM(2,tup))
+#define ARGPAIR(a,b)	spn::TrivialWrapper<a> b;
 
 //! アライン済みベクトルの隙間を埋める定義
 #define GAP_VECTOR(vecname, n, seq) GAP_VECTOR_DEF(NOTHING, vecname, n, seq)

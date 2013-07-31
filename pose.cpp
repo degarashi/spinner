@@ -26,10 +26,10 @@ namespace spn {
 		return *this;
 	}
 
-	Pose2D::Pose2D(): _finalMat() {
+	Pose2D::Pose2D() {
 		identity();
 	}
-	Pose2D::Pose2D(const Pose2D& p): _finalMat() {
+	Pose2D::Pose2D(const Pose2D& p) {
 		// trivialなctorばかりなのでmemcpyで済ませる
 		std::memcpy(this, &p, sizeof(p));
 	}
@@ -38,7 +38,13 @@ namespace spn {
 		_angle = ang;
 		_scale = sc;
 	}
-	Pose2D::Pose2D(const TValue& tv): _ofs(tv.ofs), _scale(tv.scale), _angle(tv.ang), _accum(std::rand()), _rflag(PRF_ALL) {}
+	Pose2D::Pose2D(const TValue& tv) {
+		_ofs = tv.ofs;
+		_scale = tv.scale;
+		_angle = tv.ang;
+		_accum = std::rand();
+		_rflag = PRF_ALL;
+	}
 
 	void Pose2D::identity() {
 		_finalMat.identity();
@@ -74,7 +80,7 @@ namespace spn {
 
 	void Pose2D::_refresh() const {
 		if(_rflag & (PRF_SCALE|PRF_ROTATE)) {
-			_finalMat = AMat32::Scaling(_scale.x, _scale.y);
+			_finalMat = AMat32::Scaling(_scale->x, _scale->y);
 			_finalMat *= AMat32::Rotation(_angle);
 			_finalMat.getRow(2) = _ofs;
 		} else if(_rflag & PRF_OFFSET)
@@ -99,8 +105,8 @@ namespace spn {
 		setScale(ofs.x, ofs.y);
 	}
 	void Pose2D::setScale(float x, float y) {
-		_scale.x = x;
-		_scale.y = y;
+		_scale->x = x;
+		_scale->y = y;
 		_rflag |= PRF_SCALE;
 		++_accum;
 	}
@@ -108,8 +114,8 @@ namespace spn {
 		setOfs(ofs.x, ofs.y);
 	}
 	void Pose2D::setOfs(float x, float y) {
-		_ofs.x = x;
-		_ofs.y = y;
+		_ofs->x = x;
+		_ofs->y = y;
 		_rflag |= PRF_OFFSET;
 		++_accum;
 	}
@@ -124,9 +130,9 @@ namespace spn {
 	Pose2D Pose2D::lerp(const Pose2D& p1, float t) const {
 		Pose2D ret;
 		ret._accum = _accum-1;
-		ret._ofs = _ofs.l_intp(p1._ofs, t);
+		ret._ofs = _ofs->l_intp((const Vec2&)p1._ofs, t);
 		ret._angle = (p1._angle - _angle) * t + _angle;
-		ret._scale = _scale.l_intp(p1._scale, t);
+		ret._scale = _scale->l_intp((const Vec2&)p1._scale, t);
 		return ret;
 	}
 	Pose2D::Value Pose2D::refValue() {
@@ -181,7 +187,9 @@ namespace spn {
 		_rot = rot;
 		_scale = sc;
 	}
-	Pose3D::Pose3D(const TValue& tv): _ofs(tv.ofs), _rot(tv.rot), _scale(tv.scale), _rflag(PRF_ALL) {}
+	Pose3D::Pose3D(const TValue& tv): _ofs(tv.ofs), _rot(tv.rot), _scale(tv.scale) {
+		_rflag = PRF_ALL;
+	}
 
 	void Pose3D::identity() {
 		_rflag = 0;

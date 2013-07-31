@@ -373,7 +373,7 @@
 					alignas(16) const uint32_t mask[4] = {0xff,0xff,0xff,0xff};
 
 					__m128 x = _mm_and_ps(_mm_load_ps((const float*)mask), _mm_load_ps((const float*)tmp));
-					x = _mm_cvtepi32_ps(x);
+					x = _mm_cvtepi32_ps((__m128i)x);
 
 					const float f255 = 1.f/255;
 					x = _mm_mul_ps(x, _mm_load1_ps(&f255));
@@ -381,11 +381,11 @@
 				}
 				uint32_t VT::toPacked() const {
 					__m128 x = _mm_mul_ps(_mm_set_ps(255,255,255,255), LOADTHISZ());
-					x = _mm_cvtps_epi32(x);
-					x = _mm_packs_epi32(x,x);
-					x = _mm_packus_epi16(x,x);
+					__m128i x2 = _mm_cvtps_epi32(x);
+					x2 = _mm_packs_epi32(x2,x2);
+					x2 = _mm_packus_epi16(x2,x2);
 					float ret;
-					_mm_store_ss(&ret, x);
+					_mm_store_ss(&ret, (__m128)x2);
 					return *reinterpret_cast<uint32_t*>(&ret);
 				}
 			#endif
