@@ -149,6 +149,8 @@ template <class T>
 struct TrivialWrapper {
 	uint8_t _buff[sizeof(T)];
 
+	T& operator * () { return (T&)*this; }
+	const T& operator * () const { return (const T&)*this; }
 	operator T& () { return *reinterpret_cast<T*>(_buff); }
 	operator const T& () const { return *reinterpret_cast<const T*>(_buff); }
 	T* operator -> () { return reinterpret_cast<T*>(_buff); }
@@ -163,6 +165,8 @@ struct TrivialWrapper<T[N]> {
 	T _buff[N];
 	using AR = T (&)[N];
 
+	AR operator * () { return _buff; }
+	const AR operator * () const { return _buff; }
 	operator AR () { return _buff; }
 	T& operator [] (int n) { return _buff[n]; }
 	const T& operator [] (int n) const { return _buff[n]; }

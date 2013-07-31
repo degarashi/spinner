@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(spinner)
-set(CMAKE_CXX_COMPILER "g++-4.81")
+set(CMAKE_CXX_COMPILER "clang++")
 include_directories(${PROJECT_SOURCE_DIR})
 include_directories("/usr/local/include/c++/4.8.1")
 include_directories("/usr/local/include/c++/4.8.1/i686-pc-linux-gnu")
