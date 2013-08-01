@@ -1,5 +1,6 @@
 #pragma once
 #include "vector.hpp"
+#include "bits.hpp"
 #include <cassert>
 #include <cstring>
 #include <cwchar>
@@ -213,6 +214,36 @@ namespace spn {
 			throw std::bad_alloc();
 		return reinterpret_cast<T*>(ptr);
 	}
+	/*! \param[in] nAlign	バイト境界 (2byte以上128byte以下)
+		\param[in] size		確保したいバイト数 */
+	inline void* AlignedAlloc(size_t nAlign, size_t size) {
+		assert(spn::Bit::Count(nAlign) == 1);
+		assert(nAlign >= 2 && nAlign <= 128);
+		// 1byte前にずらした距離を記載
+		size_t sz = size + nAlign;
+		uintptr_t ptr = (uintptr_t)std::malloc(sz);
+		// アラインメントチェック
+		uint32_t ofs = nAlign - (ptr & (nAlign-1)),
+				ret;
+		if(ofs == nAlign) {
+			ret = ptr+nAlign;
+			ofs = nAlign;
+		} else {
+			ret = ptr+ofs;
+		}
+		auto* ofsSz = reinterpret_cast<uint8_t*>(ret-1);
+		*ofsSz = static_cast<uint8_t>(ofs);
+		return reinterpret_cast<void*>(ret);
+	}
+	//! AlignedAllocで確保したメモリの解放
+	/*! \param[in] ptr	開放したいメモリのポインタ(nullは不可) */
+	inline void AlignedFree(void* ptr) {
+		assert(ptr);
+		auto iptr = reinterpret_cast<uintptr_t>(ptr);
+		auto* ofs = reinterpret_cast<uint8_t*>(iptr-1);
+		std::free(reinterpret_cast<void*>(iptr - *ofs));
+	}
+
 	//! バイトアラインメント付きのメモリ確保
 	/*! 解放はdeleteで行う
 		----------------------
@@ -221,17 +252,17 @@ namespace spn {
 		ptr = (void*)(((uintptr_t)ptr + 15) & ~0x0f); */
 	template <class T, class... Args>
 	T* AAlloc(int n, Args&&... args) {
-		return new(AAllocBase<T>(n,1)) T(std::forward<Args>(args)...);
+		return new(AlignedAlloc(n, sizeof(T))) T(std::forward<Args>(args)...);
 	}
 	//! デフォルトコンストラクタによる初期化
 	template <class T>
 	T* AAlloc(int n) {
-		return new(AAllocBase<T>(n,1)) T();
+		return new(AlignedAlloc(n, sizeof(T))) T();
 	}
 	//! initializer_listによる初期化
 	template <class T, class A>
 	T* AAlloc(int n, std::initializer_list<A>&& w) {
-		return new(AAllocBase<T>(n,1)) T(std::forward<std::initializer_list<A>>(w));
+		return new(AlignedAlloc(n, sizeof(T))) T(std::forward<std::initializer_list<A>>(w));
 	}
 	//! バイトアラインメント付きの配列メモリ確保
 	template <class T>
@@ -241,6 +272,11 @@ namespace spn {
 			new(ptr+i) T();
 		return ptr;
 	}
+	template <class T>
+	void DefaultDelete(void* ptr) {
+		delete reinterpret_cast<T*>(ptr);
+	}
+	// TODO: オブジェクト配列への対応
 	//! アラインメントチェッカ
 	template <int N, class T>
 	class CheckAlign {
@@ -249,18 +285,47 @@ namespace spn {
 				// 16byteアラインメントチェック
 				assert((((uintptr_t)this)&(N-1)) == 0);
 			}
-		public:
-			static T* New() {
-				return AAlloc<T>(N);
+		private:
+			static void AlignedDelete(void* ptr) {
+				reinterpret_cast<T*>(ptr)->~T();
+				AlignedFree(ptr);
 			}
+			struct AlignedDeleter {
+				void operator()(void* ptr) const {
+					AlignedDelete(ptr);
+				}
+			};
+
+			//! initializer_listのctor
 			template <class A>
-			static T* New(std::initializer_list<A>&& w) {
-				return AAlloc<T>(N, std::forward<std::initializer_list<A>>(w));
-			}
+			static T* _New(std::initializer_list<A>&& w) {
+				return AAlloc<T>(N, std::forward<std::initializer_list<A>>(w)); }
+			//! 任意の引数によるctor
 			template <class... Args>
-			static T* New(Args&&... args) {
-				return AAlloc<T>(N, std::forward<Args>(args)...);
-			}
+			static T* _New(Args&&... args) {
+				return AAlloc<T>(N, std::forward<Args>(args)...); }
+		public:
+			//! アラインメント済みのメモリにオブジェクトを確保し、カスタムデリータ付きのunique_ptrとして返す
+			template <class... Args>
+			static std::unique_ptr<T, AlignedDeleter> NewU(Args&&... args) {
+				return std::unique_ptr<T, AlignedDeleter>(_New(std::forward<Args>(args)...)); }
+			template <class A>
+			static std::unique_ptr<T, AlignedDeleter> NewU(std::initializer_list<A>&& w) {
+				return std::unique_ptr<T, AlignedDeleter>(_New(std::move(w))); }
+			//! アラインメント済みのメモリにオブジェクトを確保し、個別デリータ付きのunique_ptrとして返す
+			template <class... Args>
+			static std::unique_ptr<T, void (*)(void*)> NewUF(Args&&... args) {
+				return std::unique_ptr<T, void(*)(void*)>(_New(std::forward<Args>(args)...), AlignedDelete); }
+			template <class A>
+			static std::unique_ptr<T, void (*)(void*)> NewUF(std::initializer_list<A>&& w) {
+				return std::unique_ptr<T, void(*)(void*)>(_New(std::move(w)), AlignedDelete); }
+			//! アラインメント済みのメモリにオブジェクトを確保し、shared_ptrとして返す
+			template <class... Args>
+			static std::shared_ptr<T> NewS(Args&&... args) {
+				return std::shared_ptr<T>(_New(std::forward<Args>(args)...), AlignedDeleter()); }
+			template <class A>
+			static std::shared_ptr<T> NewS(std::initializer_list<A>&& w) {
+				return std::shared_ptr<T>(_New(std::move(w)), AlignedDeleter()); }
 	};
 
 	//! dirAを基準に時計回りに増加する値を返す
