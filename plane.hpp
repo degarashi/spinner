@@ -30,7 +30,9 @@
 			using APlane = PlaneT<true>;
 			using UPlane = PlaneT<false>;
 			union {
-				float	a,b,c,d;
+				struct {
+					float	a,b,c,d;
+				};
 				float	m[4];
 			};
 
