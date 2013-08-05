@@ -371,8 +371,8 @@
 				#if DIM_M == 3
 					MT MT::Translation(const VecT<2,false>& v) {
 						MatT mt(TagIdentity);
-						mt.ma[0][2] = v.x;
-						mt.ma[1][2] = v.y;
+						mt.ma[2][0] = v.x;
+						mt.ma[2][1] = v.y;
 						return mt;
 					}
 				#endif
@@ -436,9 +436,9 @@
 				#if DIM_M == 4
 					MT MT::Translation(const UVec3& v) {
 						MatT mt(TagIdentity);
-						mt.ma[0][3] = v.x;
-						mt.ma[1][3] = v.y;
-						mt.ma[2][3] = v.z;
+						mt.ma[3][0] = v.x;
+						mt.ma[3][1] = v.y;
+						mt.ma[3][2] = v.z;
 						return mt;
 					}
 					MT MT::LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up) {
