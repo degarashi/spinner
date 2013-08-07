@@ -166,7 +166,8 @@ namespace spn {
 
 		Word _word;
 
-		BitField() {}
+		BitField() = default;
+		BitField(const BitField& bf): _word(bf.value()) {}
 		BitField(const Word& w): _word(w) {}
 		Word& value() { return _word; }
 		const Word& value() const { return _word; }
@@ -196,6 +197,17 @@ namespace spn {
 		static Word mask() {
 			auto ret = length_mask<N>();
 			return ret << BFAt<N>::offset;
+		}
+
+		//! ビットフィールドで使う場所以外をゼロクリアした値を取得
+		Word cleanedValue() const {
+			constexpr Word msk = (1 << maxbit)-1;
+			return value() & msk;
+		}
+		bool operator == (const BitField& bf) const { return cleanedValue() == bf.cleanedValue(); }
+		bool operator != (const BitField& bf) const { return !(this->operator == (bf)); }
+		bool operator < (const BitField& bf) const {
+			return cleanedValue() < bf.cleanedValue();
 		}
 	};
 
