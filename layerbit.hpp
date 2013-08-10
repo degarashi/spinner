@@ -119,13 +119,24 @@ namespace spn {
 				_nFlag = 0;
 				memset(_bit, 0, sizeof(_bit));
 			}
+
+			template <class OP>
+			void _procIndex() {}
+			template <class OP, class... Idx>
+			void _procIndex(int idx0, Idx... idx) {
+				_proc<OP>(idx0);
+				_procIndex<OP>(idx...);
+			}
+
 			//! 指定ビットを1にする
-			void set(int idx) {
-				_proc<Setter>(idx);
+			template <class... Idx>
+			void set(Idx... idx) {
+				_procIndex<Setter>(idx...);
 			}
 			//! 指定ビットを0にする
-			void reset(int idx) {
-				_proc<Clearer>(idx);
+			template <class... Idx>
+			void reset(Idx... idx) {
+				_procIndex<Clearer>(idx...);
 			}
 			//! 指定ビットが立っているかをチェック
 			bool check(int idx) const {
