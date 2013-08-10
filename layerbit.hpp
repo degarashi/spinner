@@ -103,6 +103,7 @@ namespace spn {
 		}
 		public:
 			LayerBitArray() {
+				// TODO: この処理は静的にできる筈
 				int cur = NElem,
 					sub = NElemLow;
 				for(int i=NLayer ; i>=0 ; i--) {
@@ -148,6 +149,76 @@ namespace spn {
 			void iterateBit(std::function<void (int)> cb) const {
 				Callback c(cb);
 				_iterate(c);
+			}
+
+			template <class ARDST, class AR0, class AR1, class OP>
+			static ARDST& _operate (ARDST& arDst, const AR0& ar0, const AR1& ar1, OP op) {
+				const int low = ar0._offset[countof(_offset)-1];
+				// 上層
+				int cur = 0;
+				while(cur != low) {
+					arDst._bit[cur] = op(ar0._bit[cur], ar1._bit[cur]);
+					++cur;
+				}
+
+				// 最下層
+				// ついでに総フラグ数の再カウント
+				int count = 0;
+				while(cur != countof(ar0._bit)) {
+					arDst._bit[cur] = op(ar0._bit[cur], ar1._bit[cur]);
+					count += Bit::Count(arDst._bit[cur]);
+					++cur;
+				}
+				arDst._nFlag = count;
+				return arDst;
+			}
+			template <class OP>
+			LayerBitArray& _operate2 (const LayerBitArray& ar, OP op) {
+				return _operate(*this, *this, ar, op); }
+			template <class OP>
+			LayerBitArray _operate3 (const LayerBitArray& ar, OP op) const {
+				LayerBitArray ret;
+				std::memcpy(ret._offset, _offset, sizeof(_offset));
+				return _operate(ret, *this, ar, op);
+			}
+
+			#define FUNC_OR [](const T& v0, const T& v1) { return v0 | v1; }
+			#define FUNC_AND [](const T& v0, const T& v1) { return v0 & v1; }
+			#define FUNC_XOR [](const T& v0, const T& v1) { return v0 ^ v1; }
+
+			//! LayerBit同士をOR演算
+			LayerBitArray& operator |= (const LayerBitArray& ar) {
+				return _operate2(ar, FUNC_OR); }
+			LayerBitArray operator | (const LayerBitArray& ar) const {
+				return _operate3(ar, FUNC_OR); }
+			//! LayerBit同士をAND演算
+			LayerBitArray& operator &= (const LayerBitArray& ar) {
+				return _operate2(ar, FUNC_AND); }
+			LayerBitArray operator & (const LayerBitArray& ar) const {
+				return _operate3(ar, FUNC_AND); }
+			//! LayerBit同士をXOR演算
+			LayerBitArray& operator ^= (const LayerBitArray& ar) {
+				return _operate2(ar, FUNC_XOR); }
+			LayerBitArray operator ^ (const LayerBitArray& ar) const {
+				return _operate3(ar, FUNC_XOR); }
+
+			#undef FUNC_OR
+			#undef FUNC_AND
+			#undef FUNC_XOR
+
+			bool operator == (const LayerBitArray& ar) const {
+				// ビット数が違っていたらアウト
+				if(getNBit() != ar.getNBit())
+					return false;
+
+				// 一旦上層レイヤーで比較した方が速いかもしれない
+				T val(0);
+				for(int cur = _offset[countof(_offset)-1] ; cur != countof(_bit) ; cur++)
+					val |= _bit[cur] ^ ar._bit[cur];
+				return val == 0;
+			}
+			bool operator != (const LayerBitArray& ar) const {
+				return !(operator ==(ar));
 			}
 	};
 }
