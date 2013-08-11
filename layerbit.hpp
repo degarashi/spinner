@@ -11,10 +11,24 @@ namespace spn {
 						NElem = NDivide<NElemLow, ElemBits>::sum+1,
 						NLayer = NDivide<NElemLow,ElemBits>::result+1;	// 最上位を1Elemとした時に幾つレイヤーが必要か
 
+		template <int LayerFromLow, int Value>
+		struct _OffsetInv {
+			constexpr static int result = (Value+ElemBits-1)/ElemBits + _OffsetInv<LayerFromLow-1, Value/ElemBits>::result;
+		};
+		template <int Value>
+		struct _OffsetInv<0, Value> {
+			constexpr static int result = (Value+ElemBits-1)/ElemBits;
+		};
+		template <int Layer>
+		struct _Offset {
+			constexpr static int result = NElem - _OffsetInv<NLayer-Layer, N>::result;
+		};
+		// 各レイヤーのオフセット
+		template <int Layer>
+		using Offset = _Offset<Layer>;
+
 		// 一次元配列で扱う
 		T	_bit[NElem];
-		// 各レイヤーのオフセット
-		int	_offset[NLayer+1];
 		// 総フラグ数
 		int _nFlag;
 		// NはBitsの整数倍でなければならない
@@ -24,7 +38,7 @@ namespace spn {
 		struct Iter {
 			static void proc(const LayerBitArray& src, Proc& p, int cur) {
 				// フラグをシフトしながら巡回
-				T bs = src._bit[src._offset[Layer] + cur];
+				T bs = src._bit[Offset<Layer>::result + cur];
 
 				int bsLsb = Bit::LSB_N(bs);
 				bs >>= bsLsb;
@@ -41,7 +55,7 @@ namespace spn {
 		template <int Layer, class Proc>
 		struct Iter<Layer, Layer, Proc> {
 			static void proc(const LayerBitArray& src, Proc& p, int cur) {
-				T bs = src._bit[src._offset[Layer] + cur];
+				T bs = src._bit[Offset<Layer>::result + cur];
 
 				int bsLsb = Bit::LSB_N(bs);
 				bs >>= bsLsb;
@@ -84,40 +98,38 @@ namespace spn {
 		}
 		template <class Proc>
 		void _proc(int idx) {
-			int ofs = idx;
-			T mask = 1<<(ofs % ElemBits);
-			auto& e = _bit[_offset[NLayer] + ofs/ElemBits];
-			Proc::count(_nFlag, e, mask);
-			Proc::proc(e, mask, 0);
-			auto prev = e;
+			constexpr uint32_t ofsMask = (1 << ElemWidth) - 1;
+			uint32_t ofs = idx;
+
+			T mask = 1<<(ofs & ofsMask);
+			T* plCur = _bit + Offset<NLayer>::result;
+			T* prev = plCur + (ofs>>ElemWidth);
+			Proc::count(_nFlag, *prev, mask);
+			Proc::proc(*prev, mask, 0);
 
 			ofs >>= ElemWidth;
 			// Elemの特定と上レイヤの巡回
+			int lwidth = (NElemLow+ElemBits-1) >> ElemWidth;
+			plCur -= lwidth;
 			for(int i=NLayer-1 ; i>=0 ; i--) {
 				int nofs = ofs >> ElemWidth;
-				const T mask = 1<<(ofs % ElemBits);
-				Proc::proc(_bit[_offset[i] + nofs], mask, prev);
-				prev = _bit[_offset[i] + nofs];
+				const T mask = 1<<(ofs & ofsMask);
+				T* tCur = plCur + nofs;
+				Proc::proc(*tCur, mask, *prev);
 				ofs = nofs;
+				prev = tCur;
+
+				lwidth = (lwidth+ElemBits-1) >> ElemWidth;
+				plCur -= lwidth;
 			}
 		}
 		public:
 			LayerBitArray() {
-				// TODO: この処理は静的にできる筈
-				int cur = NElem,
-					sub = NElemLow;
-				for(int i=NLayer ; i>=0 ; i--) {
-					cur -= sub;
-					sub /= ElemBits;
-					_offset[i] = cur;
-				}
-				_offset[0] = 0;
 				clear();
 			}
 			//! ビットを全て0にする
 			void clear() {
-				_nFlag = 0;
-				memset(_bit, 0, sizeof(_bit));
+				memset(this, 0, sizeof(*this));
 			}
 
 			template <class OP>
@@ -140,7 +152,7 @@ namespace spn {
 			}
 			//! 指定ビットが立っているかをチェック
 			bool check(int idx) const {
-				return _bit[_offset[NLayer] + idx/ElemBits] & (1<<(idx % ElemBits));
+				return _bit[Offset<NLayer>::result + (idx>>ElemWidth)] & (1 << (idx>>ElemWidth));
 			}
 			//! 1になっているビットの数
 			int getNBit() const { return _nFlag; }
@@ -163,34 +175,64 @@ namespace spn {
 			}
 
 			template <class ARDST, class AR0, class AR1, class OP>
-			static ARDST& _operate (ARDST& arDst, const AR0& ar0, const AR1& ar1, OP op) {
-				const int low = ar0._offset[countof(_offset)-1];
+			static ARDST& _operateOr (ARDST& arDst, const AR0& ar0, const AR1& ar1, OP op) {
+				constexpr int low = Offset<NLayer>::result;
 				// 上層
-				int cur = 0;
-				while(cur != low) {
-					arDst._bit[cur] = op(ar0._bit[cur], ar1._bit[cur]);
-					++cur;
-				}
+				for(int i=0 ; i<low ; i++)
+					arDst._bit[i] = op(ar0._bit[i], ar1._bit[i]);
 
 				// 最下層
 				// ついでに総フラグ数の再カウント
 				int count = 0;
-				while(cur != countof(ar0._bit)) {
-					arDst._bit[cur] = op(ar0._bit[cur], ar1._bit[cur]);
-					count += Bit::Count(arDst._bit[cur]);
-					++cur;
+				for(int i=0 ; i<NElem ; i++) {
+					arDst._bit[i] = op(ar0._bit[i], ar1._bit[i]);
+					count += Bit::Count(arDst._bit[i]);
 				}
 				arDst._nFlag = count;
 				return arDst;
 			}
-			template <class OP>
-			LayerBitArray& _operate2 (const LayerBitArray& ar, OP op) {
-				return _operate(*this, *this, ar, op); }
-			template <class OP>
-			LayerBitArray _operate3 (const LayerBitArray& ar, OP op) const {
-				LayerBitArray ret;
-				std::memcpy(ret._offset, _offset, sizeof(_offset));
-				return _operate(ret, *this, ar, op);
+			template <class ARDST, class AR0, class AR1, class OP>
+			static ARDST& _operateAndXor(ARDST& arDst, const AR0& ar0, const AR1& ar1, OP op) {
+				// 最下層のビット演算
+				int count = 0;
+				for(int i=Offset<NLayer>::result ; i<countof(_bit) ; i++) {
+					arDst._bit[i] = op(ar0._bit[i], ar1._bit[i]);
+					count += Bit::Count(arDst._bit[i]);
+				}
+				arDst._nFlag = count;
+				// 上層は計算しなおし
+				arDst._reconstructUpper();
+				return arDst;
+			}
+			void _reconstructUpper() {
+				int beg = Offset<NLayer>::result,
+					end = countof(_bit);
+				int upBeg = Offset<NLayer-1>::result,
+					upEnd = beg;
+				int lwidth = (NElemLow+ElemBits-1) >> ElemWidth;
+
+				std::memset(_bit, 0, sizeof(T)*Offset<NLayer>::result);
+
+				for(;;) {
+					uint32_t bitmask = 0x01;
+					int tmpUp = upBeg;
+					for(int i=beg ; i<end ; i++) {
+						_bit[tmpUp] |= Bit::ZeroOrFull(_bit[i]) & bitmask;
+						bitmask <<= 1;
+						uint32_t ovf = ~Bit::ZeroOrFull(bitmask) & 0x01;
+						bitmask |= ovf;
+						tmpUp += ovf;
+					}
+					assert(tmpUp >= upEnd-1);
+
+					if(upBeg == 0)
+						break;
+					end = beg;
+					beg = upBeg;
+					upEnd = upBeg;
+					lwidth = (lwidth+ElemBits-1) >> ElemWidth;
+					upBeg -= lwidth;
+				}
 			}
 
 			#define FUNC_OR [](const T& v0, const T& v1) { return v0 | v1; }
@@ -199,19 +241,19 @@ namespace spn {
 
 			//! LayerBit同士をOR演算
 			LayerBitArray& operator |= (const LayerBitArray& ar) {
-				return _operate2(ar, FUNC_OR); }
+				return _operateOr(*this, *this, ar, FUNC_OR); }
 			LayerBitArray operator | (const LayerBitArray& ar) const {
-				return _operate3(ar, FUNC_OR); }
+				return _operateOr(LayerBitArray(), *this, ar, FUNC_OR); }
 			//! LayerBit同士をAND演算
 			LayerBitArray& operator &= (const LayerBitArray& ar) {
-				return _operate2(ar, FUNC_AND); }
+				return _operateAndXor(*this, *this, ar, FUNC_AND); }
 			LayerBitArray operator & (const LayerBitArray& ar) const {
-				return _operate3(ar, FUNC_AND); }
+				return _operateAndXor(LayerBitArray(), *this, ar, FUNC_AND); }
 			//! LayerBit同士をXOR演算
 			LayerBitArray& operator ^= (const LayerBitArray& ar) {
-				return _operate2(ar, FUNC_XOR); }
+				return _operateAndXor(*this, *this, ar, FUNC_XOR); }
 			LayerBitArray operator ^ (const LayerBitArray& ar) const {
-				return _operate3(ar, FUNC_XOR); }
+				return _operateAndXor(LayerBitArray(), *this, ar, FUNC_XOR); }
 
 			#undef FUNC_OR
 			#undef FUNC_AND
@@ -224,7 +266,8 @@ namespace spn {
 
 				// 一旦上層レイヤーで比較した方が速いかもしれない
 				T val(0);
-				for(int cur = _offset[countof(_offset)-1] ; cur != countof(_bit) ; cur++)
+
+				for(int cur = Offset<NLayer>::result ; cur != countof(_bit) ; cur++)
 					val |= _bit[cur] ^ ar._bit[cur];
 				return val == 0;
 			}
