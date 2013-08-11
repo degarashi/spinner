@@ -11,4 +11,4 @@ set(CMAKE_BUILD_TYPE "Debug")
 add_library(spinner STATIC misc.cpp resmgr.cpp reshandle.cpp bits.cpp spn_math.cpp spn_math2.cpp fpset.cpp pose.cpp)
 
 add_executable(spn_test main.cpp)
-target_link_libraries(spn_test spinner)
+target_link_libraries(spn_test spinner boost_system)
