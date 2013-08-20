@@ -228,7 +228,8 @@ namespace spn {
 			return bRet;
 		}
 		//! 入力値の一番左のビットだけを残す
-		static uint32_t LowClear(uint32_t x) {
+		template <class T, class=typename std::enable_if<std::is_unsigned<T>::value>::type*>
+		static T LowClear(T x) {
 			x = x | (x >> 1);
 			x = x | (x >> 2);
 			x = x | (x >> 4);
