@@ -13,6 +13,28 @@
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
 
 namespace spn {
+	//! rvalue-reference wrapper
+	template <class T>
+	struct _RRef {
+		T& value;
+		_RRef(T& v): value(v) {}
+		_RRef(const _RRef& r): value(r.value) {}
+		int get() { return 0; }
+		operator T& () { return value; }
+	};
+	template <class T>
+	struct _RRef<T&&> {
+		T&& value;
+		_RRef(const _RRef& r): value(std::move(r.value)) {}
+		_RRef(T&& v): value(std::forward<T>(v)) {}
+		operator T&& () { return std::move(value); }
+		int get() { return 1; }
+	};
+	template <class T>
+	auto RRef(T&& t) -> _RRef<decltype(std::forward<T>(t))> {
+		return _RRef<T&&>(std::forward<T>(t));
+	}
+
 	//! スピンロックによるmutex
 	class Synchro {
 		private:

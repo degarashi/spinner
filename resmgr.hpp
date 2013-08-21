@@ -276,7 +276,8 @@ namespace spn {
 		T 					value;
 		const std::string*	stp;
 
-		ResWrap(T&& t): value(std::forward<T>(t)), stp(nullptr) {}
+		template <class... Ts>
+		ResWrap(Ts&&... ts): value(std::forward<Ts>(ts)...), stp(nullptr) {}
 		operator T&() { return value; }
 		operator const T&() const { return value; }
 	};
@@ -376,6 +377,18 @@ namespace spn {
 					return *opt;
 				return boost::none;
 			}
+			LHdl _acquire(DAT&& d) {
+				#ifdef DEBUG
+					auto id = _dataVec.add(Entry(std::move(d), ++_wMagicIndex, ++_sMagicIndex));
+					_sMagicIndex &= SHandle::Value::length_mask<SHandle::Value::MAGIC>();
+					SHdl sh(id, _resID, _sMagicIndex);
+				#else
+					auto id = _dataVec.add(Entry(std::move(d), ++_wMagicIndex));
+					SHdl sh(id, _resID);
+				#endif
+				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
+				return LHdl(sh);
+			}
 
 		public:
 			class iterator : public AdaptItrBase<data_type, typename AVec::iterator> {
@@ -431,16 +444,11 @@ namespace spn {
 			//! 名前なしリソースの作成
 			template <class DAT2>
 			LHdl acquire(DAT2&& dat) {
-				#ifdef DEBUG
-					auto id = _dataVec.add(Entry(std::forward<DAT2>(dat), ++_wMagicIndex, ++_sMagicIndex));
-					_sMagicIndex &= SHandle::Value::length_mask<SHandle::Value::MAGIC>();
-					SHdl sh(id, _resID, _sMagicIndex);
-				#else
-					auto id = _dataVec.add(Entry(std::forward<DAT2>(dat), ++_wMagicIndex));
-					SHdl sh(id, _resID);
-				#endif
-				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
-				return LHdl(sh);
+				return _acquire(std::forward<DAT2>(dat));
+			}
+			template <class... Ts>
+			LHdl emplace(Ts&&... args) {
+				return _acquire(DAT(std::forward<Ts>(args)...));
 			}
 			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
@@ -603,7 +611,9 @@ namespace spn {
 			}
 			template <class KEY, class... Args>
 			std::pair<LHdl,bool> emplace(KEY&& key, Args&&... args) {
-				auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
+				auto fn = std::bind(&base_type::template emplace<Args&&...>, std::ref(*this), RRef(std::forward<Args>(args))...);
+				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
+ 				// auto fn = [&]() { return base_type::emplace(std::forward<Args>(args)...); };
 				return _acquire(std::forward<KEY>(key), fn);
 			}
 
