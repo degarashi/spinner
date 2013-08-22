@@ -1,5 +1,6 @@
 #include "pose.hpp"
 #include <cstdlib>
+#include <iostream>
 
 namespace spn {
 	// ------------------------------ Pose2D ------------------------------

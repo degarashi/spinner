@@ -23,7 +23,7 @@
 
 	#define DIM		4
 	#include "local_macro.hpp"
-
+	#include <iostream>
 	namespace spn {
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		template <>
