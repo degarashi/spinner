@@ -110,6 +110,37 @@ namespace spn {
 		//! 文字列の先頭4文字から32bitチャンクを生成
 		inline static long MakeChunk(const char* str) {
 			return ::spn::MakeChunk(str[0], str[1], str[2], str[3]); }
+
+		//! "ASCII文字の16進数値"を数値へ
+		uint32_t CharToHex(uint32_t ch);
+		//! ASCII文字の4桁の16進数値を数値へ
+		uint32_t StrToHex4(const char* src);
+		uint32_t HexToChar(uint32_t hex);
+		//! Base64変換
+		static int base64(char* dst, size_t n_dst, const char* src, int n);
+		static int base64toNum(char* dst, size_t n_dst, const char* src, int n);
+		// URL変換
+		static int url_encode_OAUTH(char* dst, size_t n_dst, const char* src, int n);
+		static int url_encode(char* dst, size_t n_dst, const char* src, int n);
+		// UTF-16関連
+		static bool utf16_isSurrogate(char16_t c);
+		static size_t utf16_strlen(const char16_t* str);
+		static bool utf16_isSpace(char16_t c);
+		static bool utf16_isLF(char16_t c);
+		static bool utf16_isPrivate(char16_t c);	// 私用領域なら1，サロゲート私用領域なら2を返す(予定)
+		// UTF16 <-> UTF8 相互変換
+		/*! \param n_src 文字数
+			\return 変換できた文字数 */
+		static int UTFConvert8_16(char16_t* dst, size_t n_dst, const char* src, size_t n_src=0);
+		static int UTFConvert16_8(char* dst, size_t n_dst, const char16_t* src, size_t n_src=0);
+		// UTF変換(主に内部用)
+		static void UTF16To32(uint32_t src, uint32_t& code, int& nread);
+		static void UTF32To16(uint32_t src, uint32_t& code, int& nread);
+		static void UTF8To32(uint32_t src, uint32_t& code, int& nread);
+		static void UTF8To32_s(uint32_t src, uint32_t& code, int& nread);
+		static void UTF32To8(uint32_t src, uint32_t& code, int& nwrite);
+		static void UTF8To16(uint32_t src, uint32_t& code, int& nread, int& nwrite);
+		static void UTF16To8(uint32_t src, uint32_t& code, int& nread, int& nwrite);
 	};
 
 	//! フリーリストでオブジェクト管理
