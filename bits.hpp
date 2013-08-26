@@ -290,11 +290,13 @@ namespace spn {
 			//! most significant bit を取得
 			/*! もし入力値が0の場合は0を返す */
 			static uint32_t MSB_N(uint32_t x) {
+				x |= 0x01;
 				return NLRZ_TABLE[0x0aec7cd2U * LowClear(x) >> 27];
 			}
 			//! least significant bit を取得
 			/*! もし入力値が0の場合は31を返す */
 			static uint32_t LSB_N(uint32_t x) {
+				x |= 0x80000000;
 				return NLRZ_TABLE[0x0aec7cd2U * (x & -x) >> 27];
 			}
 		#endif
