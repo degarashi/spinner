@@ -80,6 +80,27 @@ namespace spn {
 			void unlock() {}
 	};
 
+	//! static変数の初期化を制御する
+	template <class T>
+	class NiftyCounterIdiom {
+		static int s_niftyCounter;
+		public:
+			NiftyCounterIdiom() {
+				if(s_niftyCounter++ == 0) {
+					T::Initialize();
+				}
+			}
+			~NiftyCounterIdiom() {
+				if(--s_niftyCounter == 0) {
+					T::Terminate();
+				}
+			}
+	};
+	template <class T>
+	int NiftyCounterIdiom<T>::s_niftyCounter = 0;
+
+	#define DEF_NIFTY_INITIALIZER(name)	static class name##_initializer : public spn::NiftyCounterIdiom<name> {} name##_initializer_obj;
+
 	//! 4つの8bit値から32bitチャンクを生成
 	inline static long MakeChunk(uint8_t c0, uint8_t c1, uint8_t c2, uint8_t c3) {
 		return (c3 << 24) | (c2 << 16) | (c1 << 8) | c0; }
