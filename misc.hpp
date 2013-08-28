@@ -1,6 +1,7 @@
 #pragma once
 #include "vector.hpp"
 #include "bits.hpp"
+#include "abstbuff.hpp"
 #include <cassert>
 #include <cstring>
 #include <cwchar>
@@ -143,6 +144,7 @@ namespace spn {
 		// URL変換
 		static int url_encode_OAUTH(char* dst, size_t n_dst, const char* src, int n);
 		static int url_encode(char* dst, size_t n_dst, const char* src, int n);
+		static size_t utf8_strlen(const char* str);
 		// UTF-16関連
 		static bool utf16_isSurrogate(char16_t c);
 		static size_t utf16_strlen(const char16_t* str);
@@ -150,18 +152,27 @@ namespace spn {
 		static bool utf16_isLF(char16_t c);
 		static bool utf16_isPrivate(char16_t c);	// 私用領域なら1，サロゲート私用領域なら2を返す(予定)
 		// UTF16 <-> UTF8 相互変換
-		/*! \param n_src 文字数
-			\return 変換できた文字数 */
-		static int UTFConvert8_16(char16_t* dst, size_t n_dst, const char* src, size_t n_src=0);
-		static int UTFConvert16_8(char* dst, size_t n_dst, const char16_t* src, size_t n_src=0);
+		static std::u16string UTFConvertTo16(c8Buff src);
+		static std::u16string UTFConvertTo16(c32Buff src);
+		static std::u32string UTFConvertTo32(c8Buff src);
+		static std::string UTFConvertTo8(c16Buff src);
+		static std::string UTFConvertTo8(c32Buff src);
+		static void WriteData(void* pDst, char32_t val, int n);
+
+		struct Code {
+			char32_t	code;
+			int			nread, nwrite;
+		};
+		// nread, nwriteはバイト数ではなく文字数を表す
 		// UTF変換(主に内部用)
-		static void UTF16To32(uint32_t src, uint32_t& code, int& nread);
-		static void UTF32To16(uint32_t src, uint32_t& code, int& nread);
-		static void UTF8To32(uint32_t src, uint32_t& code, int& nread);
-		static void UTF8To32_s(uint32_t src, uint32_t& code, int& nread);
-		static void UTF32To8(uint32_t src, uint32_t& code, int& nwrite);
-		static void UTF8To16(uint32_t src, uint32_t& code, int& nread, int& nwrite);
-		static void UTF16To8(uint32_t src, uint32_t& code, int& nread, int& nwrite);
+		static Code UTF16To32(char32_t src);
+		static Code UTF32To16(char32_t src);
+		static Code UTF8To32(char32_t src);
+		//! 不正なシーケンスを検出すると例外を発生させる
+		static Code UTF8To32_s(char32_t src);
+		static Code UTF32To8(char32_t src);
+		static Code UTF8To16(char32_t src);
+		static Code UTF16To8(char32_t src);
 	};
 
 	//! フリーリストでオブジェクト管理

@@ -1,6 +1,19 @@
 #include "misc.hpp"
 #include <locale>
 namespace spn {
+	size_t GetLength(const char* str) {
+		return std::strlen(str);
+	}
+	size_t GetLength(const char16_t* str) {
+		return Text::utf16_strlen(str);
+	}
+	size_t GetLength(const char32_t* str) {
+		size_t count = 0;
+		while(*str != U'\0')
+			++count;
+		return count;
+	}
+
 	bool Text::sjis_isMBChar(char c) {
 		uint32_t subset = c & 0xff;
 		if((subset >= 0x81 && subset <= 0x9F) || (subset >= 0xe0))
@@ -219,156 +232,166 @@ namespace spn {
 		return c>=0xe000 && c<0xf900;
 	}
 
-	void Text::UTF16To32(uint32_t src, uint32_t& code, int& nread) {
+	Text::Code Text::UTF16To32(char32_t src) {
+		Code ret;
+		ret.nwrite = 1;
 		if((src & 0xdc00dc00) == 0xdc00d800) {
 			// サロゲートペア
-			uint32_t l_bit = src & 0x03ff0000,
+			char32_t l_bit = src & 0x03ff0000,
 			h_bit = (src & 0x000003ff) + 0x40;
 
-			code = (l_bit>>16)|(h_bit<<10);
-			nread = 4;
+			ret.code = (l_bit>>16)|(h_bit<<10);
+			ret.nread = 2;
 		} else {
 			// 16bit数値
-			code = src&0xffff;
-			nread = 2;
+			ret.code = src&0xffff;
+			ret.nread = 1;
 		}
+		return ret;
 	}
-	void Text::UTF32To16(uint32_t src, uint32_t& code, int& nread) {
+	Text::Code Text::UTF32To16(char32_t src) {
+		Code ret;
+		ret.nread = 1;
 		if(src >= 0x10000) {
 			// サロゲートペア
-			uint32_t l_bit = (src & 0x3ff)<<16,
+			char32_t l_bit = (src & 0x3ff)<<16,
 			h_bit = ((src>>10)&0x3ff) - 0x40;
-			code = h_bit|l_bit|0xdc00d800;
-			nread = 4;
+			ret.code = h_bit|l_bit|0xdc00d800;
+			ret.nwrite = 2;
 		} else {
 			// 16bit数値
-			code = src;
-			nread = 2;
+			ret.code = src;
+			ret.nwrite = 1;
 		}
+		return ret;
 	}
-	void Text::UTF8To32(uint32_t src, uint32_t& code, int& nread) {
+	Text::Code Text::UTF8To32(char32_t src) {
+		Code ret;
+		ret.nwrite = 1;
 		if((src&0x80) == 0) {
 			// 1バイト文字
-			code = src&0xff;
-			nread = 1;
+			ret.code = src&0xff;
+			ret.nread = 1;
 		} else if((src&0xc0e0) == 0x80c0) {
 			// 2バイト文字
-			code = ((src&0x1f)<<6) |
+			ret.code = ((src&0x1f)<<6) |
 					((src&0x3f00)>>8);
-			nread = 2;
+			ret.nread = 2;
 		} else if((src&0xc0c0f0) == 0x8080e0) {
 			// 3バイト文字
-			code = ((src&0x0f)<<12) |
+			ret.code = ((src&0x0f)<<12) |
 					((src&0x3f00)>>2) |
 					((src&0x3f0000)>>16);
-			nread = 3;
+			ret.nread = 3;
 		} else if((src&0xc0c0c0f8) == 0x808080f0) {
 			// 4バイト文字
-			code = ((src&0x07)<<18) |
+			ret.code = ((src&0x07)<<18) |
 					((src&0x3f00)<<4) |
 					((src&0x3f0000)>>10) |
 					((src&0x3f000000)>>24);
-			nread = 4;
-		}
-		throw std::invalid_argument("unknown unicode char");
-	}
-	// 不正なシーケンスを検出すると例外を発生させる
-	void Text::UTF8To32_s(uint32_t src, uint32_t& code, int& nread) {
-		uint32_t val;
-		int nByte;
-		UTF8To32(src, val, nByte);
-		const uint32_t mask[5] = {0, 0,0x1e00,0x0f2000,0x07300000};
-		const uint32_t ormask[5] = {0, 1,0,0,0};
-
-		if((val & mask[nByte]) | ormask[nByte]) {
-			code = val;
-			nread = nByte;
+			ret.nread = 4;
 		} else
-			throw std::invalid_argument("invalid unicode sequence");
+			throw std::invalid_argument("unknown unicode char");
+		return ret;
 	}
-	// 変換後の数値, 書き込んだバイト数
-	void Text::UTF32To8(uint32_t src, uint32_t& code, int& nread) {
+	Text::Code Text::UTF8To32_s(char32_t src) {
+		Code ret = UTF8To32(src);
+		const char32_t mask[5] = {0, 0,0x1e00,0x0f2000,0x07300000};
+		const char32_t ormask[5] = {0, 1,0,0,0};
+
+		if((ret.code & mask[ret.nread]) | ormask[ret.nread]) {}
+		else
+			throw std::invalid_argument("invalid unicode sequence");
+		return ret;
+	}
+	Text::Code Text::UTF32To8(char32_t src) {
+		Code ret;
+		ret.nread = 1;
 		if(src < 0x80) {
 			// 1バイト文字
-			code = src;
-			nread = 1;
+			ret.code = src;
+			ret.nwrite = 1;
 		} else if(src < 0x0400) {
 			// 2バイト文字
-			code = ((0x80 | (src&0x3f))<<8) |
+			ret.code = ((0x80 | (src&0x3f))<<8) |
 					(0xc0 | ((src&0x07c0)>>6));
-			nread = 2;
+					ret.nwrite = 2;
 		} else if(src < 0x10000) {
 			// 3バイト文字
-			code = ((0x80 | (src&0x3f))<<16) |
+			ret.code = ((0x80 | (src&0x3f))<<16) |
 					((0x80 | ((src&0x0fc0)>>6))<<8) |
 					(0xe0 | ((src&0xf000)>>12));
-			nread = 3;
+			ret.nwrite = 3;
 		} else {
 			// 4バイト文字
-			code = ((0x80 | (src&0x3f))<<24) |
+			ret.code = ((0x80 | (src&0x3f))<<24) |
 					((0x80 | ((src&0x0fc0)>>6))<<16) |
 					((0x80 | ((src&0x3f000)>>12))<<8) |
 					(0xf0 | ((src&0x1c0000)>>18));
-			nread = 4;
+			ret.nwrite = 4;
 		}
+		return ret;
 	}
-	void Text::UTF8To16(uint32_t src, uint32_t& code, int& nread, int& nwrite) {
-		uint32_t val;
-		UTF8To32(src, val, nread);
-		UTF32To16(val, code, nwrite);
+	Text::Code Text::UTF8To16(char32_t src) {
+		Code ret = UTF8To32(src);
+		return UTF32To16(ret.code);
 	}
 	// 変換後の数値, 読み取ったバイト数, 書き込んだバイト数
-	void Text::UTF16To8(uint32_t src, uint32_t& code, int& nread, int& nwrite) {
-		uint32_t val;
-		UTF16To32(src, val, nread);
-		UTF32To8(val, code, nwrite);
+	Text::Code Text::UTF16To8(char32_t src) {
+		Code ret = UTF16To32(src);
+		return UTF32To8(ret.code);
 	}
-	int Text::UTFConvert8_16(char16_t* dst, size_t n_dst, const char* src, size_t n_src) {
-		if(n_src == 0)
-			n_src = std::strlen(src);
-		// 少なくとも同じ文字数でなければ収まらない
-		if(n_dst < n_src)
-			return -1;
 
-		char16_t* tdst = dst;
-		uint32_t val;
-		size_t count = 0;
-		int nRead, nWrite;
-		while(count < n_src) {
-			UTF8To16(*((uint32_t*)src), val, nRead, nWrite);
-			src += nRead;
-			count += nRead;
-			// 出力文字数に応じて書き込む
-			// 通常=2, サロゲート=4
-			const char16_t* wc = (const char16_t*)&val;
-			do {
-				*tdst++ = *wc++;
-				nWrite -= 2;
-			} while(nWrite != 0);
+	//! 32bitデータの内、(1〜4)までの任意のバイト数をpDstに書き込む
+	void Text::WriteData(void* pDst, char32_t val, int n) {
+		switch(n) {
+			case 1:
+				*reinterpret_cast<uint8_t*>(pDst) = val&0xff; return;
+			case 2:
+				*reinterpret_cast<uint16_t*>(pDst) = val&0xffff; return;
+			case 3:
+				*reinterpret_cast<uint16_t*>(pDst) = val&0xffff;
+				*reinterpret_cast<uint8_t*>(pDst) = (val>>16)&0xff; return;
+			case 4:
+				*reinterpret_cast<uint32_t*>(pDst) = val; return;
+			default:
+				assert(false);
 		}
-		return tdst-dst;
 	}
-	int Text::UTFConvert16_8(char* dst, size_t n_dst, const char16_t* src, size_t n_src) {
-		if(n_src == 0)
-			n_src = utf16_strlen(src);
-		if(n_dst < n_src)
-			return -1;
-
-		char* tdst = dst;
-		uint32_t val;
-		size_t count = 0;
-		int nRead, nWrite;
-		while(count < n_src) {
-			UTF16To8(*((uint32_t*)src), val, nRead, nWrite);
-			src += nRead/2;
-			count += nRead/2;
-
-			// nWrite(1～4)バイト可変
-			const char* c = (const char*)&val;
-			do {
-				*tdst++ = *c++;
-			} while(--nWrite != 0);
+	namespace {
+		template <class DST, class SRC>
+		std::basic_string<DST> ConvertToString(const std::vector<SRC>& data, const SRC* pCur) {
+			auto* pSrcC = reinterpret_cast<const DST*>(&data[0]);
+			return std::basic_string<DST>(pSrcC, reinterpret_cast<const DST*>(pCur) - pSrcC);
 		}
-		return tdst-dst;
+		template <class DST, class SRC, class Conv>
+		std::basic_string<DST> UTFConvert(const SRC* pSrc, size_t len, int ratio, Conv cnv) {
+			std::vector<DST> ret(len*ratio);
+			auto* pDst = &ret[0];
+			auto* pSrcEnd = pSrc + len;
+			while(pSrc != pSrcEnd) {
+				Text::Code ret = cnv(*reinterpret_cast<const char32_t*>(pSrc));
+				pSrc += ret.nread;
+				Text::WriteData(pDst, ret.code, ret.nwrite * sizeof(decltype(*pSrc)));
+				pDst += ret.nwrite;
+			}
+			// 実際に使ったサイズに合わせる
+			return ConvertToString<DST>(ret, pDst);
+		}
+	}
+	std::string Text::UTFConvertTo8(c16Buff src) {
+		return UTFConvert<char>(src.getPtr(), src.getSize(), 2, &UTF16To8);
+	}
+	std::string Text::UTFConvertTo8(c32Buff src) {
+		return UTFConvert<char>(src.getPtr(), src.getSize(), 4, &UTF32To8);
+	}
+	std::u16string Text::UTFConvertTo16(c8Buff src) {
+		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 1, &UTF8To16);
+	}
+	std::u16string Text::UTFConvertTo16(c32Buff src) {
+		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 2, &UTF32To16);
+	}
+	std::u32string Text::UTFConvertTo32(c8Buff src) {
+		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 1, &UTF8To32);
 	}
 }
