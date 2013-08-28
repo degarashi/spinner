@@ -35,7 +35,7 @@ namespace spn {
 			_size = ab._size;
 		}
 		//! initialize by const-pointer
-		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _size(sz), _pSrc(reinterpret_cast<const T*>(src)) {}
+		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz) {}
 		//! initialize by movable-vector
 		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(&buff), _size(buff.size()) {}
 		//! initialize by const-vector
@@ -67,6 +67,7 @@ namespace spn {
 			}
 		}
 
+		//! データのサイズ (not 文字列長)
 		size_t getSize() const {
 			return _size;
 		}
@@ -77,26 +78,44 @@ namespace spn {
 		}
 	};
 
-	size_t GetLength(const char* str);
-	size_t GetLength(const char16_t* str);
-	size_t GetLength(const char32_t* str);
+	struct StrLen {
+		size_t	dataLen,	//!< 単純なバイト長
+				strLen;		//!< 多バイト文字を考慮した文字列長
+		StrLen() = default;
+		StrLen(size_t sz): dataLen(sz), strLen(sz) {}
+		StrLen(size_t dLen, size_t sLen): dataLen(dLen), strLen(sLen) {}
+	};
+	StrLen GetLength(const char* str);
+	StrLen GetLength(const char16_t* str);
+	StrLen GetLength(const char32_t* str);
+
+	// とりあえずバイト長だけ格納しておいて必要に応じて文字列長を計算
 	template <class T>
 	class AbstString : public AbstBuffer<T, std::basic_string<T>> {
 		using base_type = AbstBuffer<T, std::basic_string<T>>;
 		using Str = std::basic_string<T>;
+		mutable size_t	_strLen;
+		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
 		public:
 			// 文字数カウント機能を追加
-			AbstString(const T* src): base_type(src, GetLength(src)) {}
-			AbstString(const T* src, size_t len): base_type(src, len) {}
-			AbstString(Str&& str): base_type(std::move(str)) {}
-			AbstString(const Str& str): base_type(str) {}
+			AbstString(const T* src): base_type(src, (_strLen=GetLength(src)).dataLen), _bStrLen(true) {}
+			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false) {}
+			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false) {}
+			AbstString(const Str& str): base_type(str), _bStrLen(false) {}
+
+			size_t getLength() const {
+				if(!_bStrLen) {
+					_bStrLen = true;
+					auto len = GetLength(base_type::getPtr());
+					assert(len.dataLen == base_type::getSize());
+					_strLen = len.strLen;
+				}
+				return _strLen;
+			}
 	};
 	using c8Str = AbstString<char>;
 	using c16Str = AbstString<char16_t>;
 	using c32Str = AbstString<char32_t>;
-	using c8Buff = AbstBuffer<char>;
-	using c16Buff = AbstBuffer<char16_t>;
-	using c32Buff = AbstBuffer<char32_t>;
 
 	using ByteBuff = std::vector<uint8_t>;
 	using U16Buff = std::vector<uint16_t>;

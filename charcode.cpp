@@ -1,13 +1,13 @@
 #include "misc.hpp"
 #include <locale>
 namespace spn {
-	size_t GetLength(const char* str) {
-		return std::strlen(str);
+	StrLen GetLength(const char* str) {
+		return Text::utf8_strlen(str);
 	}
-	size_t GetLength(const char16_t* str) {
+	StrLen GetLength(const char16_t* str) {
 		return Text::utf16_strlen(str);
 	}
-	size_t GetLength(const char32_t* str) {
+	StrLen GetLength(const char32_t* str) {
 		size_t count = 0;
 		while(*str != U'\0')
 			++count;
@@ -207,10 +207,25 @@ namespace spn {
 		return wcur;
 	}
 
+	StrLen Text::utf8_strlen(const char* str) {
+		auto *cur0 = reinterpret_cast<const uint8_t*>(str),
+			*cur = cur0;
+		constexpr int invalid = 0xffff;
+		const int c_size[] = {1, invalid, 2, 3, 4, 5, 6, invalid};
+		size_t count = 0;
+
+		uint8_t c = *cur;
+		while(c != '\0') {
+			cur += c_size[Bit::MSB_N(~c)];
+			++count;
+			c = *cur;
+		}
+		return StrLen(cur-cur0, count);
+	}
 	bool Text::utf16_isSurrogate(char16_t c) {
 		return (c & 0xdc00) == 0xd800;
 	}
-	size_t Text::utf16_strlen(const char16_t* str) {
+	StrLen Text::utf16_strlen(const char16_t* str) {
 		int cur = 0;
 		size_t count = 0;
 		char16_t c = str[cur++];
@@ -220,7 +235,7 @@ namespace spn {
 				++cur;
 			c = str[cur++];
 		}
-		return count;
+		return StrLen(cur, count);
 	}
 	bool Text::utf16_isSpace(char16_t c) {
 		return (c==L' ') || (c==L'　');
@@ -379,19 +394,19 @@ namespace spn {
 			return ConvertToString<DST>(ret, pDst);
 		}
 	}
-	std::string Text::UTFConvertTo8(c16Buff src) {
+	std::string Text::UTFConvertTo8(c16Str src) {
 		return UTFConvert<char>(src.getPtr(), src.getSize(), 2, &UTF16To8);
 	}
-	std::string Text::UTFConvertTo8(c32Buff src) {
+	std::string Text::UTFConvertTo8(c32Str src) {
 		return UTFConvert<char>(src.getPtr(), src.getSize(), 4, &UTF32To8);
 	}
-	std::u16string Text::UTFConvertTo16(c8Buff src) {
+	std::u16string Text::UTFConvertTo16(c8Str src) {
 		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 1, &UTF8To16);
 	}
-	std::u16string Text::UTFConvertTo16(c32Buff src) {
+	std::u16string Text::UTFConvertTo16(c32Str src) {
 		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 2, &UTF32To16);
 	}
-	std::u32string Text::UTFConvertTo32(c8Buff src) {
+	std::u32string Text::UTFConvertTo32(c8Str src) {
 		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 1, &UTF8To32);
 	}
 }
