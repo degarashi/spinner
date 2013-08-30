@@ -387,7 +387,7 @@ namespace spn {
 			while(pSrc != pSrcEnd) {
 				Text::Code ret = cnv(*reinterpret_cast<const char32_t*>(pSrc));
 				pSrc += ret.nread;
-				Text::WriteData(pDst, ret.code, ret.nwrite * sizeof(decltype(*pSrc)));
+				Text::WriteData(pDst, ret.code, ret.nwrite * sizeof(decltype(*pDst)));
 				pDst += ret.nwrite;
 			}
 			// 実際に使ったサイズに合わせる
