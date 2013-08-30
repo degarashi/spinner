@@ -271,10 +271,10 @@ namespace spn {
 			virtual ~ResMgrBase() {}
 	};
 	//! 名前付きリソース管理の為のラッパ
-	template <class T>
+	template <class T, class KEY>
 	struct ResWrap {
-		T 					value;
-		const std::string*	stp;
+		T 			value;
+		const KEY*	stp;
 
 		template <class... Ts>
 		ResWrap(Ts&&... ts): value(std::forward<Ts>(ts)...), stp(nullptr) {}
@@ -286,8 +286,8 @@ namespace spn {
 	struct DecayWrap {
 		using result = T;
 	};
-	template <class T>
-	struct DecayWrap<ResWrap<T>> {
+	template <class T, class K>
+	struct DecayWrap<ResWrap<T,K>> {
 		using result = T;
 	};
 	//! 名前なしリソース (anonymous-only)
@@ -540,18 +540,18 @@ namespace spn {
 	const std::function<void (typename ResMgrA<DAT,DERIVED>::Entry&)> ResMgrA<DAT,DERIVED>::cs_defCB = [](Entry&){};
 
 	//! 名前付きリソース (with anonymous)
-	template <class DAT, class DERIVED>
-	class ResMgrN : public ResMgrA<ResWrap<DAT>, DERIVED> {
+	template <class DAT, class DERIVED, class KEY=std::string>
+	class ResMgrN : public ResMgrA<ResWrap<DAT,KEY>, DERIVED> {
 		public:
-			using base_type = ResMgrA<ResWrap<DAT>, DERIVED>;
+			using base_type = ResMgrA<ResWrap<DAT,KEY>, DERIVED>;
 			using LHdl = typename base_type::LHdl;
 			using SHdl = typename base_type::SHdl;
 		private:
-			using NameMap = std::unordered_map<std::string, typename base_type::SHdl>;
+			using NameMap = std::unordered_map<KEY, typename base_type::SHdl>;
 			NameMap		_nameMap;
 
-			template <class KEY, class CB>
-			LHdl _replace(KEY&& key, CB cb) {
+			template <class KEY2, class CB>
+			LHdl _replace(KEY2&& key, CB cb) {
 				auto itr = _nameMap.find(key);
 				if(itr != _nameMap.end()) {
 					// 古いリソースは名前との関連付けを外す
@@ -567,21 +567,21 @@ namespace spn {
 				}
 				// エントリの新規作成
 				auto lh = cb();
-				itr = _nameMap.insert(std::make_pair(std::forward<KEY>(key), lh.get())).first;
+				itr = _nameMap.insert(std::make_pair(std::forward<KEY2>(key), lh.get())).first;
 				// 名前登録
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &itr->first;
 				return std::move(lh);
 			}
-			template <class KEY, class CB>
-			std::pair<LHdl,bool> _acquire(KEY&& key, CB cb) {
+			template <class KEY2, class CB>
+			std::pair<LHdl,bool> _acquire(KEY2&& key, CB cb) {
 				// 既に同じ名前が登録されていたら既存のハンドルを返す
 				auto itr = _nameMap.find(key);
 				if(itr != _nameMap.end())
 					return std::make_pair(LHdl(itr->second), false);
 
 				auto lh = cb();
-				itr = _nameMap.emplace(std::forward<KEY>(key), lh.get()).first;
+				itr = _nameMap.emplace(std::forward<KEY2>(key), lh.get()).first;
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &(itr->first);
 				return std::make_pair(std::move(lh), true);
@@ -590,35 +590,35 @@ namespace spn {
 		public:
 			using base_type::acquire;
 
-			template <class KEY, class... Args>
-			LHdl replace_emplace(KEY&& key, Args&&... args) {
+			template <class KEY2, class... Args>
+			LHdl replace_emplace(KEY2&& key, Args&&... args) {
 				auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
-				return _replace(std::forward<KEY>(key), fn);
+				return _replace(std::forward<KEY2>(key), fn);
 			}
 			//! 同じ要素が存在したら置き換え
-			template <class KEY, class DATA>
-			LHdl replace(KEY&& key, DATA&& dat) {
+			template <class KEY2, class DATA>
+			LHdl replace(KEY2&& key, DATA&& dat) {
 				auto fn = [&](){ return base_type::acquire(std::forward<DATA>(dat)); };
-				return _replace(std::forward<KEY>(key), fn);
+				return _replace(std::forward<KEY2>(key), fn);
 			}
 			//! 名前付きリソースの作成
 			/*! \return [リソースハンドル,
 			 *			新たにエントリが作成されたらtrue, 既存のキーが使われたらfalse] */
-			template <class KEY, class DATA>
-			std::pair<LHdl,bool> acquire(KEY&& key, DATA&& dat) {
+			template <class KEY2, class DATA>
+			std::pair<LHdl,bool> acquire(KEY2&& key, DATA&& dat) {
 				auto fn = [&]() { return base_type::acquire(std::forward<DATA>(dat)); };
-				return _acquire(std::forward<KEY>(key), fn);
+				return _acquire(std::forward<KEY2>(key), fn);
 			}
-			template <class KEY, class... Args>
-			std::pair<LHdl,bool> emplace(KEY&& key, Args&&... args) {
+			template <class KEY2, class... Args>
+			std::pair<LHdl,bool> emplace(KEY2&& key, Args&&... args) {
 				auto fn = std::bind(&base_type::template emplace<Args&&...>, std::ref(*this), RRef(std::forward<Args>(args))...);
 				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
  				// auto fn = [&]() { return base_type::emplace(std::forward<Args>(args)...); };
-				return _acquire(std::forward<KEY>(key), fn);
+				return _acquire(std::forward<KEY2>(key), fn);
 			}
 
 			//! キーを指定してハンドルを取得
-			LHdl getFromKey(const std::string& key) const {
+			LHdl getFromKey(const KEY& key) const {
 				auto itr = _nameMap.find(key);
 				if(itr != _nameMap.end())
 					return itr->second;
@@ -627,7 +627,7 @@ namespace spn {
 
 			bool release(SHandle sh) override {
 				auto& ent = base_type::_refSH(sh);
-				const std::string* stp = ent.data.stp;
+				const KEY* stp = ent.data.stp;
 				if(stp) {
 					return base_type::releaseWithCallback(sh, [this, stp](typename base_type::Entry&){
 						// 名前も消す
