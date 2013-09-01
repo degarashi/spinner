@@ -113,6 +113,28 @@ namespace spn {
 		return ret;
 	}
 
+	#define MoveByte(val,from,to) (((val>>from)&0xff) << to)
+	#define FlipByte(val, pos) MoveByte(val, pos, (numbit-pos-8))
+	inline uint64_t FlipEndian(uint64_t val) {
+		constexpr int numbit = sizeof(val)*8;
+		return FlipByte(val, 0) | FlipByte(val, 8) | FlipByte(val, 16) | FlipByte(val, 24)
+				| FlipByte(val, 32) | FlipByte(val, 40) | FlipByte(val, 48) | FlipByte(val, 56);
+	}
+	inline uint32_t FlipEndian(uint32_t val) {
+		constexpr int numbit = sizeof(val)*8;
+		return FlipByte(val, 0) | FlipByte(val, 8) | FlipByte(val, 16) | FlipByte(val, 24);
+	}
+	inline uint16_t FlipEndian(uint16_t val) {
+		constexpr int numbit = sizeof(val)*8;
+		return FlipByte(val, 0) | FlipByte(val, 8);
+	}
+	inline uint32_t ARGBtoRGBA(uint32_t val) {
+		return (val & 0xff00ff00) | ((val>>16)&0xff) | ((val&0xff)<<16);
+	}
+	inline uint32_t SetAlphaR(uint32_t val) {
+		return (val & 0x00ffffff) | ((val&0xff)<<24);
+	}
+
 	struct Text {
 		// エンコードタイプ
 		enum class CODETYPE {
