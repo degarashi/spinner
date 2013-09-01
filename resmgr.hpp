@@ -40,6 +40,7 @@ namespace spn {
 			bool valid() const;
 			operator bool () const;
 			bool operator == (const SHandle& sh) const;
+			bool operator != (const SHandle& sh) const;
 			void swap(SHandle& sh) noexcept;
 			/*! ResourceIDから対応マネージャを特定して解放 */
 			void release();
