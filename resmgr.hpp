@@ -38,9 +38,10 @@ namespace spn {
 			VWord getValue() const;
 			//! ハンドル値が有効かを判定
 			bool valid() const;
-			operator bool () const;
+			explicit operator bool () const;
 			bool operator == (const SHandle& sh) const;
 			bool operator != (const SHandle& sh) const;
+			bool operator < (const SHandle& sh) const;
 			void swap(SHandle& sh) noexcept;
 			/*! ResourceIDから対応マネージャを特定して解放 */
 			void release();
@@ -69,8 +70,10 @@ namespace spn {
 			VWord getValue() const;
 			bool valid() const;
 			void  swap(WHandle& wh) noexcept;
-			operator bool () const;
-			bool operator == (const WHandle& sh) const;
+			explicit operator bool () const;
+			bool operator == (const WHandle& wh) const;
+			bool operator != (const WHandle& wh) const;
+			bool operator < (const WHandle& wh) const;
 	};
 
 	template <class MGR, class DATA>

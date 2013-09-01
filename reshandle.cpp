@@ -37,6 +37,9 @@ namespace spn {
 	bool SHandle::operator != (const SHandle& sh) const {
 		return !(this->operator == (sh));
 	}
+	bool SHandle::operator < (const SHandle& sh) const {
+		return _value.value() < sh._value.value();
+	}
 	void SHandle::swap(SHandle& sh) noexcept {
 		std::swap(_value, sh._value);
 	}
@@ -71,6 +74,12 @@ namespace spn {
 	}
 	bool WHandle::operator == (const WHandle& wh) const {
 		return _value.value() == wh._value.value();
+	}
+	bool WHandle::operator != (const WHandle& wh) const {
+		return !(this->operator == (wh));
+	}
+	bool WHandle::operator < (const WHandle& wh) const {
+		return _value.value() < wh._value.value();
 	}
 	void WHandle::swap(WHandle& wh) noexcept {
 		std::swap(_value, wh._value);
