@@ -5,6 +5,7 @@
 #include "noseq.hpp"
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 namespace spn {
 	//! 型を保持しない強参照ハンドル値
@@ -355,8 +356,11 @@ namespace spn {
 			Entry& _refSH(SHdl sh) {
 				Entry& ent = _dataVec.get(sh.getIndex());
 				#ifdef DEBUG
-					if(ent.magic != sh.getMagic())
-						throw std::runtime_error("ResMgr: invalid magic number");
+					if(ent.magic != sh.getMagic()) {
+						std::stringstream ss;
+						ss << "ResMgr: invalid magic number(Ent:" << ent.magic << " != Handle:" << sh.getMagic() << ")";
+						throw std::runtime_error(ss.str());
+					}
 				#endif
 				return ent;
 			}
@@ -382,15 +386,17 @@ namespace spn {
 				return boost::none;
 			}
 			LHdl _acquire(DAT&& d) {
+				++_wMagicIndex;
+				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
 				#ifdef DEBUG
-					auto id = _dataVec.add(Entry(std::move(d), ++_wMagicIndex, ++_sMagicIndex));
+					++_sMagicIndex;
 					_sMagicIndex &= SHandle::Value::length_mask<SHandle::Value::MAGIC>();
+					auto id = _dataVec.add(Entry(std::move(d), _wMagicIndex, _sMagicIndex));
 					SHdl sh(id, _resID, _sMagicIndex);
 				#else
-					auto id = _dataVec.add(Entry(std::move(d), ++_wMagicIndex));
+					auto id = _dataVec.add(Entry(std::move(d), _wMagicIndex));
 					SHdl sh(id, _resID);
 				#endif
-				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
 				return LHdl(sh);
 			}
 
@@ -460,8 +466,11 @@ namespace spn {
 				auto& ent = _refSH(sh);
 				#ifdef DEBUG
 					// 簡易マジックナンバーチェック
-					if(ent.magic != sh.getMagic())
-						throw std::runtime_error("invalid magic number");
+					if(ent.magic != sh.getMagic()) {
+						std::stringstream ss;
+						ss << "ResMgr: invalid magic number(Ent:" << ent.magic << " != Handle:" << sh.getMagic() << ")";
+						throw std::runtime_error(ss.str());
+					}
 				#endif
 				if(--ent.count == 0) {
 					cb(ent);
