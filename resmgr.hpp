@@ -155,6 +155,10 @@ namespace spn {
 			bool operator == (const HdlLock& hl) const {
 				return _hdl == hl.get();
 			}
+			HdlLock& operator = (HDL hdl) {
+				reset(hdl);
+				return *this;
+			}
 
 			operator bool () const { return valid(); }
 
