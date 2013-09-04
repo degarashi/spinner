@@ -531,6 +531,9 @@ namespace spn {
 			using AnotherWHandle = WHandleT<ThisType, NDATA>;
 			template <class NDATA>
 			using AnotherLHandle = HdlLock<AnotherSHandle<NDATA>>;
+			size_t size() const {
+				return _dataVec.size();
+			}
 
 		protected:
 			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
