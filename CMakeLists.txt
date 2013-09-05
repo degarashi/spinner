@@ -7,7 +7,7 @@ include_directories("/usr/local/include/c++/4.8.1/i686-pc-linux-gnu")
 link_directories("/usr/local/lib/gcc/i686-pc-linux-gnu/4.8.1")
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -std=c++11 -ggdb3 -O0 -msse2")
 set(CMAKE_CXX_FLAGS_RELEASE "-std=c++11 -O2 -msse2")
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 add_library(spinner STATIC misc.cpp resmgr.cpp reshandle.cpp bits.cpp spn_math.cpp spn_math2.cpp fpset.cpp pose.cpp charcode.cpp)
 
 add_executable(spn_test main.cpp)
