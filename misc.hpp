@@ -36,6 +36,40 @@ namespace spn {
 		return _RRef<T&&>(std::forward<T>(t));
 	}
 
+	template <class... Ts>
+	struct _InversedArg {
+		template <class CB, class... TsA>
+		void operator()(CB cb, TsA&&... tsa) {
+			cb(std::forward<TsA>(tsa)...);
+		}
+	};
+	template <class T0, class... Ts>
+	struct _InversedArg<T0,Ts...> {
+		template <class T>
+		struct Inner {
+			/*! T&& -> T&&
+			 *	T& -> T&
+			 *	T* -> T*
+			 *	T = const T& */
+			using type = typename std::conditional<!std::is_reference<T>::value  && !std::is_pointer<T>::value, const T&, T>::type;
+		};
+		using Type = typename Inner<T0>::type;
+		Type				_value;
+		_InversedArg<Ts...>	_other;
+
+		template <class T0A, class... TsA>
+		_InversedArg(T0A&& t0, TsA&&... tsa): _value(std::forward<T0A>(t0)), _other(std::forward<TsA>(tsa)...) {}
+		template <class CB, class... TsA>
+		void operator()(CB cb, TsA&&... tsa) {
+			_other(cb, std::forward<Type>(_value), std::forward<TsA>(tsa)...);
+		}
+	};
+	//! 引数の順序を逆にしてコール
+	template <class CB, class... Ts>
+	void InversedArg(CB cb, Ts&&... ts) {
+		_InversedArg<decltype(std::forward<Ts>(ts))...>(std::forward<Ts>(ts)...)(cb);
+	}
+
 	//! スピンロックによるmutex
 	class Synchro {
 		private:
