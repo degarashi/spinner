@@ -664,14 +664,14 @@ namespace spn {
 		using W##suffix = mgr::AnotherWHandle<sp>;
 }
 namespace std {
-	template <>
-	struct hash<spn::SHandle> {
+	template <class MGR, class DATA>
+	struct hash<spn::SHandleT<MGR,DATA>> {
 		size_t operator()(const spn::SHandle& sh) const {
 			return sh.getValue();
 		}
 	};
-	template <>
-	struct hash<spn::WHandle> {
+	template <class MGR, class DATA>
+	struct hash<spn::WHandleT<MGR,DATA>> {
 		size_t operator()(const spn::WHandle& wh) const {
 			return hash<uint64_t>()(wh.getValue());
 		}
@@ -679,7 +679,7 @@ namespace std {
 	template <class H>
 	struct hash<spn::HdlLock<H>> {
 		size_t operator()(const spn::HdlLock<H>& h) const {
-			return hash<H>()(h);
+			return hash<H>()(h.get());
 		}
 	};
 }
