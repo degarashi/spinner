@@ -37,14 +37,18 @@ namespace spn {
 	}
 
 	template <class... Ts>
-	struct _InversedArg {
+	struct ArgHolder {
 		template <class CB, class... TsA>
-		void operator()(CB cb, TsA&&... tsa) {
-			cb(std::forward<TsA>(tsa)...);
+		auto reverse(CB cb, TsA&&... tsa) -> decltype(cb(std::forward<TsA>(tsa)...)) {
+			return cb(std::forward<TsA>(tsa)...);
+		}
+		template <class CB, class... TsA>
+		auto inorder(CB cb, TsA&&... tsa) -> decltype(cb(std::forward<TsA>(tsa)...)) {
+			return cb(std::forward<TsA>(tsa)...);
 		}
 	};
 	template <class T0, class... Ts>
-	struct _InversedArg<T0,Ts...> {
+	struct ArgHolder<T0,Ts...> {
 		template <class T>
 		struct Inner {
 			/*! T&& -> T&&
@@ -55,19 +59,24 @@ namespace spn {
 		};
 		using Type = typename Inner<T0>::type;
 		Type				_value;
-		_InversedArg<Ts...>	_other;
+		using Lower = ArgHolder<Ts...>;
+		Lower				_other;
 
 		template <class T0A, class... TsA>
-		_InversedArg(T0A&& t0, TsA&&... tsa): _value(std::forward<T0A>(t0)), _other(std::forward<TsA>(tsa)...) {}
+		ArgHolder(T0A&& t0, TsA&&... tsa): _value(std::forward<T0A>(t0)), _other(std::forward<TsA>(tsa)...) {}
 		template <class CB, class... TsA>
-		void operator()(CB cb, TsA&&... tsa) {
-			_other(cb, std::forward<Type>(_value), std::forward<TsA>(tsa)...);
+		auto reverse(CB cb, TsA&&... tsa) -> decltype(_other.reverse(cb, std::forward<Type>(_value), std::forward<TsA>(tsa)...)) {
+			return _other.reverse(cb, std::forward<Type>(_value), std::forward<TsA>(tsa)...);
+		}
+		template <class CB, class... TsA>
+		auto inorder(CB cb, TsA&&... tsa) -> decltype(_other.inorder(cb, std::forward<TsA>(tsa)..., std::forward<Type>(_value))) {
+			return _other.inorder(cb, std::forward<TsA>(tsa)..., std::forward<Type>(_value));
 		}
 	};
 	//! 引数の順序を逆にしてコール
 	template <class CB, class... Ts>
-	void InversedArg(CB cb, Ts&&... ts) {
-		_InversedArg<decltype(std::forward<Ts>(ts))...>(std::forward<Ts>(ts)...)(cb);
+	auto ReversedArg(CB cb, Ts&&... ts) -> decltype(ArgHolder<decltype(std::forward<Ts>(ts))...>(std::forward<Ts>(ts)...).reverse(cb)) {
+		return ArgHolder<decltype(std::forward<Ts>(ts))...>(std::forward<Ts>(ts)...).reverse(cb);
 	}
 
 	//! スピンロックによるmutex
