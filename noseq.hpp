@@ -171,7 +171,7 @@ namespace spn {
 						_array[_array[objI].udata.uid].ids = ObjID(objI);
 					}
 					// 要素を解放
-					_array[backI].udata.value = boost::none;
+					_array[backI].udata.value = none;
 					// フリーリストをつなぎ替える
 					ids = FreeID(_firstFree);
 					_firstFree = uindex;

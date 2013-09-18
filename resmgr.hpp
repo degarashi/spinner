@@ -439,7 +439,7 @@ namespace spn {
 					if(--(*ent).count == 0) {
 						// オブジェクトの解放
 						// 巡回中はエントリを消すと不具合が出るのでデストラクタを呼ぶのみ
-						ent = boost::none;
+						ent = none;
 						++count;
 					}
 				});

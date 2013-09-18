@@ -1,6 +1,10 @@
 #pragma once
+#include <cstdint>
+#include <algorithm>
 
 namespace spn {
+	struct none_t{};
+	extern none_t none;
 	template <class T>
 	struct _OptionalBuff {
 		uint8_t _buffer[sizeof(T)];
@@ -66,7 +70,7 @@ namespace spn {
 			Optional(_AsInitialized): _bInit(true) {}
 
 			Optional(): _bInit(false) {}
-			Optional(boost::none_t): _bInit(false) {}
+			Optional(none_t): _bInit(false) {}
 			template <class T2>
 			Optional(T2&& t): _buffer(std::forward<T2>(t)), _bInit(true) {}
 			Optional(Optional<T>&& t): _bInit(t) {
@@ -114,7 +118,7 @@ namespace spn {
 				_bInit = true;
 				return *this;
 			}
-			Optional& operator = (boost::none_t) noexcept {
+			Optional& operator = (none_t) noexcept {
 				_release();
 				return *this;
 			}

@@ -1,6 +1,7 @@
 #include "resmgr.hpp"
 
 namespace spn {
+	none_t none;
 	// ------------------ ResMgrBase ------------------
 	ResMgrBase::RMList ResMgrBase::s_rmList;
 
