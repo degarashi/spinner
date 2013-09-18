@@ -85,7 +85,7 @@ namespace spn {
 
 			decltype(_buffer.castT()) get() {
 				if(!*this)
-					throw boost::bad_get();
+					throw std::runtime_error("optional: bad_get");
 				return _buffer.castT();
 			}
 			decltype(_buffer.castCT()) get() const {
