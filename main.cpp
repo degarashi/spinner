@@ -7,7 +7,7 @@
 #include "noseq.hpp"
 #include "bits.hpp"
 #include "resmgr.hpp"
-
+#include "pqueue.hpp"
 using namespace spn;
 namespace {
 	void MatTest() {
@@ -97,5 +97,6 @@ int main(int argc, char **argv) {
 	PoseTest();
 	BitFieldTest();
 	ResourceTest();
+	spn::unittest::PQueue();
 	return 0;
 }
