@@ -1,12 +1,13 @@
 #pragma once
 #include "optional.hpp"
+#include <deque>
 
 namespace spn {
 	namespace unittest {
 		void PQueue();
 	}
 	//! 優先度付きキュー
-	template <class T, template<class,class> class Container=std::vector, class Pred=std::less<T>>
+	template <class T, template<class,class> class Container=std::deque, class Pred=std::less<T>>
 	class pqueue : private Container<T, std::allocator<T>> {
 		using base_type = Container<T, std::allocator<T>>;
 		friend void spn::unittest::PQueue();
