@@ -64,6 +64,12 @@ namespace spn {
 				dst = std::move(const_cast<T&>(base_type::back()));
 				pop_back();
 			}
+			typename base_type::const_iterator erase(const T& obj) {
+				auto itr = std::find(base_type::begin(), base_type::end(), obj);
+				if(itr != base_type::end())
+					return base_type::erase(itr);
+				return base_type::end();
+			}
 			bool empty() const {
 				return base_type::empty();
 			}
