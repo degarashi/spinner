@@ -94,5 +94,6 @@ namespace spn {
 			}
 			using base_type::cbegin;
 			using base_type::cend;
+			using base_type::clear;
 	};
 }
