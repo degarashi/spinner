@@ -13,10 +13,11 @@ namespace spn {
 		friend void spn::unittest::PQueue();
 		template <class TA>
 		void _push(TA&& t, std::bidirectional_iterator_tag) {
+			Pred pred;
 			// 線形探索
 			auto itr = base_type::begin();
 			while(itr != base_type::end()) {
-				if(t < *itr)
+				if(pred(t, *itr))
 					break;
 				++itr;
 			}
@@ -24,12 +25,13 @@ namespace spn {
 		}
 		template <class TA>
 		void _push(TA&& t, std::random_access_iterator_tag) {
+			Pred pred;
 			// 2分探索
 			auto itrA = base_type::begin(),
 				itrC = base_type::end();
 			while(itrA < itrC) {
 				auto itrB = itrA + (itrC - itrA)/2;
-				if(t < *itrB)
+				if(pred(t, *itrB))
 					itrC = itrB;
 				else
 					itrA = itrB+1;

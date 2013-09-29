@@ -4,10 +4,26 @@
 #include <limits>
 #include <cassert>
 #include <deque>
-
+#include <iostream>
 namespace spn {
 	namespace unittest {
 		void PQueue() {
+			struct My {
+				int a,b;
+				bool operator < (const My& my) const {
+					return a < my.a;
+				}
+				bool operator > (const My& my) const {
+					return a > my.a;
+				}
+			};
+			spn::pqueue<My, std::deque, std::less<My>> my;
+			my.push(My{100,200});
+			my.push(My{200,300});
+			my.push(My{300,400});
+			for(auto& me : my)
+				std::cout << me.b << std::endl;
+
 			using Data = MoveOnly<MoveOnly<int>>;
 			std::random_device rdev;
 			std::array<uint_least32_t, 32> seed;
