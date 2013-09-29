@@ -6,18 +6,31 @@ namespace spn {
 	namespace unittest {
 		void PQueue();
 	}
+	struct InsertAfter {
+		template <class T, class Pred>
+		bool operator()(const T& t0, const T& t1, Pred p) const {
+			return p(t0, t1);
+		}
+	};
+	struct InsertBefore {
+		template <class T, class Pred>
+		bool operator()(const T& t0, const T& t1, Pred p) const {
+			return !p(t1, t0);
+		}
+	};
 	//! 優先度付きキュー
-	template <class T, template<class,class> class Container=std::deque, class Pred=std::less<T>>
+	template <class T, template<class,class> class Container=std::deque, class Pred=std::less<T>, class Insert=InsertAfter>
 	class pqueue : private Container<T, std::allocator<T>> {
 		using base_type = Container<T, std::allocator<T>>;
 		friend void spn::unittest::PQueue();
 		template <class TA>
 		void _push(TA&& t, std::bidirectional_iterator_tag) {
 			Pred pred;
+			Insert ins;
 			// 線形探索
 			auto itr = base_type::begin();
 			while(itr != base_type::end()) {
-				if(pred(t, *itr))
+				if(ins(t, *itr, pred))
 					break;
 				++itr;
 			}
@@ -26,12 +39,13 @@ namespace spn {
 		template <class TA>
 		void _push(TA&& t, std::random_access_iterator_tag) {
 			Pred pred;
+			Insert ins;
 			// 2分探索
 			auto itrA = base_type::begin(),
 				itrC = base_type::end();
 			while(itrA < itrC) {
 				auto itrB = itrA + (itrC - itrA)/2;
-				if(pred(t, *itrB))
+				if(ins(t, *itrB, pred))
 					itrC = itrB;
 				else
 					itrA = itrB+1;

@@ -8,21 +8,33 @@
 namespace spn {
 	namespace unittest {
 		void PQueue() {
-			struct My {
+			struct MyPair {
 				int a,b;
-				bool operator < (const My& my) const {
+				bool operator < (const MyPair& my) const {
 					return a < my.a;
 				}
-				bool operator > (const My& my) const {
-					return a > my.a;
-				}
 			};
-			spn::pqueue<My, std::deque, std::less<My>> my;
-			my.push(My{100,200});
-			my.push(My{200,300});
-			my.push(My{300,400});
-			for(auto& me : my)
-				std::cout << me.b << std::endl;
+			{
+				spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertBefore> myB;
+				for(int i=0 ; i<20 ; i++)
+					myB.push(MyPair{0, i*100});
+
+				int check = myB.front().b;
+				for(auto& me : myB) {
+					assert(check >= me.b);
+					check = me.b;
+				}
+			}
+			{
+				spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertAfter> myA;
+				for(int i=0 ; i<20 ; i++)
+					myA.push(MyPair{0, i*100});
+				int check = myA.front().b;
+				for(auto& me : myA) {
+					assert(check <= me.b);
+					check = me.b;
+				}
+			}
 
 			using Data = MoveOnly<MoveOnly<int>>;
 			std::random_device rdev;
@@ -32,7 +44,7 @@ namespace spn {
 			std::mt19937 mt(seq);
 			std::uniform_int_distribution<int> uni{0, std::numeric_limits<int>::max()};
 
-			pqueue<Data, std::deque> q;
+			pqueue<Data, std::deque, std::less<Data>, InsertBefore> q;
 			// 並び順のチェック
 			auto fnCheck = [&q]() {
 				int check = 0;
