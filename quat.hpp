@@ -38,7 +38,7 @@
 			QuatT(const QuatT<true>& q);
 			QuatT(_TagIdentity);
 			QuatT(float fx, float fy, float fz, float fw);
-			__m128 loadPS() const;
+			reg128 loadPS() const;
 
 			template <int M, int N, bool A>
 			static QuatT FromMat(const MatT<M,N,A>& m);
@@ -117,14 +117,14 @@
 		}
 		QT::QuatT(const QuatT<false>& q) { STORETHIS(LOADPSU(q.m)); }
 		QT::QuatT(const QuatT<true>& q) { STORETHIS(LOADPS(q.m)); }
-		QT::QuatT(_TagIdentity) { STORETHIS(_mm_setr_ps(0,0,0,1)); }
+		QT::QuatT(_TagIdentity) { STORETHIS(reg_setr_ps(0,0,0,1)); }
 		QT::QuatT(float fx, float fy, float fz, float fw) {
 			x = fx;
 			y = fy;
 			z = fz;
 			w = fw;
 		}
-		__m128 QT::loadPS() const { return LOADTHIS(); }
+		reg128 QT::loadPS() const { return LOADTHIS(); }
 		QT QT::FromAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA) {
 			return FromAxisF(xA.x, xA.y, xA.z,
 						yA.x, yA.y, yA.z,
@@ -189,14 +189,14 @@
 		BOOST_PP_REPEAT_FROM_TO(3,5, DEF_FROMMAT0, NOTHING)
 
 		void QT::identity() {
-			STORETHIS(_mm_setr_ps(0,0,0,1));
+			STORETHIS(reg_setr_ps(0,0,0,1));
 		}
 		void QT::conjugate() {
-			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_setr_ps(-1,-1,-1,1)));
+			STORETHIS(reg_mul_ps(LOADTHIS(), reg_setr_ps(-1,-1,-1,1)));
 		}
 		QT QT::conjugation() const {
 			QuatT ret;
-			STORETHISPS(ret.m, _mm_mul_ps(LOADTHIS(), _mm_setr_ps(-1,-1,-1,1)));
+			STORETHISPS(ret.m, reg_mul_ps(LOADTHIS(), reg_setr_ps(-1,-1,-1,1)));
 			return ret;
 		}
 		void QT::invert() {
@@ -214,12 +214,12 @@
 			*this = q;
 		}
 		float QT::len_sq() const {
-			__m128 xm = LOADTHIS();
-			xm = _mm_mul_ps(xm, xm);
+			reg128 xm = LOADTHIS();
+			xm = reg_mul_ps(xm, xm);
 			SUMVEC(xm);
 
 			float ret;
-			_mm_store_ss(&ret, xm);
+			reg_store_ss(&ret, xm);
 			return ret;
 		}
 		float QT::length() const {
@@ -231,7 +231,7 @@
 		QT QT::normalization() const {
 			float rlen = _sseRcp22Bit(length());
 			QuatT q;
-			STORETHISPS(q.m, _mm_mul_ps(LOADTHIS(), _mm_load1_ps(&rlen)));
+			STORETHISPS(q.m, reg_mul_ps(LOADTHIS(), reg_load1_ps(&rlen)));
 			return q;
 		}
 		#define DEF_OP0(align, op, func)	QT& QT::operator BOOST_PP_CAT(op,=) (const QuatT<BOOLNIZE(align)>& q) { \
@@ -243,18 +243,18 @@
 
 		#define DEF_OP1(z,align,ops)	DEF_OP0(align, BOOST_PP_TUPLE_ELEM(0,ops), BOOST_PP_TUPLE_ELEM(1,ops))
 		#define DEF_OP(op, func)		BOOST_PP_REPEAT(2, DEF_OP1, (op,func))
-		DEF_OP(+, _mm_add_ps)
-		DEF_OP(-, _mm_sub_ps)
+		DEF_OP(+, reg_add_ps)
+		DEF_OP(-, reg_sub_ps)
 		#undef DEF_OP1
 		#undef DEF_OP0
 
 		QT& QT::operator *= (float s) {
-			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
+			STORETHIS(reg_mul_ps(LOADTHIS(), reg_load1_ps(&s)));
 			return *this;
 		}
 		QT QT::operator * (float s) const {
 			QuatT q;
-			STORETHISPS(q.m, _mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
+			STORETHISPS(q.m, reg_mul_ps(LOADTHIS(), reg_load1_ps(&s)));
 			return q;
 		}
 		QT& QT::operator /= (float s) { return *this *= _sseRcp22Bit(s); }
@@ -282,7 +282,7 @@
 		/*
 		#define DEF_OP00(align, op, func)	QT& QT::operator BOOST_PP_CAT(op,=) (const QuatT<BOOLNIZE(align)>& q) {
 		#define DEF_OP()
-		DEF_OPS(*, _mm_mul_ps)
+		DEF_OPS(*, reg_mul_ps)
 		DEF_OPS(/, _mmDivPs)
 		*/
 		QT QT::lerp(const QuatT& q, float t) const {

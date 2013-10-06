@@ -83,12 +83,12 @@
 				}
 				#define ALLSET(z,n,data)	STORETHIS(n, data);
 				MatT(float s, _TagAll) {
-					__m128 r = _mm_load1_ps(&s);
+					reg128 r = reg_load1_ps(&s);
 					BOOST_PP_REPEAT(DIM_M, ALLSET, r)
 				}
 				MatT(_TagIdentity): MatT(1.f, TagDiagonal) {}
 
-				#define SETARRAY(z,n,src)	STORETHIS(n, _mm_loadu_ps(src)); src += DIM_N;
+				#define SETARRAY(z,n,src)	STORETHIS(n, reg_loadu_ps(src)); src += DIM_N;
 				MatT(const float* src) {
 					BOOST_PP_REPEAT(DIM_M, SETARRAY, src)
 				}
@@ -103,8 +103,8 @@
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMUL, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMUL, SET_ARGS0, f)
 				}
-				#define SET_ARGS1(z,n,data)	STORETHIS(n, _mm_mul_ps(xmm_matI[n], _mm_load1_ps(&BOOST_PP_CAT(data,n))));
-				#define SET_ARGS2(z,n,dummy) STORETHIS(n, _mm_setzero_ps());
+				#define SET_ARGS1(z,n,data)	STORETHIS(n, reg_mul_ps(xmm_matI[n], reg_load1_ps(&BOOST_PP_CAT(data,n))));
+				#define SET_ARGS2(z,n,dummy) STORETHIS(n, reg_setzero_ps());
 				//! 対角線上
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMIN, SET_ARGS1, f)
@@ -142,7 +142,7 @@
 					RowE getRowE(int n) const {
 						if(n >= height)
 							return RowE(xmm_matI[n]);
-						return RowE(_mm_or_ps(_mm_and_ps(LOADTHIS(n), xmm_mask[n]), xmm_matI[n]));
+						return RowE(reg_or_ps(reg_and_ps(LOADTHIS(n), xmm_mask[n]), xmm_matI[n]));
 					}
 				#endif
 				template <bool A>
@@ -169,18 +169,18 @@
 				#define FUNC(z,n,func)		STORETHIS(n, func(LOADTHIS(n), r0));
 				#define FUNC2(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHIS(n), r0));
 				#define DEF_OP(op, func) MatT& operator BOOST_PP_CAT(op,=) (float s) { \
-					__m128 r0 = _mm_load1_ps(&s); \
+					reg128 r0 = reg_load1_ps(&s); \
 					BOOST_PP_REPEAT(DIM_M, FUNC, func) \
 					return *this; } \
 					MatT operator op (float s) const { \
 						MatT ret; \
-						__m128 r0 = _mm_load1_ps(&s); \
+						reg128 r0 = reg_load1_ps(&s); \
 						BOOST_PP_REPEAT(DIM_M, FUNC2, func) \
 						return ret; }
 
-				DEF_OP(+, _mm_add_ps)
-				DEF_OP(-, _mm_sub_ps)
-				DEF_OP(*, _mm_mul_ps)
+				DEF_OP(+, reg_add_ps)
+				DEF_OP(-, reg_sub_ps)
+				DEF_OP(*, reg_mul_ps)
 				DEF_OP(/, _mmDivPs)
 				#undef DEF_OP
 
@@ -194,8 +194,8 @@
 					BOOST_PP_REPEAT(DIM_M, FUNC4, func) \
 					return ret; }
 
-				DEF_OPM(+, _mm_add_ps)
-				DEF_OPM(-, _mm_sub_ps)
+				DEF_OPM(+, reg_add_ps)
+				DEF_OPM(-, reg_sub_ps)
 
 				// -------------------- others --------------------
 				// 行列拡張Get = Mat::getRowE()
@@ -382,11 +382,11 @@
 							S = std::sin(ang);
 
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_setr_ps(1,0,0,0));
-						STORETHISPS(mt.ma[1], _mm_setr_ps(0,C,-S,0));
-						STORETHISPS(mt.ma[2], _mm_setr_ps(0,S,C,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(1,0,0,0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(0,C,-S,0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(0,S,C,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -394,11 +394,11 @@
 						float C = std::cos(ang),
 							S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_setr_ps(C,0,S,0));
-						STORETHISPS(mt.ma[1], _mm_setr_ps(0,1,0,0));
-						STORETHISPS(mt.ma[2], _mm_setr_ps(-S,0,C,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(C,0,S,0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(0,1,0,0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(-S,0,C,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -406,11 +406,11 @@
 						float C = std::cos(ang),
 							S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_setr_ps(C,-S,0,0));
-						STORETHISPS(mt.ma[1], _mm_setr_ps(S,C,0,0));
-						STORETHISPS(mt.ma[2], _mm_setr_ps(0,0,1,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(C,-S,0,0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(S,C,0,0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(0,0,1,0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -419,17 +419,17 @@
 							S = std::sin(ang),
 							RC = 1-C;
 						MatT mt;
-						STORETHISPS(mt.ma[0], _mm_setr_ps(C+Square(axis.x)*RC,
+						STORETHISPS(mt.ma[0], reg_setr_ps(C+Square(axis.x)*RC,
 														axis.x * axis.y * RC + axis.z*S,
 														axis.x * axis.z * RC + axis.y*S, 0));
-						STORETHISPS(mt.ma[1], _mm_setr_ps(axis.x * axis.y * RC - axis.z*S,
+						STORETHISPS(mt.ma[1], reg_setr_ps(axis.x * axis.y * RC - axis.z*S,
 														C + Square(axis.y) * RC,
 														 axis.y * axis.z * RC + axis.x*S, 0));
-						STORETHISPS(mt.ma[2], _mm_setr_ps(axis.x * axis.z * RC + axis.y*S,
+						STORETHISPS(mt.ma[2], reg_setr_ps(axis.x * axis.z * RC + axis.y*S,
 														axis.y * axis.z * RC + axis.x*S,
 														C + Square(axis.z) * RC, 0));
 						#if DIM_M == 4
-							STORETHISPS(mt.ma[3], _mm_setr_ps(0,0,0,1));
+							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
@@ -449,10 +449,10 @@
 						xA.normalize();
 
 						MatT ret;
-						STORETHISPS(ret.ma[0], _mm_setr_ps(xA.x, up.x, dir.x, 0));
-						STORETHISPS(ret.ma[1], _mm_setr_ps(xA.y, up.y, dir.y, 0));
-						STORETHISPS(ret.ma[2], _mm_setr_ps(xA.z, up.z, dir.z, 0));
-						STORETHISPS(ret.ma[3], _mm_setr_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
+						STORETHISPS(ret.ma[0], reg_setr_ps(xA.x, up.x, dir.x, 0));
+						STORETHISPS(ret.ma[1], reg_setr_ps(xA.y, up.y, dir.y, 0));
+						STORETHISPS(ret.ma[2], reg_setr_ps(xA.z, up.z, dir.z, 0));
+						STORETHISPS(ret.ma[3], reg_setr_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
 						return ret;
 					}
 					MT MT::LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up) {
@@ -469,10 +469,10 @@
 								f0 = fz/(fz-nz),
 								f1 = -nz*fz/(fz-nz);
 						MatT ret;
-						STORETHISPS(ret.ma[0], _mm_setr_ps(w,0,0,0));
-						STORETHISPS(ret.ma[1], _mm_setr_ps(0,h,0,0));
-						STORETHISPS(ret.ma[2], _mm_setr_ps(0,0,f0,coeff));
-						STORETHISPS(ret.ma[3], _mm_setr_ps(0,0,f1*coeff,0));
+						STORETHISPS(ret.ma[0], reg_setr_ps(w,0,0,0));
+						STORETHISPS(ret.ma[1], reg_setr_ps(0,h,0,0));
+						STORETHISPS(ret.ma[2], reg_setr_ps(0,0,f0,coeff));
+						STORETHISPS(ret.ma[3], reg_setr_ps(0,0,f1*coeff,0));
 						return ret;
 					}
 					MT MT::PerspectiveFovLH(float fov, float aspect, float nz, float fz) {
@@ -518,18 +518,18 @@
 				return !(clmFlagT & clmFlagF);
 			}
 			void MT::rowSwap(int r0, int r1) {
-				__m128 xm0 = LOADTHIS(r0),
+				reg128 xm0 = LOADTHIS(r0),
 						xm1 = LOADTHIS(r1);
 				STORETHIS(r1, xm0);
 				STORETHIS(r0, xm1);
 			}
 			void MT::rowMul(int r0, float s) {
-				STORETHIS(r0, _mm_mul_ps(LOADTHIS(r0), _mm_load1_ps(&s)));
+				STORETHIS(r0, reg_mul_ps(LOADTHIS(r0), reg_load1_ps(&s)));
 			}
 			void MT::rowMulAdd(int r0, float s, int r1) {
-				__m128 xm0 = _mm_mul_ps(LOADTHIS(r0), _mm_load1_ps(&s)),
+				reg128 xm0 = reg_mul_ps(LOADTHIS(r0), reg_load1_ps(&s)),
 						xm1 = LOADTHIS(r1);
-				STORETHIS(r1, _mm_add_ps(xm0, xm1));
+				STORETHIS(r1, reg_add_ps(xm0, xm1));
 			}
 			void MT::clmSwap(int c0, int c1) {
 				setColumn(c1, getColumn(c0));
@@ -553,19 +553,19 @@
 				return _mmIsZeroEps(LOADTHISZ(n));
 			}
 			bool MT::isZero() const {
-				__m128 accum = _mm_setzero_ps();
-				#define ACCUM_ABS(dummy,n,dummy2)	_mm_add_ps(accum, _mmAbsPs(LOADTHIS(n)));
+				reg128 accum = reg_setzero_ps();
+				#define ACCUM_ABS(dummy,n,dummy2)	reg_add_ps(accum, _mmAbsPs(LOADTHIS(n)));
 				BOOST_PP_REPEAT(DIM_M, ACCUM_ABS, NOTHING)
-				accum = _mm_and_ps(accum, xmm_mask[DIM_N]);
-				return _mm_movemask_ps(accum) == 0;
+				accum = reg_and_ps(accum, xmm_mask[DIM_N]);
+				return reg_movemask_ps(accum) == 0;
 			}
 			void MT::rowNormalize() {
-				__m128 xm0 = LOADTHIS(0);
+				reg128 xm0 = LOADTHIS(0);
 				for(int i=1 ; i<height ; i++)
-					xm0 = _mm_max_ps(xm0, LOADTHIS(i));
+					xm0 = reg_max_ps(xm0, LOADTHIS(i));
 				RCP22BIT(xm0)
 				for(int i=0 ; i<height ; i++)
-					STORETHIS(i, _mm_mul_ps(LOADTHIS(i), xm0));
+					STORETHIS(i, reg_mul_ps(LOADTHIS(i), xm0));
 			}
 			int MT::rowReduce() {
 				// rowNormalize();
@@ -712,21 +712,21 @@
 				#else
 					// DMIN >= 3なら4x4行列として処理
 					// M*4行列 = レジスタM本
-					__m128	xm[4], xmt[4];
+					reg128	xm[4], xmt[4];
 					#define LOADROWE(n) BOOST_PP_IF(BOOST_PP_GREATER_EQUAL(n, DIM_M), xmm_matI[n], LOADTHIS(n))
 					#define BOOST_PP_LOCAL_MACRO(n)	xm[n] = LOADROWE(n);
 					#define BOOST_PP_LOCAL_LIMITS (0,DMAX)
 					#include BOOST_PP_LOCAL_ITERATE()
 
-					xmt[0] = _mm_unpacklo_ps(xm[0], xm[2]);
-					xmt[1] = _mm_unpacklo_ps(xm[1], xm[3]);
-					xmt[2] = _mm_unpackhi_ps(xm[0], xm[2]);
-					xmt[3] = _mm_unpackhi_ps(xm[1], xm[3]);
+					xmt[0] = reg_unpacklo_ps(xm[0], xm[2]);
+					xmt[1] = reg_unpacklo_ps(xm[1], xm[3]);
+					xmt[2] = reg_unpackhi_ps(xm[0], xm[2]);
+					xmt[3] = reg_unpackhi_ps(xm[1], xm[3]);
 
-					xm[0] = _mm_unpacklo_ps(xmt[0], xmt[1]);
-					xm[1] = _mm_unpackhi_ps(xmt[0], xmt[1]);
-					xm[2] = _mm_unpacklo_ps(xmt[2], xmt[3]);
-					xm[3] = _mm_unpackhi_ps(xmt[2], xmt[3]);
+					xm[0] = reg_unpacklo_ps(xmt[0], xmt[1]);
+					xm[1] = reg_unpackhi_ps(xmt[0], xmt[1]);
+					xm[2] = reg_unpacklo_ps(xmt[2], xmt[3]);
+					xm[3] = reg_unpackhi_ps(xmt[2], xmt[3]);
 					#define BOOST_PP_LOCAL_MACRO(n) STORETHISPS(ret.ma[n], xm[n]);
 					#define BOOST_PP_LOCAL_LIMITS (0,DIM_N)
 					#include BOOST_PP_LOCAL_ITERATE()
@@ -766,11 +766,11 @@
 					ALIGN16 MatT<DIM_M, n1, ALIGNB> ret;
 					// <Repeat by MUL_OUTER>
 					for(int i=0 ; i<n0 ; i++) {
-						__m128 tm = LOADTHIS(i);
-						__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS(m.ma[0]));
+						reg128 tm = LOADTHIS(i);
+						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS(m.ma[0]));
 						// <Repeat by MUL_INNER>
 						for(int j=0 ; j<DIM_N ; j++)
-							_mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(j,j,j,j)), LOADPS(m.ma[j])));
+							reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(j,j,j,j)), LOADPS(m.ma[j])));
 						STOREPS_(A)4(ret.ma[i], accum);
 					}
 					return ret;
@@ -781,9 +781,9 @@
 				BOOST_PP_REPEAT(n0, MUL_OUTER, BOOST_PP_IF(align, NOTHING, U)) \
 				return ret; \
 			}
-			#define MUL_INNER(z,n,AU)	accum = _mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
-				__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
+			#define MUL_INNER(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
+			#define MUL_OUTER(z,n,AU)	{ reg128 tm = LOADTHIS(n); \
+				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
 				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, AU) \
 				STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
@@ -796,11 +796,11 @@
 						return *this = *this * *this;
 					// <Repeat by MUL_OUTER2>
 					for(int i=0 ; i<DIM_M ; i++) {
-						__m128 tm = LOADTHIS(n);
-						__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(0,0,0,0)), LOADTHIS(0));
+						reg128 tm = LOADTHIS(n);
+						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(0,0,0,0)), LOADTHIS(0));
 						// <Repeat by MUL_INNER2>
 						for(int j=0 ; j<DIM_M ; j++)
-							_mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(j,j,j,j)), LOADTHIS(j));
+							reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(j,j,j,j)), LOADTHIS(j));
 						STORETHIS(j,accum);
 					}
 					return *this;
@@ -810,9 +810,9 @@
 						if((intptr_t)&m == (intptr_t)this) return *this = *this * *this; \
 						BOOST_PP_REPEAT(DIM_M, MUL_OUTER2, BOOST_PP_IF(align, NOTHING, U)) \
 						return *this; }
-			#define MUL_INNER2(z,n,AU)	accum = _mm_add_ps(accum, _mm_mul_ps(_mm_shuffle_ps(tm,tm, _MM_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER2(z,n,AU)	{ __m128 tm = LOADTHIS(n); \
-					__m128 accum = _mm_mul_ps(_mm_shuffle_ps(tm, tm, _MM_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
+			#define MUL_INNER2(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
+			#define MUL_OUTER2(z,n,AU)	{ reg128 tm = LOADTHIS(n); \
+					reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
 					BOOST_PP_REPEAT_FROM_TO(1,DIM_M, MUL_INNER2, AU) \
 					STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)

@@ -38,7 +38,7 @@
 			template <bool A>
 			ExpQuatT(const QuatT<A>& q);
 			ExpQuatT(float x, float y, float z);
-			__m128 loadPS() const;
+			reg128 loadPS() const;
 			QT asQuat() const;
 
 			#define DEF_OP0(z,align,op)		ExpQuatT operator op (const ExpQuatT<BOOLNIZE(align)>& q) const; \
@@ -67,12 +67,12 @@
 		template <bool A>
 		EQT::ExpQuatT(const QuatT<A>& q) {
 			float ang_d2 = std::acos(q.w);
-			__m128 xm = _mm_mul_ps(q.loadPS(), _mm_load1_ps(&ang_d2));
+			reg128 xm = reg_mul_ps(q.loadPS(), reg_load1_ps(&ang_d2));
 			STORETHIS(xm);
 		}
 		template EQT::ExpQuatT(const QuatT<false>&);
 		template EQT::ExpQuatT(const QuatT<true>&);
-		__m128 EQT::loadPS() const { return LOADTHIS(); }
+		reg128 EQT::loadPS() const { return LOADTHIS(); }
 
 		EQT::ExpQuatT(float fx, float fy, float fz) {
 			x = fx;
@@ -91,18 +91,18 @@
 			STORETHIS(func(LOADTHIS(), BOOST_PP_CAT(BOOST_PP_CAT(LOADPS_,ALIGNA),4)(q.m))); \
 			return *this; }
 		#define DEF_OP1(dummy,align,ops)	DEF_OP0(align,BOOST_PP_TUPLE_ELEM(0,ops), BOOST_PP_TUPLE_ELEM(1,ops))
-		BOOST_PP_REPEAT(2,DEF_OP1,(+,_mm_add_ps))
-		BOOST_PP_REPEAT(2,DEF_OP1,(-,_mm_sub_ps))
+		BOOST_PP_REPEAT(2,DEF_OP1,(+,reg_add_ps))
+		BOOST_PP_REPEAT(2,DEF_OP1,(-,reg_sub_ps))
 		#undef DEF_OP1
 		#undef DEF_OP0
 
 		EQT EQT::operator * (float s) const {
 			EQT eq;
-			STORETHISPS(eq.m, _mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
+			STORETHISPS(eq.m, reg_mul_ps(LOADTHIS(), reg_load1_ps(&s)));
 			return eq;
 		}
 		EQT& EQT::operator *= (float s) {
-			STORETHIS(_mm_mul_ps(LOADTHIS(), _mm_load1_ps(&s)));
+			STORETHIS(reg_mul_ps(LOADTHIS(), reg_load1_ps(&s)));
 			return *this;
 		}
 		EQT EQT::operator / (float s) const {
@@ -113,11 +113,11 @@
 			return *this;
 		}
 		float EQT::len_sq() const {
-			__m128 xm = LOADTHISZ();
+			reg128 xm = LOADTHISZ();
 			SUMVEC(xm)
 
 			float ret;
-			_mm_store_ss(&ret, xm);
+			reg_store_ss(&ret, xm);
 			return ret;
 		}
 		float EQT::length() const {

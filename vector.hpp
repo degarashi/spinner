@@ -52,11 +52,11 @@
 
 				// -------------------- ctor --------------------
 				VecT() = default;
-				explicit VecT(__m128 r);
+				explicit VecT(reg128 r);
 				explicit VecT(float a);
 				explicit VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
-				__m128 loadPS() const;
-				__m128 loadPSZ() const;
+				reg128 loadPS() const;
+				reg128 loadPSZ() const;
 
 				//! アラインメント済ベクトルで初期化
 				VecT(const AVec& v);
@@ -64,7 +64,7 @@
 				VecT(const UVec& v);
 				VecT& operator = (const AVec& v);
 				VecT& operator = (const UVec& v);
-				VecT& operator = (__m128 r);
+				VecT& operator = (reg128 r);
 				// -------------------- operators --------------------
 				// ベクトルとの積算や除算は同じ要素同士の演算とする
 				#define DEF_PRE(op, func)	VecT& operator BOOST_PP_CAT(op,=) (float s); \
@@ -75,15 +75,15 @@
 					UVec operator op (const UVec& v) const; \
 					AVec&& operator op (AVec&& v) const; \
 					UVec&& operator op (UVec&& v) const;
-				DEF_PRE(+, _mm_add_ps)
-				DEF_PRE(-, _mm_sub_ps)
-				DEF_PRE(*, _mm_mul_ps)
+				DEF_PRE(+, reg_add_ps)
+				DEF_PRE(-, reg_sub_ps)
+				DEF_PRE(*, reg_mul_ps)
 				DEF_PRE(/, _mmDivPs)
 
 				friend std::ostream& operator << (std::ostream& os, const VT& v);
 
 				// -------------------- others --------------------
-				static float _sumup(__m128 xm);
+				static float _sumup(reg128 xm);
 				// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
 				template <bool A>
 				float dot(const VecT<DIM,A>& v) const;
@@ -188,29 +188,29 @@
 		#elif BOOST_PP_ITERATION_FLAGS() == 1
 		// 同次元ベクトルとの演算を定義
 		namespace spn {
-			VT::VecT(__m128 r){
+			VT::VecT(reg128 r){
 				STORETHIS(r);
 			}
 			VT::VecT(float a) {
-				STORETHIS(_mm_load1_ps(&a));
+				STORETHIS(reg_load1_ps(&a));
 			}
 			VT::VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))) {
 				BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))
 			}
-			__m128 VT::loadPS() const {
+			reg128 VT::loadPS() const {
 				return LOADTHIS();
 			}
-			__m128 VT::loadPSZ() const {
+			reg128 VT::loadPSZ() const {
 				return LOADTHISZ();
 			}
-			VT& VT::operator = (__m128 r) {
+			VT& VT::operator = (reg128 r) {
 				STORETHIS(r);
 				return *this;
 			}
-			float VT::_sumup(__m128 xm) {
+			float VT::_sumup(reg128 xm) {
 				SUMVEC(xm)
 				float ret;
-				_mm_store_ss(&ret, xm);
+				reg_store_ss(&ret, xm);
 				return ret;
 			}
 			VT::VecT(const AVec& v) {
@@ -228,10 +228,10 @@
 			}
 			#define DEF_OP(op, func) \
 					VT& VT::operator BOOST_PP_CAT(op,=) (float s) { \
-						STORETHIS(func(LOADTHIS(), _mm_load_ps1(&s))); \
+						STORETHIS(func(LOADTHIS(), reg_load_ps1(&s))); \
 						return *this; } \
 					VT VT::operator op (float s) const { \
-						return VecT(func(LOADTHIS(), _mm_load1_ps(&s))); } \
+						return VecT(func(LOADTHIS(), reg_load1_ps(&s))); } \
 					VT& VT::operator BOOST_PP_CAT(op,=) (const AVec& v) { \
 						STORETHIS(func(LOADTHIS(), LOADPS(v.m))); \
 						return *this; } \
@@ -248,9 +248,9 @@
 					VT::UVec&& VT::operator op (UVec&& v) const { \
 						STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
 						return std::forward<UVec>(v); }
-			DEF_OP(+, _mm_add_ps)
-			DEF_OP(-, _mm_sub_ps)
-			DEF_OP(*, _mm_mul_ps)
+			DEF_OP(+, reg_add_ps)
+			DEF_OP(-, reg_sub_ps)
+			DEF_OP(*, reg_mul_ps)
 			DEF_OP(/, _mmDivPs)
 
 			std::ostream& operator << (std::ostream& os, const VT& v) {
@@ -262,7 +262,7 @@
 
 			template <bool A>
 			float VT::dot(const VecT<DIM,A>& v) const {
-				return _sumup(_mm_mul_ps(LOADTHISZ(), v.loadPSZ()));
+				return _sumup(reg_mul_ps(LOADTHISZ(), v.loadPSZ()));
 			}
 			template float VT::dot(const VecT<DIM,false>& v) const;
 			template float VT::dot(const VecT<DIM,true>& v) const;
@@ -287,25 +287,25 @@
 
 			template <bool A>
 			VT VT::getMin(const VecT<DIM,A>& v) const {
-				return VT(_mm_min_ps(LOADTHIS(), v.loadPS())); }
+				return VT(reg_min_ps(LOADTHIS(), v.loadPS())); }
 			template VT VT::getMin(const VecT<DIM,false>&) const;
 			template VT VT::getMin(const VecT<DIM,true>&) const;
 
 			template <bool A>
 			void VT::selectMin(const VecT<DIM,A>& v) {
-				STORETHIS(_mm_min_ps(LOADTHIS(), v.loadPS())); }
+				STORETHIS(reg_min_ps(LOADTHIS(), v.loadPS())); }
 			template void VT::selectMin(const VecT<DIM,false>&);
 			template void VT::selectMin(const VecT<DIM,true>&);
 
 			template <bool A>
 			VT VT::getMax(const VecT<DIM,A>& v) const {
-				return VT(_mm_max_ps(LOADTHIS(), v.loadPS())); }
+				return VT(reg_max_ps(LOADTHIS(), v.loadPS())); }
 			template VT VT::getMax(const VecT<DIM,false>&) const;
 			template VT VT::getMax(const VecT<DIM,true>&) const;
 
 			template <bool A>
 			void VT::selectMax(const VecT<DIM,A>& v) {
-				STORETHIS(_mm_max_ps(LOADTHIS(), v.loadPS())); }
+				STORETHIS(reg_max_ps(LOADTHIS(), v.loadPS())); }
 			template void VT::selectMax(const VecT<DIM,false>&);
 			template void VT::selectMax(const VecT<DIM,true>&);
 
@@ -315,10 +315,10 @@
 
 			template <bool A>
 			bool VT::operator == (const VecT<DIM,A>& v) const {
-				__m128 r0 = _mm_cmpeq_ps(LOADTHISZ(), v.loadPSZ());
-				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(1,0,3,2)));
-				r0 = _mm_and_ps(r0, _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,2,3)));
-				return _mm_cvttss_si32(r0) != 0;
+				reg128 r0 = reg_cmpeq_ps(LOADTHISZ(), v.loadPSZ());
+				r0 = reg_and_ps(r0, reg_shuffle_ps(r0, r0, _REG_SHUFFLE(1,0,3,2)));
+				r0 = reg_and_ps(r0, reg_shuffle_ps(r0, r0, _REG_SHUFFLE(0,1,2,3)));
+				return reg_cvttss_si32(r0) != 0;
 			}
 			template bool VT::operator == (const VecT<DIM,false>&) const;
 			template bool VT::operator == (const VecT<DIM,true>&) const;
@@ -330,8 +330,8 @@
 			}
 			VT VT::normalization() const {
 				float tmp = length();
-				__m128 r0 = _mm_load_ps1(&tmp);
-				r0 = _mm_div_ps(LOADTHIS(), r0);
+				reg128 r0 = reg_load_ps1(&tmp);
+				r0 = reg_div_ps(LOADTHIS(), r0);
 				return VT(r0);
 			}
 			/*! \return ベクトルの長さ */
@@ -340,28 +340,28 @@
 			}
 			/*! \return ベクトル長の2乗 */
 			float VT::len_sq() const {
-				__m128 r0 = LOADTHISZ();
-				r0 = _mm_mul_ps(r0, r0);
+				reg128 r0 = LOADTHISZ();
+				r0 = reg_mul_ps(r0, r0);
 				SUMVEC(r0)
 
 				float ret;
-				_mm_store_ss(&ret, r0);
+				reg_store_ss(&ret, r0);
 				return ret;
 			}
 			void VT::saturate(float fMin, float fMax) {
 				*this = saturation(fMin, fMax);
 			}
 			VT VT::saturation(float fMin, float fMax) const {
-				__m128 xm = _mm_max_ps(LOADTHIS(), _mm_load1_ps(&fMin));
-				return VT(_mm_min_ps(xm, _mm_load1_ps(&fMax)));
+				reg128 xm = reg_max_ps(LOADTHIS(), reg_load1_ps(&fMin));
+				return VT(reg_min_ps(xm, reg_load1_ps(&fMax)));
 			}
 			void VT::lerp(const UVec& v, float r) {
 				*this = l_intp(v,r);
 			}
 			template <bool A>
 			VT VT::l_intp(const VecT<DIM,A>& v, float r) const {
-				__m128 ths = LOADTHIS();
-				ths = _mm_add_ps(ths, _mm_mul_ps(_mm_sub_ps(v.loadPS(), ths), _mm_load1_ps(&r)));
+				reg128 ths = LOADTHIS();
+				ths = reg_add_ps(ths, reg_mul_ps(reg_sub_ps(v.loadPS(), ths), reg_load1_ps(&r)));
 				return VT(ths);
 			}
 			template VT VT::l_intp(const VecT<DIM,false>&, float) const;
@@ -372,20 +372,20 @@
 					alignas(16) const uint32_t tmp[4] = {val, val>>8, val>>16, val>>24};
 					alignas(16) const uint32_t mask[4] = {0xff,0xff,0xff,0xff};
 
-					__m128 x = _mm_and_ps(_mm_load_ps((const float*)mask), _mm_load_ps((const float*)tmp));
-					x = _mm_cvtepi32_ps((__m128i)x);
+					reg128 x = reg_and_ps(reg_load_ps((const float*)mask), reg_load_ps((const float*)tmp));
+					x = reg_cvtepi32_ps((reg128i)x);
 
 					const float f255 = 1.f/255;
-					x = _mm_mul_ps(x, _mm_load1_ps(&f255));
+					x = reg_mul_ps(x, reg_load1_ps(&f255));
 					return VecT(x);
 				}
 				uint32_t VT::toPacked() const {
-					__m128 x = _mm_mul_ps(_mm_set_ps(255,255,255,255), LOADTHISZ());
-					__m128i x2 = _mm_cvtps_epi32(x);
-					x2 = _mm_packs_epi32(x2,x2);
-					x2 = _mm_packus_epi16(x2,x2);
+					reg128 x = reg_mul_ps(reg_set_ps(255,255,255,255), LOADTHISZ());
+					reg128i x2 = reg_cvtps_epi32(x);
+					x2 = reg_packs_epi32(x2,x2);
+					x2 = reg_packus_epi16(x2,x2);
 					float ret;
-					_mm_store_ss(&ret, (__m128)x2);
+					reg_store_ss(&ret, (reg128)x2);
 					return *reinterpret_cast<uint32_t*>(&ret);
 				}
 			#endif
@@ -406,8 +406,8 @@
 				}
 				/*! \return x,y,zそれぞれをwで割った値 */
 				_Vec3 VT::asVec3Coord() const {
-					__m128 r0 = _mm_rcp_ps(_mm_load_ps1(&w));
-					return _Vec3(_mm_mul_ps(LOADTHIS(), r0));
+					reg128 r0 = reg_rcp_ps(reg_load_ps1(&w));
+					return _Vec3(reg_mul_ps(LOADTHIS(), r0));
 				}
 			#elif DIM==3
 				const VecT<2,ALIGNB>& VT::asVec2() const {
@@ -416,19 +416,19 @@
 				/*! \return this X v の外積ベクトル */
 				template <bool A>
 				VT VT::cross(const VecT<DIM,A>& v) const {
-					__m128 r0 = LOADTHIS(),
+					reg128 r0 = LOADTHIS(),
 							r1 = v.loadPS();
 					// r0[y,z,x]
-					__m128 m0 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,0,2,1)),
+					reg128 m0 = reg_shuffle_ps(r0, r0, _REG_SHUFFLE(0,0,2,1)),
 					// r0[z,x,y]
-							m1 = _mm_shuffle_ps(r0, r0, _MM_SHUFFLE(0,1,0,2)),
+							m1 = reg_shuffle_ps(r0, r0, _REG_SHUFFLE(0,1,0,2)),
 					// r1[z,x,y]
-							m2 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,1,0,2)),
+							m2 = reg_shuffle_ps(r1, r1, _REG_SHUFFLE(0,1,0,2)),
 					// r1[y,z,x]
-							m3 = _mm_shuffle_ps(r1, r1, _MM_SHUFFLE(0,0,2,1));
-					r0 = _mm_mul_ps(m0,m2);
-					r1 = _mm_mul_ps(m1,m3);
-					return VT(_mm_sub_ps(r0, r1));
+							m3 = reg_shuffle_ps(r1, r1, _REG_SHUFFLE(0,0,2,1));
+					r0 = reg_mul_ps(m0,m2);
+					r1 = reg_mul_ps(m1,m3);
+					return VT(reg_sub_ps(r0, r1));
 				}
 				template VT VT::cross(const VecT<DIM,false>&) const;
 				template VT VT::cross(const VecT<DIM,true>&) const;
@@ -483,20 +483,20 @@
 			/*	Pseudo-code:
 				template <int N, bool A>
 				VecT<N,ALIGNB> VT::operator * (const MatT<DIM,N,A>& m) const {
-					__m128 ths = LOADTHIS(),
-							accum = _mm_setzero_ps();
+					reg128 ths = LOADTHIS(),
+							accum = reg_setzero_ps();
 					for(int i=0 ; i<DIM ; i++) {
-						__m128 tmp = _mm_shuffle_ps(ths, ths, _MM_SHUFFLE(i,i,i,i));
-						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, LOADPS_(N)(m.ma[i])));
+						reg128 tmp = reg_shuffle_ps(ths, ths, _REG_SHUFFLE(i,i,i,i));
+						accum = reg_add_ps(accum, reg_mul_ps(tmp, LOADPS_(N)(m.ma[i])));
 					}
 					return VecT<N,ALIGNB>(accum);
 				}
 			*/
-			#define LOOP_MULOP(z,n,loadf)		{__m128 tmp=_mm_shuffle_ps(ths,ths, _MM_SHUFFLE(n,n,n,n)); \
-						accum = _mm_add_ps(accum, _mm_mul_ps(tmp, loadf(mat.ma[n])));}
+			#define LOOP_MULOP(z,n,loadf)		{reg128 tmp=reg_shuffle_ps(ths,ths, _REG_SHUFFLE(n,n,n,n)); \
+						accum = reg_add_ps(accum, reg_mul_ps(tmp, loadf(mat.ma[n])));}
 			#define DEF_MULOPA(z,n,align)	template <> VecT<n,ALIGNB> VT::operator * (const MatT<DIM,n,BOOLNIZE(align)>& mat) const { \
-						__m128 ths = LOADTHIS(), \
-						accum = _mm_setzero_ps(); \
+						reg128 ths = LOADTHIS(), \
+						accum = reg_setzero_ps(); \
 						BOOST_PP_REPEAT_##z(DIM, LOOP_MULOP, BOOST_PP_CAT(LOADPS_, BOOST_PP_CAT(AFLAG(align),n))) \
 						return VecT<n,ALIGNB>(accum); }
 			#define DEF_MULOPA_2(z,n,align)	template <> VT& VT::operator *= (const MatT<DIM,DIM,BOOLNIZE(align)>& mat) { \

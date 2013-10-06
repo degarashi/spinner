@@ -70,10 +70,10 @@
 			return *reinterpret_cast<const VEC3*>(this);
 		}
 		float PT::dot(const VEC3& p) const {
-			__m128 xm = _mm_mul_ps(LOADTHIS(), LOADPS_I3(p.m, 3));
+			reg128 xm = reg_mul_ps(LOADTHIS(), LOADPS_I3(p.m, 3));
 			SUMVEC(xm)
 			float ret;
-			_mm_store_ss(&ret, xm);
+			reg_store_ss(&ret, xm);
 			return ret;
 		}
 		void PT::move(float fd) {
