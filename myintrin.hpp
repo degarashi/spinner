@@ -80,8 +80,10 @@
 		_rbase(const _rbase<T,N>& r) = default;
 		template <class T2>
 		_rbase(const _rbase<T2,N>& v2) {
+			auto* pDst = reinterpret_cast<T*>(v);
+			auto* pSrc = reinterpret_cast<const T*>(v2.v);
 			for(int i=0 ; i<N ; i++)
-				v[i] = v2.v[i];
+				pDst[i] = pSrc[i];
 		}
 		_rbase(std::initializer_list<T> il) {
 			auto* p = v;
@@ -240,13 +242,6 @@
 	struct reg128 : _rbase<float, 4> {
 		using baseI = _rbase<int32_t,4>;
 		using _rbase<float,4>::_rbase;
-		reg128() = default;
-		reg128(const reg128& r) = default;
-		reg128(_rbase<int32_t,4>& r) {
-			for(int i=0 ; i<4 ; i++)
-				v[i] = r.v[i];
-		}
-
 		using _rbase<float,4>::operator =;
 		#define DEF_REG128I_OP(op)  reg128 operator op (const reg128& r) const { \
 			return *reinterpret_cast<const reg128i*>(this) op *reinterpret_cast<const reg128i*>(&r); }
