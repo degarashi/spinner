@@ -268,7 +268,7 @@
 			template float VT::dot(const VecT<DIM,true>& v) const;
 
 			float VT::average() const {
-				return _sumup(LOADTHIS()) * _sseRcp22Bit(DIM);
+				return _sumup(LOADTHIS()) * spn::Rcp22Bit(DIM);
 			}
 			template <bool A>
 			float VT::distance(const VecT<DIM,A>& v) const {
@@ -325,7 +325,7 @@
 
 			float VT::normalize() {
 				float len = length();
-				*this *= _sseRcp22Bit(len);
+				*this *= spn::Rcp22Bit(len);
 				return len;
 			}
 			VT VT::normalization() const {

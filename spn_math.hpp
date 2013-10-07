@@ -23,7 +23,7 @@
 #include <cstdint>
 namespace spn {
 //! ニュートン法で逆数を計算
-inline reg128 _mmRcp22Bit(reg128 r) {
+inline reg128 Rcp22Bit(reg128 r) {
 	reg128 tmp(reg_rcp_ps(r));
 	r = reg_mul_ps(r, reg_mul_ps(tmp,tmp));
 	tmp = reg_add_ps(tmp,tmp);
@@ -31,7 +31,7 @@ inline reg128 _mmRcp22Bit(reg128 r) {
 }
 //! ニュートン法で逆数を計算して積算 = reg_div_psよりはマシな除算
 inline reg128 _mmDivPs(reg128 r0, reg128 r1) {
-	return reg_mul_ps(r0, _mmRcp22Bit(r1));
+	return reg_mul_ps(r0, Rcp22Bit(r1));
 }
 inline reg128 _mmAbsPs(reg128 r) {
 	const static reg128 signMask = reg_set1_ps(-0.0f);
@@ -44,23 +44,23 @@ inline reg128 _mmSetPs(float w, float z, float y, float x) {
 inline reg128 _mmSetPs(float s) {
 	return reg_load1_ps(&s);
 }
-inline float _sseRcp22Bit(float s) {
+inline float Rcp22Bit(float s) {
 	reg128 tmp = reg_load_ss(&s);
 	RCP22BIT(tmp)
 	float ret;
 	reg_store_ss(&ret, tmp);
 	return ret;
 }
-inline float _sseSqrt(float s) {
+inline float Sqrt(float s) {
 	reg_store_ss(&s, reg_sqrt_ss(reg_load_ss(&s)));
 	return s;
 }
-inline float _sseRSqrt(float s) {
-	return _sseRcp22Bit(_sseSqrt(s));
+inline float RSqrt(float s) {
+	return Rcp22Bit(spn::Sqrt(s));
 }
 
 constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
-// SSEレジスタ用の定数
+// ベクトルレジスタ用の定数
 const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
 					xmm_tmp0111(_mmSetPs(1,1,1,0)),
 					xmm_tmp0000(_mmSetPs(0,0,0,0)),
@@ -128,10 +128,10 @@ T Square(const T& t0) { return t0*t0; }
 template <class T>
 T Cubic(const T& t0) { return t0*t0*t0; }
 inline float DEGtoRAD(float ang) {
-	return ang*_sseRcp22Bit(180.f) * PI;
+	return ang * spn::Rcp22Bit(180.f) * PI;
 }
 inline float RADtoDEG(float ang) {
-	return ang*_sseRcp22Bit(PI) * 180.f;
+	return ang * spn::Rcp22Bit(PI) * 180.f;
 }
 
 //! Tをtrivialなctorでラップ

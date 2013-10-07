@@ -598,7 +598,7 @@
 					if(idx > rbase)
 						rowSwap(idx, rbase);
 					// 基点で割って1にする
-					rowMul(rbase, _sseRcp22Bit(ma[rbase][cbase]));
+					rowMul(rbase, spn::Rcp22Bit(ma[rbase][cbase]));
 					ma[rbase][cbase] = 1;	// 精度の問題で丁度1にならない事があるので強制的に1をセット
 					// 他の行の同じ列を0にする
 					for(int i=0 ; i<DIM_M ; i++) {
@@ -647,7 +647,7 @@
 					if(std::fabs(det) < FLOAT_EPSILON)
 						return false;
 
-					det = _sseRcp22Bit(det);
+					det = spn::Rcp22Bit(det);
 					#if DIM_M==2
 						dst.ma[0][0] = ma[1][1] * det;
 						dst.ma[0][1] = -ma[1][0] * det;

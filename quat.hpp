@@ -201,7 +201,7 @@
 		}
 		void QT::invert() {
 			conjugate();
-			*this *= _sseRcp22Bit(len_sq());
+			*this *= spn::Rcp22Bit(len_sq());
 		}
 		QT QT::inverse() const {
 			QuatT q(*this);
@@ -223,13 +223,13 @@
 			return ret;
 		}
 		float QT::length() const {
-			return _sseSqrt(len_sq());
+			return spn::Sqrt(len_sq());
 		}
 		void QT::normalize() {
 			*this = normalization();
 		}
 		QT QT::normalization() const {
-			float rlen = _sseRcp22Bit(length());
+			float rlen = spn::Rcp22Bit(length());
 			QuatT q;
 			STORETHISPS(q.m, reg_mul_ps(LOADTHIS(), reg_load1_ps(&rlen)));
 			return q;
@@ -257,8 +257,8 @@
 			STORETHISPS(q.m, reg_mul_ps(LOADTHIS(), reg_load1_ps(&s)));
 			return q;
 		}
-		QT& QT::operator /= (float s) { return *this *= _sseRcp22Bit(s); }
-		QT QT::operator / (float s) const { return *this * _sseRcp22Bit(s); }
+		QT& QT::operator /= (float s) { return *this *= spn::Rcp22Bit(s); }
+		QT QT::operator / (float s) const { return *this * spn::Rcp22Bit(s); }
 
 		QT& QT::operator *= (const QuatT& q) {
 			QuatT t(w*q.x + x*q.w + y*q.z - z*q.y,

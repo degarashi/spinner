@@ -106,10 +106,10 @@
 			return *this;
 		}
 		EQT EQT::operator / (float s) const {
-			return *this * _sseRcp22Bit(s);
+			return *this * spn::Rcp22Bit(s);
 		}
 		EQT& EQT::operator /= (float s) {
-			(*this) *= _sseRcp22Bit(s);
+			(*this) *= spn::Rcp22Bit(s);
 			return *this;
 		}
 		float EQT::len_sq() const {
@@ -121,7 +121,7 @@
 			return ret;
 		}
 		float EQT::length() const {
-			return _sseSqrt(len_sq());
+			return spn::Sqrt(len_sq());
 		}
 		std::tuple<float,VEC3> EQT::getAngAxis() const {
 			float len = length();
