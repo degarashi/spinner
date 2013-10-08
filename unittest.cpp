@@ -1,4 +1,5 @@
 #include "unittest.hpp"
+#include "spn_math.hpp"
 #include <random>
 #include <array>
 #include <limits>
@@ -68,6 +69,29 @@ namespace spn {
 			fnAddrand(256);
 			fnCheck();
 			assert(q.size() == 512);
+		}
+
+		void PrintReg(reg128 r) {
+			float t[4];
+			reg_store_ps(t, r);
+			for(int i=0 ; i<4 ; i++)
+				std::cout << t[i] << std::endl;
+		}
+		void Math() {
+			std::cout << "---- math test ----" << std::endl << spn::Rcp22Bit(128) << std::endl;
+			reg128 ra, rb;
+			ra = reg_set_ps(1,2,3,4);
+			rb = reg_set_ps(123,456,789,901);
+			ra = _mmDivPs(ra, rb);
+			ra = reg_div_ps(ra, rb);
+			ra = reg_add_ps(ra, rb);
+			ra = reg_mul_ps(ra, rb);
+			ra = reg_sub_ps(ra, rb);
+			ra = reg_or_ps(ra, ra);
+ 			rb = reg_xor_ps(ra, rb);
+
+			PrintReg(ra);
+			PrintReg(rb);
 		}
 	}
 }

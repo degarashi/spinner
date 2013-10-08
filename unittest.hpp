@@ -38,5 +38,6 @@ namespace spn {
 	};
 	namespace unittest {
 		void PQueue();
+		void Math();
 	}
 }

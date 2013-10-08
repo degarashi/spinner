@@ -8,6 +8,8 @@
 #include "bits.hpp"
 #include "resmgr.hpp"
 #include "pqueue.hpp"
+#include "unittest.hpp"
+
 using namespace spn;
 namespace {
 	void MatTest() {
@@ -98,5 +100,6 @@ int main(int argc, char **argv) {
 	BitFieldTest();
 	ResourceTest();
 	spn::unittest::PQueue();
+	spn::unittest::Math();
 	return 0;
 }
