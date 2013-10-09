@@ -1,10 +1,8 @@
 #pragma once
 #include "macro.hpp"
-#define USE_SSE
-#define SSE_LEVEL 2
 #include "myintrin.hpp"
 
-#if !defined(USE_SSE) || SSE_LEVEL <= 2
+#if !defined(SSE_LEVEL) || SSE_LEVEL <= 2
 	#define SUMVEC(r)	{ reg128 tmp = reg_shuffle_ps(r, r, _REG_SHUFFLE(0,1,2,3)); \
 		tmp = reg_add_ps(r, tmp); \
 		r = reg_shuffle_ps(tmp,tmp, _REG_SHUFFLE(1,0,0,1)); \

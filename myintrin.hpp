@@ -1,9 +1,6 @@
 #pragma once
 
-#ifdef USE_SSE
-	#ifndef SSE_LEVEL
-		#define SSE_LEVEL 1
-	#endif
+#if defined(SSE_LEVEL) && SSE_LEVEL > 0
 	#if SSE_LEVEL >= 3
 		#include <pmmintrin.h>
 	#elif SSE_LEVEL == 2
@@ -64,7 +61,7 @@
 	#define reg_cvttss_si32	_mm_cvttss_si32
 	#define reg_cvtps_epi32 _mm_cvtps_epi32
 
-#elif defined(USE_NEON)
+#elif USE_NEON > 0
 	void _Dummy_() {
 		static_assert(false, "not implemented yet");
 	}
