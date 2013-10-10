@@ -759,7 +759,9 @@
 				BOOST_PP_REPEAT(n0, ITR_COPY, (n1)(align)) \
 				return ret; }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
-
+		}
+		#elif BOOST_PP_FRAME_FLAGS(1) == 2
+		namespace spn {
 			// 行列の積算
 			/*	Pseudo-code:
 				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
@@ -787,7 +789,9 @@
 				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, AU) \
 				STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
-
+		}
+		#else
+		namespace spn {
 			// 自分との積算でなければ上書き演算
 			/*	Pseudo-code:
 				MT& MT::operator *= (const MatT<n0,n1,align>& m) {
@@ -816,9 +820,7 @@
 					BOOST_PP_REPEAT_FROM_TO(1,DIM_M, MUL_INNER2, AU) \
 					STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
-		}
-	#else
-		namespace spn {
+
 			// 他の行列やベクトルと計算するメソッドを定義
 			/*	Pseudo-code:
 				template <>
