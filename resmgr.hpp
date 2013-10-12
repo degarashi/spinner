@@ -612,13 +612,17 @@ namespace spn {
 
 			template <class KEY2, class... Args>
 			LHdl replace_emplace(KEY2&& key, Args&&... args) {
-				auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
+				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
+				// auto fn = std::bind(base_type::acquire, this, std::forward<Args>(args)...);
+				auto fn = std::bind(&base_type::template acquire<Args&&...>, std::ref(*this), RRef(std::forward<Args>(args))...);
 				return _replace(std::forward<KEY2>(key), fn);
 			}
 			//! 同じ要素が存在したら置き換え
 			template <class KEY2, class DATA>
 			LHdl replace(KEY2&& key, DATA&& dat) {
-				auto fn = [&](){ return base_type::acquire(std::forward<DATA>(dat)); };
+				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
+				// auto fn = [&](){ return base_type::acquire(std::forward<DATA>(dat)); };
+				auto fn = std::bind(&base_type::template acquire<DATA&&>, std::ref(*this), RRef(std::forward<DATA>(dat)));
 				return _replace(std::forward<KEY2>(key), fn);
 			}
 			//! 名前付きリソースの作成
@@ -626,7 +630,9 @@ namespace spn {
 			 *			新たにエントリが作成されたらtrue, 既存のキーが使われたらfalse] */
 			template <class KEY2, class DATA>
 			std::pair<LHdl,bool> acquire(KEY2&& key, DATA&& dat) {
-				auto fn = [&]() { return base_type::acquire(std::forward<DATA>(dat)); };
+				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
+				// auto fn = [&]() { return base_type::acquire(std::forward<DATA>(dat)); };
+				auto fn = std::bind(&base_type::template acquire<DATA&&>, std::ref(*this), RRef(std::forward<DATA>(dat)));
 				return _acquire(std::forward<KEY2>(key), fn);
 			}
 			template <class KEY2, class... Args>
