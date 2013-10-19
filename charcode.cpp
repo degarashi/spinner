@@ -216,7 +216,7 @@ namespace spn {
 
 		uint8_t c = *cur;
 		while(c != '\0') {
-			cur += c_size[Bit::MSB_N(~c)];
+			cur += c_size[7 - Bit::MSB_N(uint8_t(~c))];
 			++count;
 			c = *cur;
 		}
