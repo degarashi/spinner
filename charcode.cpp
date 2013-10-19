@@ -406,6 +406,9 @@ namespace spn {
 	std::u16string Text::UTFConvertTo16(c32Str src) {
 		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 2, &UTF32To16);
 	}
+	std::u32string Text::UTFConvertTo32(c16Str src) {
+		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 2, &UTF16To32);
+	}
 	std::u32string Text::UTFConvertTo32(c8Str src) {
 		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 1, &UTF8To32);
 	}

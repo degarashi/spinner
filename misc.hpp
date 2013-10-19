@@ -219,6 +219,7 @@ namespace spn {
 		// UTF16 <-> UTF8 相互変換
 		static std::u16string UTFConvertTo16(c8Str src);
 		static std::u16string UTFConvertTo16(c32Str src);
+		static std::u32string UTFConvertTo32(c16Str src);
 		static std::u32string UTFConvertTo32(c8Str src);
 		static std::string UTFConvertTo8(c16Str src);
 		static std::string UTFConvertTo8(c32Str src);
