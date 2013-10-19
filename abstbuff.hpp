@@ -94,23 +94,25 @@ namespace spn {
 	class AbstString : public AbstBuffer<T, std::basic_string<T>> {
 		using base_type = AbstBuffer<T, std::basic_string<T>>;
 		using Str = std::basic_string<T>;
-		mutable size_t	_strLen;
+		mutable StrLen	_strLenP;
 		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
 		public:
 			// 文字数カウント機能を追加
-			AbstString(const T* src): base_type(src, (_strLen=GetLength(src)).dataLen), _bStrLen(true) {}
+			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true) {}
 			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false) {}
 			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false) {}
 			AbstString(const Str& str): base_type(str), _bStrLen(false) {}
+			AbstString(const AbstString& str): base_type(str), _bStrLen(str._bStrLen) {}
+			AbstString(AbstString&& str): base_type(std::move(str)), _bStrLen(str._bStrLen) {}
 
 			size_t getLength() const {
 				if(!_bStrLen) {
 					_bStrLen = true;
 					auto len = GetLength(base_type::getPtr());
 					assert(len.dataLen == base_type::getSize());
-					_strLen = len.strLen;
+					_strLenP.strLen = len.strLen;
 				}
-				return _strLen;
+				return _strLenP.strLen;
 			}
 	};
 	using c8Str = AbstString<char>;
