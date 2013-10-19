@@ -8,10 +8,10 @@ namespace spn {
 		return Text::utf16_strlen(str);
 	}
 	StrLen GetLength(const char32_t* str) {
-		size_t count = 0;
-		while(*str != U'\0')
-			++count;
-		return count;
+		const auto* ts = str;
+		while(*ts != U'\0')
+			++ts;
+		return ts - str;
 	}
 
 	bool Text::sjis_isMBChar(char c) {
