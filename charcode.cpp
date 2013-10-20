@@ -348,13 +348,15 @@ namespace spn {
 		return ret;
 	}
 	Text::Code Text::UTF8To16(char32_t src) {
-		Code ret = UTF8To32(src);
-		return UTF32To16(ret.code);
+		Code ret = UTF8To32(src),
+			ret2 = UTF32To16(ret.code);
+		return Code{ret2.code, ret.nread, ret2.nwrite};
 	}
 	// 変換後の数値, 読み取ったバイト数, 書き込んだバイト数
 	Text::Code Text::UTF16To8(char32_t src) {
-		Code ret = UTF16To32(src);
-		return UTF32To8(ret.code);
+		Code ret = UTF16To32(src),
+			ret2 = UTF32To8(ret.code);
+		return Code{ret2.code, ret.nread, ret2.nwrite};
 	}
 
 	//! 32bitデータの内、(1〜4)までの任意のバイト数をpDstに書き込む
@@ -366,7 +368,7 @@ namespace spn {
 				*reinterpret_cast<uint16_t*>(pDst) = val&0xffff; return;
 			case 3:
 				*reinterpret_cast<uint16_t*>(pDst) = val&0xffff;
-				*reinterpret_cast<uint8_t*>(pDst) = (val>>16)&0xff; return;
+				*reinterpret_cast<uint8_t*>(((uintptr_t)pDst)+2) = (val>>16)&0xff; return;
 			case 4:
 				*reinterpret_cast<uint32_t*>(pDst) = val; return;
 			default:
