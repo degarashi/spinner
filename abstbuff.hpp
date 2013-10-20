@@ -20,6 +20,7 @@ namespace spn {
 			const Buff*	_buffC;
 		};
 		size_t	_size;
+		bool	_bRelease;
 
 		void _invalidate() {
 			_pSrc = nullptr;
@@ -28,18 +29,32 @@ namespace spn {
 		}
 
 	public:
-		// 中身がMovableな時にちょっと微妙だけど後で考える
 		AbstBuffer(const AbstBuffer& ab) {
 			_type = ab._type;
 			_pSrc = ab._pSrc;
 			_size = ab._size;
+			_bRelease = false;
+		}
+		AbstBuffer(AbstBuffer&& ab) {
+			_type = ab._type;
+			_buffM = ab._buffM;
+			_size = ab._size;
+			if((_bRelease = ab._bRelease)) {
+				ab._bRelease = false;
+				ab._buffM = nullptr;
+				ab._type = Type::Invalid;
+			}
+		}
+		~AbstBuffer() {
+			if(_bRelease)
+				delete _buffM;
 		}
 		//! initialize by const-pointer
-		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz) {}
+		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz), _bRelease(false) {}
 		//! initialize by movable-vector
-		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(&buff), _size(buff.size()) {}
+		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(new Buff(std::move(buff))), _size(_buffM->size()), _bRelease(true) {}
 		//! initialize by const-vector
-		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()) {}
+		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()), _bRelease(false) {}
 
 		void setTo(Buff& dst) {
 			switch(_type) {
