@@ -228,12 +228,13 @@ namespace spn {
 	StrLen Text::utf16_strlen(const char16_t* str) {
 		int cur = 0;
 		size_t count = 0;
-		char16_t c = str[cur++];
+		char16_t c = str[cur];
 		while(c != L'\0') {
+			++cur;
 			++count;
 			if(Text::utf16_isSurrogate(c))
 				++cur;
-			c = str[cur++];
+			c = str[cur];
 		}
 		return StrLen(cur, count);
 	}
