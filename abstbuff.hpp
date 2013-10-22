@@ -140,4 +140,28 @@ namespace spn {
 	using AB_Byte = AbstBuffer<uint8_t>;
 	using AB_U16 = AbstBuffer<uint16_t>;
 	using AB_Float = AbstBuffer<float>;
+
+	struct ToNStr {
+		template <class T>
+		static AbstString<T> MakeABS(const T* src);
+		template <class T>
+		static AbstString<T> MakeABS(const T* src, size_t dataLen);
+		template <class T>
+		static AbstString<T> MakeABS(std::basic_string<T>&& s);
+		template <class T>
+		static AbstString<T> MakeABS(const std::basic_string<T>& s);
+		template <class T>
+		static AbstString<T> MakeABS(const AbstString<T>& s);
+		template <class T>
+		static AbstString<T> MakeABS(AbstString<T>&& s);
+	};
+	class To32Str : public c32Str {
+		public:
+			To32Str(c8Str c);
+			To32Str(c16Str c);
+			To32Str(const c32Str& c);
+			To32Str(c32Str&& c);
+			template <class... Ts>
+			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
+	};
 }

@@ -415,4 +415,10 @@ namespace spn {
 	std::u32string Text::UTFConvertTo32(c8Str src) {
 		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 1, &UTF8To32);
 	}
+
+	// -------------------------- To32Str --------------------------
+	To32Str::To32Str(c8Str c): c32Str(Text::UTFConvertTo32(c)) {}
+	To32Str::To32Str(c16Str c): c32Str(Text::UTFConvertTo32(c)) {}
+	To32Str::To32Str(c32Str&& c): c32Str(std::move(c)) {}
+	To32Str::To32Str(const c32Str& c): c32Str(c) {}
 }
