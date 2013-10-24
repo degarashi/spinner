@@ -1,5 +1,11 @@
 #pragma once
-#include WATCH_DEPEND_HEADER
+#if defined(UNIX)
+	#include "watch_depLinux.hpp"
+#elif defined(WIN32)
+	#include "watch_depWin.hpp"
+#else
+	#error "unknown OS"
+#endif
 #include <vector>
 #include <functional>
 

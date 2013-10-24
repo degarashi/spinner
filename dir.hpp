@@ -1,5 +1,11 @@
 #pragma once
-#include DIR_DEPEND_HEADER
+#if defined(UNIX)
+	#include "dir_depLinux.hpp"
+#elif defined(WIN32)
+	#include "dir_depWin.hpp"
+#else
+	#error "unknown OS"
+#endif
 #include <boost/regex.hpp>
 
 namespace spn {
