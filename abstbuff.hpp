@@ -164,4 +164,22 @@ namespace spn {
 			template <class... Ts>
 			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
+	class To16Str : public c16Str {
+		public:
+			To16Str(c32Str c);
+			To16Str(c8Str c);
+			To16Str(const c16Str& c);
+			To16Str(c16Str&& c);
+			template <class... Ts>
+			To16Str(Ts&&... ts): To16Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
+	};
+	class To8Str : public c8Str {
+		public:
+			To8Str(c32Str c);
+			To8Str(c16Str c);
+			To8Str(const c8Str& c);
+			To8Str(c8Str&& c);
+			template <class... Ts>
+			To8Str(Ts&&... ts): To8Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
+	};
 }
