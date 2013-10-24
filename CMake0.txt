@@ -1,6 +1,14 @@
 
 set(CMAKE_CXX_COMPILER "clang++")
 include_directories(${PROJECT_SOURCE_DIR})
+# OS依存ファイルのマクロ設定
+if(${WIN32})
+	add_definitions(-DWIN32)
+elseif(${UNIX})
+	add_definitions(-DUNIX)
+else()
+	message(FATAL_ERROR "couldn't detect OS type")
+endif()
 
 # Use SSE instructions
 # set(SSE_LEVEL 2)

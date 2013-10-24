@@ -7,10 +7,8 @@ include(CMake0.txt require)
 
 # OS依存ファイルの設定
 if(${WIN32})
-	add_definitions(-DWIN32)
 	set(CXX_SRC ${CXX_SRC} dir_depWin.cpp watch_depWin.cpp)
 elseif(${UNIX})
-	add_definitions(-DUNIX)
 	set(CXX_SRC ${CXX_SRC} dir_depLinux.cpp watch_depLinux.cpp)
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
