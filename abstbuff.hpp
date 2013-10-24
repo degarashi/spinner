@@ -117,8 +117,8 @@ namespace spn {
 			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false) {}
 			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false) {}
 			AbstString(const Str& str): base_type(str), _bStrLen(false) {}
-			AbstString(const AbstString& str): base_type(str), _bStrLen(str._bStrLen) {}
-			AbstString(AbstString&& str): base_type(std::move(str)), _bStrLen(str._bStrLen) {}
+			AbstString(const AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen) {}
+			AbstString(AbstString&& str): base_type(std::move(str)), _strLenP(str._strLenP), _bStrLen(str._bStrLen) {}
 
 			size_t getLength() const {
 				if(!_bStrLen) {
