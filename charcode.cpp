@@ -1,17 +1,69 @@
 #include "misc.hpp"
 #include <locale>
 namespace spn {
-	StrLen GetLength(const char* str) {
-		return Text::utf8_strlen(str);
-	}
-	StrLen GetLength(const char16_t* str) {
-		return Text::utf16_strlen(str);
-	}
 	StrLen GetLength(const char32_t* str) {
 		const auto* ts = str;
 		while(*ts != U'\0')
 			++ts;
 		return ts - str;
+	}
+	StrLen GetLength(const char32_t* str, size_t len) {
+		// 1ワード = 1文字と決まってるのでlenをそのまま返す
+		return len;
+	}
+	namespace {
+		constexpr int utf8invalid = 0xffff;
+		const int c_utf8size[] = {1, utf8invalid, 2, 3, 4, 5, 6, utf8invalid};
+	}
+	StrLen GetLength(const char* str) {
+		auto *cur0 = reinterpret_cast<const uint8_t*>(str),
+		*cur = cur0;
+		size_t count = 0;
+
+		uint8_t c = *cur;
+		while(c != '\0') {
+			cur += c_utf8size[7 - Bit::MSB_N(uint8_t(~c))];
+			++count;
+			c = *cur;
+		}
+		return StrLen(cur-cur0, count);
+	}
+	StrLen GetLength(const char* str, size_t len) {
+		size_t count = 0;
+		auto *cur0 = reinterpret_cast<const uint8_t*>(str),
+		*cur = cur0,
+		*curE = cur + len;
+		while(cur < curE) {
+			cur += c_utf8size[7 - Bit::MSB_N(uint8_t(~(*cur)))];
+			++count;
+		}
+		assert(cur == curE);
+		return StrLen(len, count);
+	}
+	StrLen GetLength(const char16_t* str) {
+		int cur = 0;
+		size_t count = 0;
+		char16_t c = str[cur];
+		while(c != L'\0') {
+			++cur;
+			++count;
+			if(Text::utf16_isSurrogate(c))
+				++cur;
+			c = str[cur];
+		}
+		return StrLen(cur, count);
+	}
+	StrLen GetLength(const char16_t* str, size_t len) {
+		auto *strE = str + len;
+		size_t count = 0;
+		while(str < strE) {
+			if(Text::utf16_isSurrogate(*str))
+				++str;
+			++str;
+			++count;
+		}
+		assert(str == strE);
+		return StrLen(len, count);
 	}
 
 	bool Text::sjis_isMBChar(char c) {
@@ -206,37 +258,8 @@ namespace spn {
 			throw std::length_error("url_encode(): buffer overflow");
 		return wcur;
 	}
-
-	StrLen Text::utf8_strlen(const char* str) {
-		auto *cur0 = reinterpret_cast<const uint8_t*>(str),
-			*cur = cur0;
-		constexpr int invalid = 0xffff;
-		const int c_size[] = {1, invalid, 2, 3, 4, 5, 6, invalid};
-		size_t count = 0;
-
-		uint8_t c = *cur;
-		while(c != '\0') {
-			cur += c_size[7 - Bit::MSB_N(uint8_t(~c))];
-			++count;
-			c = *cur;
-		}
-		return StrLen(cur-cur0, count);
-	}
 	bool Text::utf16_isSurrogate(char16_t c) {
 		return (c & 0xdc00) == 0xd800;
-	}
-	StrLen Text::utf16_strlen(const char16_t* str) {
-		int cur = 0;
-		size_t count = 0;
-		char16_t c = str[cur];
-		while(c != L'\0') {
-			++cur;
-			++count;
-			if(Text::utf16_isSurrogate(c))
-				++cur;
-			c = str[cur];
-		}
-		return StrLen(cur, count);
 	}
 	bool Text::utf16_isSpace(char16_t c) {
 		return (c==L' ') || (c==L'　');
@@ -398,22 +421,22 @@ namespace spn {
 		}
 	}
 	std::string Text::UTFConvertTo8(c16Str src) {
-		return UTFConvert<char>(src.getPtr(), src.getSize(), 2, &UTF16To8);
+		return UTFConvert<char>(src.getPtr(), src.getLength(), 2, &UTF16To8);
 	}
 	std::string Text::UTFConvertTo8(c32Str src) {
-		return UTFConvert<char>(src.getPtr(), src.getSize(), 4, &UTF32To8);
+		return UTFConvert<char>(src.getPtr(), src.getLength(), 4, &UTF32To8);
 	}
 	std::u16string Text::UTFConvertTo16(c8Str src) {
-		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 1, &UTF8To16);
+		return UTFConvert<char16_t>(src.getPtr(), src.getLength(), 1, &UTF8To16);
 	}
 	std::u16string Text::UTFConvertTo16(c32Str src) {
-		return UTFConvert<char16_t>(src.getPtr(), src.getSize(), 2, &UTF32To16);
+		return UTFConvert<char16_t>(src.getPtr(), src.getLength(), 2, &UTF32To16);
 	}
 	std::u32string Text::UTFConvertTo32(c16Str src) {
-		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 2, &UTF16To32);
+		return UTFConvert<char32_t>(src.getPtr(), src.getLength(), 2, &UTF16To32);
 	}
 	std::u32string Text::UTFConvertTo32(c8Str src) {
-		return UTFConvert<char32_t>(src.getPtr(), src.getSize(), 1, &UTF8To32);
+		return UTFConvert<char32_t>(src.getPtr(), src.getLength(), 1, &UTF8To32);
 	}
 
 	// -------------------------- To32Str --------------------------

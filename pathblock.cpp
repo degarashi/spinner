@@ -226,7 +226,7 @@ namespace spn {
 				// 拡張子を持っている
 				ts.resize(rcur);
 			}
-			ts.append(ext.getPtr(), ext.getPtr()+ext.getSize());
+			ts.append(ext.getPtr(), ext.getPtr()+ext.getLength());
 			popBack();
 			pushBack(std::move(ts));
 		}

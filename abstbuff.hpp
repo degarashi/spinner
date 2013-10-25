@@ -83,9 +83,10 @@ namespace spn {
 		}
 
 		//! データのサイズ (not 文字列長)
-		size_t getSize() const {
+		size_t getLength() const {
 			return _size;
 		}
+		//! データの先頭ポインタを取得 (null-terminatedは保証されない)
 		const T* getPtr() const {
 			if(_type == Type::ConstPtr)
 				return _pSrc;
@@ -100,10 +101,14 @@ namespace spn {
 		StrLen(size_t sz): dataLen(sz), strLen(sz) {}
 		StrLen(size_t dLen, size_t sLen): dataLen(dLen), strLen(sLen) {}
 	};
+	// ---- 文字列バイトの長さが不明な場合に文字数と一緒に計算 ----
 	StrLen GetLength(const char* str);
 	StrLen GetLength(const char16_t* str);
 	StrLen GetLength(const char32_t* str);
-
+	// ---- 文字列バイトの長さが分かっている場合の処理 ----
+	StrLen GetLength(const char* str, size_t len);
+	StrLen GetLength(const char16_t* str, size_t len);
+	StrLen GetLength(const char32_t* str, size_t len);
 	// とりあえずバイト長だけ格納しておいて必要に応じて文字列長を計算
 	template <class T>
 	class AbstString : public AbstBuffer<T, std::basic_string<T>> {
@@ -111,23 +116,38 @@ namespace spn {
 		using Str = std::basic_string<T>;
 		mutable StrLen	_strLenP;
 		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
+		mutable bool	_bNonNull;	//!< non null-terminatedでない場合にtrue (バイト長は必ず持っている条件)
 		public:
 			// 文字数カウント機能を追加
-			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true) {}
-			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false) {}
-			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false) {}
-			AbstString(const Str& str): base_type(str), _bStrLen(false) {}
-			AbstString(const AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen) {}
-			AbstString(AbstString&& str): base_type(std::move(str)), _strLenP(str._strLenP), _bStrLen(str._bStrLen) {}
+			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true), _bNonNull(false) {}
+			// Not NullTerminatedかもしれないのでフラグを立てておく
+			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false), _bNonNull(true) {}
+			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false), _bNonNull(false) {}
+			AbstString(const Str& str): base_type(str), _bStrLen(false), _bNonNull(false) {}
+			AbstString(const AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
+			AbstString(AbstString&& str): base_type(std::move(str)), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
 
-			size_t getLength() const {
+			size_t getStringLength() const {
 				if(!_bStrLen) {
 					_bStrLen = true;
-					auto len = GetLength(base_type::getPtr());
-					assert(len.dataLen == base_type::getSize());
+					auto len = GetLength(base_type::getPtr(), base_type::getLength());
+					assert(len.dataLen == base_type::getLength());
 					_strLenP.strLen = len.strLen;
 				}
 				return _strLenP.strLen;
+			}
+			//! 文字列の先頭ポインタを取得 (null-terminated保証付き)
+			const T* getStringPtr() const {
+				// フラグが立ってない場合はgetPtr()と同義
+				if(!_bNonNull) {
+					// 1+の領域分コピーして最後をnullにセット
+					auto len = base_type::getLength();
+					AbstString tmp(base_type::getPtr(), len+1);
+					const_cast<T*>(tmp.getPtr())[len] = T(0);
+					auto* self = const_cast<AbstString*>(this);
+					std::swap(*self, tmp);
+				}
+				return base_type::getPtr();
 			}
 	};
 	using c8Str = AbstString<char>;

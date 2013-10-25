@@ -209,10 +209,8 @@ namespace spn {
 		// URL変換
 		static int url_encode_OAUTH(char* dst, size_t n_dst, const char* src, int n);
 		static int url_encode(char* dst, size_t n_dst, const char* src, int n);
-		static StrLen utf8_strlen(const char* str);
 		// UTF-16関連
 		static bool utf16_isSurrogate(char16_t c);
-		static StrLen utf16_strlen(const char16_t* str);
 		static bool utf16_isSpace(char16_t c);
 		static bool utf16_isLF(char16_t c);
 		static bool utf16_isPrivate(char16_t c);	// 私用領域なら1，サロゲート私用領域なら2を返す(予定)
