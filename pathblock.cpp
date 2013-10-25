@@ -350,39 +350,37 @@ namespace spn {
 			ptr += seg;
 		}
 	}
-	File Dir::asFile() const {
-		auto path = plain_utf8();
-		if(!_dep.isFile(path))
-			throw std::runtime_error("invalid file path");
-		return File(std::move(path));
-	}
-	void Dir::_chmod(std::string& lpath, uint32_t mode) {
-		_dep.enumEntry(lpath, [&lpath, this, mode](const char* name) {
-			lpath += '/';
-			lpath += name;
-			if(_dep.isDirectory(lpath)) {
-				_dep.chmod(lpath, mode | FStatus::UserRWX);
-				_chmod(lpath, mode);
-			} else
-				_dep.chmod(lpath, mode);
+	void Dir::_chmod(PathBlock& lpath, ModCB cb) {
+		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const ChType* name) {
+			lpath <<= name;
+			if(ChMod(lpath, cb))
+				_chmod(lpath, cb);
+			lpath.popBack();
 		});
 	}
-	void Dir::chmod(uint32_t mode, bool bRecursive) {
-		auto path = plain_utf8();
-		if(_dep.isDirectory(path)) {
-			_dep.chmod(path, mode | FStatus::UserRWX);
-			if(bRecursive)
-				_chmod(path, mode);
-		} else
-			_dep.chmod(path, mode);
+	bool Dir::ChMod(const PathBlock& pb, ModCB cb) {
+		ToStrType path = pb.plain_utf32();
+		FStatus fstat = _dep.status(path);
+		bool bDir = fstat.flag & FStatus::DirectoryType;
+		if(bDir)
+			fstat.flag |= FStatus::UserExec;
+		bool bRecr = cb(pb, fstat);
+		_dep.chmod(path, fstat.flag);
+		return bDir && bRecr;
 	}
-
-	// -------------------------- File --------------------------
-	File::File(std::string&& p): _path(std::move(p)) {}
-	File::File(const std::string& p): _path(p) {}
-	File::File(File&& f): File(std::move(f._path)) {}
-
-	FILE* File::openAsFP(const char* mode) {
-		return std::fopen(_path.c_str(), mode);
+	void Dir::chmod(ModCB cb) {
+		PathBlock pb(*this);
+		if(ChMod(pb, cb))
+			_chmod(pb, cb);
+	}
+	void Dir::chmod(uint32_t mode) {
+		chmod([mode](const PathBlock&, FStatus& fs) {
+			fs.flag = mode;
+			return false;
+		});
+	}
+	FILE* Dir::openAsFP(const char* mode) const {
+		ToStrType path = plain_utf32();
+		return std::fopen(path.getPtr(), mode);
 	}
 }

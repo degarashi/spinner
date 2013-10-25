@@ -4,7 +4,9 @@
 struct stat;
 namespace spn {
 	struct Dir_depLinux {
-		using StringType = To8Str;
+		using ToStrType = To8Str;
+		using ChType = char;
+
 		std::string getcwd() const;
 		void chdir(To8Str path) const;
 		bool chdir_nt(To8Str path) const;
@@ -20,8 +22,10 @@ namespace spn {
 		bool isDirectory(To8Str path) const;
 
 		static FStatus CreateFStatus(const struct stat& st);
-		static uint32_t ConvertFlag(uint32_t flag);
-		static uint32_t ConvertFlagRev(uint32_t flag);
+		//! ファイルフラグ変換 (spinner -> linux)
+		static uint32_t ConvertFlag_S2L(uint32_t flag);
+		//! ファイルフラグ変換 (linux -> spinner)
+		static uint32_t ConvertFlag_L2S(uint32_t flag);
 	};
 	using DirDep = Dir_depLinux;
 }

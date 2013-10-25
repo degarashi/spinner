@@ -73,18 +73,6 @@ namespace spn {
 			int addExtNum(int n=1);
 			void clear();
 	};
-	//! パスがファイルを指していると仮定出来るクラス
-	class File {
-		std::string _path;
-		public:
-			File(std::string&& p);
-			File(const std::string& p);
-			File(File&& f);
-			File(const File&) = default;
-
-			//! fopenで開く
-			FILE* openAsFP(const char* mode);
-	};
 
 	struct FStatus {
 		enum Flag : uint32_t {

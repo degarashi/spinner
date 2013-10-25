@@ -34,11 +34,11 @@ namespace spn {
 		return ::chdir(path.getPtr()) >= 0;
 	}
 	void Dir_depLinux::mkdir(To8Str path, uint32_t mode) const {
-		if(::mkdir(path.getPtr(), mode) < 0)
+		if(::mkdir(path.getPtr(), ConvertFlag_S2L(mode)) < 0)
 			throw PError("mkdir");
 	}
 	void Dir_depLinux::chmod(To8Str path, uint32_t mode) const {
-		if(::chmod(path.getPtr(), mode) < 0)
+		if(::chmod(path.getPtr(), ConvertFlag_S2L(mode)) < 0)
 			throw PError("chmod");
 	}
 	void Dir_depLinux::rmdir(To8Str path) const {
@@ -105,7 +105,7 @@ namespace spn {
 	}
 	FStatus Dir_depLinux::CreateFStatus(const struct stat& st) {
 		FStatus fs;
-		fs.flag = ConvertFlag(st.st_mode);
+		fs.flag = ConvertFlag_L2S(st.st_mode);
 		fs.userId = st.st_uid;
 		fs.groupId = st.st_gid;
 		fs.size = st.st_size;
@@ -114,18 +114,29 @@ namespace spn {
 		fs.tmCreated = st.st_ctime;
 		return fs;
 	}
-	uint32_t Dir_depLinux::ConvertFlag(uint32_t flag) {
+	uint32_t Dir_depLinux::ConvertFlag_L2S(uint32_t flag) {
 		uint32_t res = 0;
 		if(S_ISREG(flag))
-			flag |= FStatus::FileType;
+			res |= FStatus::FileType;
 		else if(S_ISDIR(flag))
 			res |= FStatus::DirectoryType;
-		else
-			return 0;
 
 		for(auto& p : c_f2s) {
 			if(p.second & flag)
 				res |= p.first;
+		}
+		return res;
+	}
+	uint32_t Dir_depLinux::ConvertFlag_S2L(uint32_t flag) {
+		uint32_t res = 0;
+		if(flag & FStatus::FileType)
+			res |= S_IFREG;
+		else if(flag & FStatus::DirectoryType)
+			res |= S_IFDIR;
+
+		for(auto& p : c_f2s) {
+			if(p.first & flag)
+				res |= p.second;
 		}
 		return res;
 	}
