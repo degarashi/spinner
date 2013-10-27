@@ -205,6 +205,9 @@ namespace spn {
 					throw std::runtime_error("unknown format");
 			}
 		}
+		const ZipFile::DirHeaderL& ZipFile::headers() const {
+			return _hdrDir;
+		}
 		ByteBuff ZipFile::extract(int n, std::istream& is) const {
 			is.seekg(_hdrDir[n]->core.relative_offset, is.beg);
 			return LocalHeader::Extract(is);
