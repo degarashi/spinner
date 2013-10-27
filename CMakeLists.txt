@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 project(spinner)
 
 set(SSE_LEVEL 2)
-set(CMAKE_BUILD_TYPE "Debug")
 include(CMake0.txt require)
 
 # OS依存ファイルの設定
@@ -19,3 +18,7 @@ add_library(spinner STATIC ${CXX_SRC})
 
 add_executable(spn_test unittest.cpp main.cpp)
 target_link_libraries(spn_test spinner boost_regex z)
+
+install(TARGETS spinner spn_test
+	ARCHIVE DESTINATION lib
+	RUNTIME DESTINATION bin)
