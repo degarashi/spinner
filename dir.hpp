@@ -23,7 +23,7 @@ namespace spn {
 		};
 
 		using StrList = std::vector<std::string>;
-		using EnumCB = std::function<void (std::string&&)>;
+		using EnumCB = std::function<void (const PathBlock&)>;
 		using ModCB = std::function<bool (const PathBlock&, FStatus&)>;
 		DirDep	_dep;
 		void _enumEntryRegExR(const boost::regex& r, std::string& lpath, size_t baseLen, EnumCB cb) const;

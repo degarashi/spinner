@@ -274,7 +274,7 @@ namespace spn {
 	}
 	Dir::StrList Dir::enumEntryRegEx(const boost::regex& r, bool bRecursive) const {
 		StrList res;
-		enumEntryRegEx(r, [&res](std::string&& s){ res.push_back(std::move(s)); }, bRecursive);
+		enumEntryRegEx(r, [&res](const PathBlock& pb){ res.push_back(pb.plain_utf8()); }, bRecursive);
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s, bool bRecursive) const {
@@ -295,7 +295,7 @@ namespace spn {
 			if(_dep.isDirectory(lpath))
 				_enumEntryRegExR(r, lpath, baseLen, cb);
 			if(boost::regex_match(s, m, r))
-				cb(lpath.substr(baseLen));
+				cb(PathBlock(lpath.substr(baseLen)));
 			lpath.resize(pl);
 		});
 	}
@@ -304,7 +304,7 @@ namespace spn {
 		_dep.enumEntry(path, [&](const char* name) {
 			std::string s(name);
 			if(boost::regex_match(s, m, r))
-				cb(std::move(s));
+				cb(PathBlock(s));
 		});
 	}
 	void Dir::enumEntryRegEx(const boost::regex& r, EnumCB cb, bool bRecursive) const {
