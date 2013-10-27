@@ -152,7 +152,7 @@ namespace spn {
 			//! 文字列の先頭ポインタを取得 (null-terminated保証付き)
 			const T* getStringPtr() const {
 				// フラグが立ってない場合はgetPtr()と同義
-				if(!_bNonNull) {
+				if(_bNonNull) {
 					// 1+の領域分コピーして最後をnullにセット
 					auto len = base_type::getLength();
 					AbstString tmp(base_type::getPtr(), len+1);
