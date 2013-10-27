@@ -18,4 +18,4 @@ set(CXX_SRC ${CXX_SRC} zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math
 add_library(spinner STATIC ${CXX_SRC})
 
 add_executable(spn_test unittest.cpp main.cpp)
-target_link_libraries(spn_test spinner boost_regex)
+target_link_libraries(spn_test spinner boost_regex z)
