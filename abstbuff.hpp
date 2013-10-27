@@ -39,11 +39,8 @@ namespace spn {
 			_type = ab._type;
 			_buffM = ab._buffM;
 			_size = ab._size;
-			if((_bRelease = ab._bRelease)) {
-				ab._bRelease = false;
-				ab._buffM = nullptr;
-				ab._type = Type::Invalid;
-			}
+			if((_bRelease = ab._bRelease))
+				ab._invalidate();
 		}
 		~AbstBuffer() {
 			if(_bRelease)
@@ -56,6 +53,14 @@ namespace spn {
 		//! initialize by const-vector
 		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()), _bRelease(false) {}
 
+		AbstBuffer& operator = (AbstBuffer&& a) {
+			_type = a._type;
+			_buffM = a._buffM;
+			_size = a._size;
+			if((_bRelease = a._bRelease))
+				a._invalidate();
+			return *this;
+		}
 		void setTo(Buff& dst) {
 			switch(_type) {
 				case Type::ConstPtr:
@@ -126,6 +131,14 @@ namespace spn {
 			AbstString(const Str& str): base_type(str), _bStrLen(false), _bNonNull(false) {}
 			AbstString(const AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
 			AbstString(AbstString&& str): base_type(std::move(str)), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
+
+			AbstString& operator = (AbstString&& a) {
+				reinterpret_cast<base_type&>(*this) = std::move(reinterpret_cast<base_type&>(a));
+				_strLenP = a._strLenP;
+				_bStrLen = a._bStrLen;
+				_bNonNull = a._bNonNull;
+				return *this;
+			}
 
 			size_t getStringLength() const {
 				if(!_bStrLen) {
