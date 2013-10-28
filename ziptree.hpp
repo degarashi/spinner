@@ -26,7 +26,7 @@ namespace spn {
 			const File* findFile(spn::PathBlock& lpath) const override;
 		};
 		struct File : FTree {
-			using Pos = std::istream::streampos;
+			using Pos = AdaptStream::streampos;
 			const DirHeader* header;
 
 			File(spn::To8Str str, const DirHeader* hdr);
@@ -38,6 +38,7 @@ namespace spn {
 		class ZipTree {
 			ZipFile		_zf;
 			Directory	_froot;
+			AdaptStd	_as;
 
 			FTree* _buildTree(Directory* pdir, spn::PathBlock& lpath);
 			public:

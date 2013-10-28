@@ -5,40 +5,40 @@
 namespace spn {
 	namespace zip {
 		namespace {
-			uint32_t GetSignature(std::istream& is) {
+			uint32_t GetSignature(AdaptStream& as) {
 				uint32_t sig;
-				is.read(reinterpret_cast<char*>(&sig), sizeof(sig));
-				is.seekg(int(-sizeof(sig)), is.cur);
+				as.read(&sig, sizeof(sig));
+				as.seekg(int64_t(-sizeof(sig)), as.cur);
 				return sig;
 			}
 			template <class T>
-			void ReadData(T& dst, std::istream& is) {
-				is.read(reinterpret_cast<char*>(&dst), sizeof(T)); }
+			void ReadData(T& dst, AdaptStream& as) {
+				as.read(reinterpret_cast<char*>(&dst), sizeof(T)); }
 			template <class T>
-			void ReadArray(T& dst, size_t len, std::istream& is) {
+			void ReadArray(T& dst, size_t len, AdaptStream& as) {
 				dst.resize(len);
-				is.read(reinterpret_cast<char*>(&dst[0]), len); }
+				as.read(reinterpret_cast<char*>(&dst[0]), len); }
 		}
 
-		UPtr<LocalHeader> LocalHeader::Read(std::istream& is) {
-			if(GetSignature(is) != SIGNATURE)
+		UPtr<LocalHeader> LocalHeader::Read(AdaptStream& as) {
+			if(GetSignature(as) != SIGNATURE)
 				return nullptr;
 
 			auto* ret = new LocalHeader;
 			Core& core = ret->core;
-			ReadData(core, is);
-			ReadArray(ret->file_name, core.file_namelen, is);
-			ReadArray(ret->extra_field, core.extra_fieldlen, is);
-			ret->data_pos = is.tellg();
-			is.seekg(core.compressed_size, is.cur);
+			ReadData(core, as);
+			ReadArray(ret->file_name, core.file_namelen, as);
+			ReadArray(ret->extra_field, core.extra_fieldlen, as);
+			ret->data_pos = as.tellg();
+			as.seekg(core.compressed_size, as.cur);
 			return UPtr<LocalHeader>(ret);
 		}
-		bool LocalHeader::Skip(std::istream& is) {
-			if(GetSignature(is) != SIGNATURE)
+		bool LocalHeader::Skip(AdaptStream& as) {
+			if(GetSignature(as) != SIGNATURE)
 				return false;
 			LocalHeader hdr;
-			ReadData(hdr.core, is);
-			is.seekg(hdr.core.file_namelen + hdr.core.extra_fieldlen + hdr.core.compressed_size, is.cur);
+			ReadData(hdr.core, as);
+			as.seekg(hdr.core.file_namelen + hdr.core.extra_fieldlen + hdr.core.compressed_size, as.cur);
 			return true;
 		}
 		namespace {
@@ -83,7 +83,7 @@ namespace spn {
 				}
 			};
 			template <class OB>
-			void Decompress(OB& ob, std::istream& is, size_t input_len, size_t output_len) {
+			void Decompress(OB& ob, AdaptStream& as, size_t input_len, size_t output_len) {
 				z_stream z;
 				z.zalloc = Z_NULL;
 				z.zfree = Z_NULL;
@@ -97,7 +97,7 @@ namespace spn {
 				*num = 0x7880;
 				*num = (*num+30) / 31 * 31;
 				std::swap(tmp[0],tmp[1]);
-				is.read(tmp+2, len);
+				as.read(tmp+2, len);
 				input_len -= len;
 				len += 2;
 				for(;;) {
@@ -119,7 +119,7 @@ namespace spn {
 					if(z.avail_in < TMP_BUFFSIZE) {
 						std::memmove(tmp, z.next_in, z.avail_in);
 						len = std::min(TMP_BUFFSIZE-z.avail_in, input_len);
-						is.read(tmp + z.avail_in, len);
+						as.read(tmp + z.avail_in, len);
 						input_len -= len;
 						len += z.avail_in;
 					}
@@ -127,39 +127,39 @@ namespace spn {
 				inflateEnd(&z);
 			}
 			using SizePair = std::pair<size_t, size_t>;
-			SizePair LoadHeader(std::istream& is) {
+			SizePair LoadHeader(AdaptStream& as) {
 				LocalHeader hdr;
 				auto& core = hdr.core;
-				ReadData(core, is);
+				ReadData(core, as);
 				if(core.signature != LocalHeader::SIGNATURE)
 					throw std::runtime_error("invalid local header");
-				is.seekg(core.file_namelen + core.extra_fieldlen, is.cur);
+				as.seekg(core.file_namelen + core.extra_fieldlen, as.cur);
 				if(core.compress_method == 0)
 					return SizePair(size_t(core.compressed_size), size_t(core.compressed_size));
 				return SizePair(size_t(core.compressed_size), size_t(core.uncompressed_size));
 			}
 		}
-		ByteBuff LocalHeader::Extract(std::istream& is) {
-			auto sz = LoadHeader(is);
+		ByteBuff LocalHeader::Extract(AdaptStream& as) {
+			auto sz = LoadHeader(as);
 			if(sz.first == sz.second) {
 				// 無圧縮
 				ByteBuff ret(sz.first);
-				is.read(reinterpret_cast<char*>(&ret[0]), sz.first);
+				as.read(reinterpret_cast<char*>(&ret[0]), sz.first);
 				return std::move(ret);
 			}
 			OutBuffer ob(sz.second);
-			Decompress(ob, is, sz.first, sz.second);
+			Decompress(ob, as, sz.first, sz.second);
 			return std::move(ob._buff);
 		}
-		void LocalHeader::Extract(std::ostream& os, std::istream& is) {
-			auto sz = LoadHeader(is);
+		void LocalHeader::Extract(std::ostream& os, AdaptStream& as) {
+			auto sz = LoadHeader(as);
 			if(sz.first == sz.second) {
 				// 無圧縮
 				constexpr size_t BUFFSIZE = 4096;
 				char tmp[BUFFSIZE];
 				for(;;) {
 					size_t len = std::min(sz.first, BUFFSIZE);
-					is.read(tmp, len);
+					as.read(tmp, len);
 					os.write(tmp, len);
 					if(sz.first <= len)
 						return;
@@ -167,38 +167,38 @@ namespace spn {
 				}
 			}
 			OutStream ofs(os, sz.second);
-			Decompress(ofs, is, sz.first, sz.second);
+			Decompress(ofs, as, sz.first, sz.second);
 		}
 
-		UPtr<EndHeader> EndHeader::Read(std::istream& is) {
-			if(GetSignature(is) != SIGNATURE)
+		UPtr<EndHeader> EndHeader::Read(AdaptStream& as) {
+			if(GetSignature(as) != SIGNATURE)
 				return nullptr;
 
 			auto* ret = new EndHeader;
 			Core& core = ret->core;
-			ReadData(core, is);
-			ReadArray(ret->comment, core.commentlen, is);
+			ReadData(core, as);
+			ReadArray(ret->comment, core.commentlen, as);
 			return UPtr<EndHeader>(ret);
 		}
-		UPtr<DirHeader> DirHeader::Read(std::istream& is) {
-			if(GetSignature(is) != SIGNATURE)
+		UPtr<DirHeader> DirHeader::Read(AdaptStream& as) {
+			if(GetSignature(as) != SIGNATURE)
 				return nullptr;
 
 			auto* ret = new DirHeader;
 			Core& core = ret->core;
-			ReadData(core, is);
-			ReadArray(ret->file_name, core.file_namelen, is);
-			ReadArray(ret->extra_field, core.extra_fieldlen, is);
-			ReadArray(ret->comment, core.commentlen, is);
+			ReadData(core, as);
+			ReadArray(ret->file_name, core.file_namelen, as);
+			ReadArray(ret->extra_field, core.extra_fieldlen, as);
+			ReadArray(ret->comment, core.commentlen, as);
 			return UPtr<DirHeader>(ret);
 		}
 
-		ZipFile::ZipFile(std::istream& is) {
+		ZipFile::ZipFile(AdaptStream& as) {
 			for(;;) {
-				if(LocalHeader::Skip(is)) {
-				} else if(auto up = DirHeader::Read(is)) {
+				if(LocalHeader::Skip(as)) {
+				} else if(auto up = DirHeader::Read(as)) {
 					_hdrDir.emplace_back(std::move(up));
-				} else if(auto up = EndHeader::Read(is)) {
+				} else if(auto up = EndHeader::Read(as)) {
 					_hdrEnd = std::move(up);
 					break;
 				} else
@@ -208,13 +208,13 @@ namespace spn {
 		const ZipFile::DirHeaderL& ZipFile::headers() const {
 			return _hdrDir;
 		}
-		ByteBuff ZipFile::extract(int n, std::istream& is) const {
-			is.seekg(_hdrDir[n]->core.relative_offset, is.beg);
-			return LocalHeader::Extract(is);
+		ByteBuff ZipFile::extract(int n, AdaptStream& as) const {
+			as.seekg(_hdrDir[n]->core.relative_offset, as.beg);
+			return LocalHeader::Extract(as);
 		}
-		void ZipFile::extract(std::ostream& os, int n, std::istream& is) const {
-			is.seekg(_hdrDir[n]->core.relative_offset, is.beg);
-			LocalHeader::Extract(os, is);
+		void ZipFile::extract(std::ostream& os, int n, AdaptStream& as) const {
+			as.seekg(_hdrDir[n]->core.relative_offset, as.beg);
+			LocalHeader::Extract(os, as);
 		}
 	}
 }

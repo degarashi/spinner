@@ -13,7 +13,7 @@ else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
 
-set(CXX_SRC ${CXX_SRC} ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp)
+set(CXX_SRC ${CXX_SRC} adaptstd.cpp ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp)
 add_library(spinner STATIC ${CXX_SRC})
 
 add_executable(spn_test unittest.cpp main.cpp)

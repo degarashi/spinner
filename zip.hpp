@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
-#include <fstream>
 #include <vector>
+#include "adaptstream.hpp"
 
 namespace spn {
 	template <class T>
@@ -31,10 +31,10 @@ namespace spn {
 			ByteBuff	extra_field;
 			SPos		data_pos;
 
-			static UPtr<LocalHeader> Read(std::istream& is);
-			static bool Skip(std::istream& is);
-			static ByteBuff Extract(std::istream& is);
-			static void Extract(std::ostream& os, std::istream& is);
+			static UPtr<LocalHeader> Read(AdaptStream& as);
+			static bool Skip(AdaptStream& as);
+			static ByteBuff Extract(AdaptStream& as);
+			static void Extract(std::ostream& os, AdaptStream& as);
 		};
 
 		struct DataDesc {
@@ -44,7 +44,7 @@ namespace spn {
 						compressed_size,
 						uncompressed_size;
 
-			static UPtr<DataDesc> Read(std::istream& is);
+			static UPtr<DataDesc> Read(AdaptStream& as);
 		};
 
 		struct DirHeader {
@@ -73,7 +73,7 @@ namespace spn {
 						comment;
 			ByteBuff	extra_field;
 
-			static UPtr<DirHeader> Read(std::istream& is);
+			static UPtr<DirHeader> Read(AdaptStream& as);
 		};
 
 		struct EndHeader {
@@ -91,7 +91,7 @@ namespace spn {
 			Core		core;
 			std::string	comment;
 
-			static UPtr<EndHeader> Read(std::istream& is);
+			static UPtr<EndHeader> Read(AdaptStream& as);
 		};
 
 		class ZipFile {
@@ -100,10 +100,10 @@ namespace spn {
 			UPtr<EndHeader>	_hdrEnd;
 
 			public:
-				ZipFile(std::istream& is);
+				ZipFile(AdaptStream& as);
 				const DirHeaderL& headers() const;
-				ByteBuff extract(int n, std::istream& is) const;
-				void extract(std::ostream& os, int n, std::istream& is) const;
+				ByteBuff extract(int n, AdaptStream& as) const;
+				void extract(std::ostream& os, int n, AdaptStream& as) const;
 		};
 	}
 }
