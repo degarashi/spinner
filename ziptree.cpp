@@ -62,7 +62,7 @@ namespace spn {
 		}
 
 
-		ZipTree::ZipTree(std::istream& ifs): _as(ifs), _zf(_as), _froot("") {
+		ZipTree::ZipTree(std::istream& ifs): _zf(AdaptStd(ifs)), _froot("") {
 			auto& hdr = _zf.headers();
 			for(auto& f : hdr) {
 				auto* fp = f.get();

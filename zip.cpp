@@ -8,7 +8,7 @@ namespace spn {
 			uint32_t GetSignature(AdaptStream& as) {
 				uint32_t sig;
 				as.read(&sig, sizeof(sig));
-				as.seekg(int64_t(-sizeof(sig)), as.cur);
+				as.seekg(-int32_t(sizeof(sig)), as.cur);
 				return sig;
 			}
 			template <class T>
@@ -193,6 +193,7 @@ namespace spn {
 			return UPtr<DirHeader>(ret);
 		}
 
+		ZipFile::ZipFile(AdaptStream&& as): ZipFile(as) {}
 		ZipFile::ZipFile(AdaptStream& as) {
 			for(;;) {
 				if(LocalHeader::Skip(as)) {

@@ -38,7 +38,6 @@ namespace spn {
 		class ZipTree {
 			ZipFile		_zf;
 			Directory	_froot;
-			AdaptStd	_as;
 
 			FTree* _buildTree(Directory* pdir, spn::PathBlock& lpath);
 			public:

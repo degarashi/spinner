@@ -101,6 +101,7 @@ namespace spn {
 
 			public:
 				ZipFile(AdaptStream& as);
+				ZipFile(AdaptStream&& as);
 				const DirHeaderL& headers() const;
 				ByteBuff extract(int n, AdaptStream& as) const;
 				void extract(std::ostream& os, int n, AdaptStream& as) const;
