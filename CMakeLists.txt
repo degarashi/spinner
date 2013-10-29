@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 project(spinner)
 
 set(SSE_LEVEL 2)
-include(CMake0.txt require)
+include(CMakePC.txt require)
+include(CMakeCompiler.txt require)
 
 # OS依存ファイルの設定
 if(${WIN32})
@@ -20,5 +21,5 @@ add_executable(spn_test unittest.cpp main.cpp)
 target_link_libraries(spn_test spinner boost_regex z)
 
 install(TARGETS spinner spn_test
-	ARCHIVE DESTINATION lib
-	RUNTIME DESTINATION bin)
+	ARCHIVE DESTINATION lib_${TOOL_PREFIX}
+	RUNTIME DESTINATION bin_${TOOL_PREFIX})
