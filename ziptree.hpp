@@ -40,8 +40,10 @@ namespace spn {
 			Directory	_froot;
 
 			FTree* _buildTree(Directory* pdir, spn::PathBlock& lpath);
+			void _init();
 			public:
 				ZipTree(std::istream& ifs);
+				ZipTree(AdaptStream&& as);
 				void enumFile(const boost::regex& re, FTree::EnumCB cb) const;
 				const File* findFile(spn::To32Str path) const;
 		};
