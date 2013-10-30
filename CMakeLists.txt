@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(spinner)
-
-set(SSE_LEVEL 2)
-include(CMakePC.txt require)
+# KDevelopの変数設定が機能していないのでターゲットによってコメントアウトを切り替える
+# set(SSE_LEVEL 2)
+# set(ARCHITECTURE x86)
+include(CMakeCommon.txt require)
 include(CMakeCompiler.txt require)
 
 # OS依存ファイルの設定
@@ -17,11 +18,6 @@ endif()
 set(CXX_SRC ${CXX_SRC} adaptstd.cpp ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp)
 add_library(spinner STATIC ${CXX_SRC})
 
-add_executable(spn_test unittest.cpp main.cpp)
-target_link_libraries(spn_test spinner boost_regex z)
-
-install(TARGETS spinner spn_test
-	ARCHIVE DESTINATION lib_${TOOL_PREFIX}
-	RUNTIME DESTINATION bin_${TOOL_PREFIX})
+install(TARGETS spinner ARCHIVE DESTINATION lib_${ARCHITECTURE})
 file(GLOB HEADERS "./*.hpp")
 install(FILES ${HEADERS} DESTINATION include/spinner)
