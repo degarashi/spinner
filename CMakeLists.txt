@@ -23,3 +23,5 @@ target_link_libraries(spn_test spinner boost_regex z)
 install(TARGETS spinner spn_test
 	ARCHIVE DESTINATION lib_${TOOL_PREFIX}
 	RUNTIME DESTINATION bin_${TOOL_PREFIX})
+file(GLOB HEADERS "./*.hpp")
+install(FILES ${HEADERS} DESTINATION include/spinner)
