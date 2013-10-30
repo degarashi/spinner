@@ -1,5 +1,10 @@
 #include "dir_depLinux.hpp"
-#include <sys/dir.h>
+#ifdef ANDROID
+	#include <dirent.h>
+	#include <errno.h>
+#else
+	#include <sys/dir.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include <stdexcept>

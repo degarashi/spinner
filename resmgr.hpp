@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 namespace spn {
 	//! 型を保持しない強参照ハンドル値

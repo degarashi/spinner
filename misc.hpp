@@ -358,10 +358,14 @@ namespace spn {
 
 	template <class T>
 	T* AAllocBase(int nAlign, int n) {
-		void* ptr;
-		if(posix_memalign(&ptr, nAlign, sizeof(T)*n) != 0)
-			throw std::bad_alloc();
-		return reinterpret_cast<T*>(ptr);
+		#ifdef ANDROID
+			return reinterpret_cast<T*>(malloc(n*sizeof(T)));
+		#else
+			void* ptr;
+			if(posix_memalign(&ptr, nAlign, sizeof(T)*n) != 0)
+				throw std::bad_alloc();
+			return reinterpret_cast<T*>(ptr);
+		#endif
 	}
 	/*! \param[in] nAlign	バイト境界 (2byte以上128byte以下)
 		\param[in] size		確保したいバイト数 */
