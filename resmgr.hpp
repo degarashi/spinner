@@ -162,6 +162,7 @@ namespace spn {
 			}
 
 			operator bool () const { return valid(); }
+			operator HDL () const { return _hdl; }
 
 			// ---- SHandleのメソッドを仲立ち ----
 			data_type& ref() { return _hdl.ref(); }
