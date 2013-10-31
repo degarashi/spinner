@@ -44,7 +44,8 @@ namespace spn {
 				ZipTree(std::istream& ifs);
 				ZipTree(AdaptStream& as);
 				ZipTree(AdaptStream&& as);
-				void enumFile(const boost::regex& re, FTree::EnumCB cb) const;
+				void enumFileWildCard(const std::string& wc, FTree::EnumCB cb) const;
+				void enumFileRegEx(const boost::regex& re, FTree::EnumCB cb) const;
 				const File* findFile(spn::To32Str path) const;
 		};
 	}

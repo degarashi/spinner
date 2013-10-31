@@ -1,5 +1,6 @@
 #include "ziptree.hpp"
 #include "path.hpp"
+#include "dir.hpp"
 
 namespace spn {
 	namespace zip {
@@ -77,7 +78,10 @@ namespace spn {
 				_froot.addItem(i, lpath);
 			}
 		}
-		void ZipTree::enumFile(const boost::regex& re, FTree::EnumCB cb) const {
+		void ZipTree::enumFileWildCard(const std::string& wc, FTree::EnumCB cb) const {
+			enumFileRegEx(Dir::ToRegEx(wc), cb);
+		}
+		void ZipTree::enumFileRegEx(const boost::regex& re, FTree::EnumCB cb) const {
 			spn::PathBlock pb;
 			_froot.enumFile(re, pb, cb);
 		}
