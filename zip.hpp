@@ -34,7 +34,7 @@ namespace spn {
 			static UPtr<LocalHeader> Read(AdaptStream& as);
 			static bool Skip(AdaptStream& as);
 			static ByteBuff Extract(AdaptStream& as);
-			static void Extract(std::ostream& os, AdaptStream& as);
+			static void Extract(AdaptOStream& aos, AdaptStream& as);
 		};
 
 		struct DataDesc {
@@ -104,7 +104,7 @@ namespace spn {
 				ZipFile(AdaptStream&& as);
 				const DirHeaderL& headers() const;
 				ByteBuff extract(int n, AdaptStream& as) const;
-				void extract(std::ostream& os, int n, AdaptStream& as) const;
+				void extract(AdaptOStream& aos, int n, AdaptStream& as) const;
 		};
 	}
 }

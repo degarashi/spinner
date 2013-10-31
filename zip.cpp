@@ -56,13 +56,13 @@ namespace spn {
 				}
 			};
 			struct OutStream {
-				std::ostream& _os;
+				AdaptOStream& _aos;
 				constexpr static size_t BUFFSIZE = 4096;
 				uint8_t	_tmp[BUFFSIZE];
 				size_t	_nWrite;
 				size_t _totalWrite;
 
-				OutStream(std::ostream& os, size_t size): _os(os), _nWrite(0), _totalWrite(size) {}
+				OutStream(AdaptOStream& aos, size_t size): _aos(aos), _nWrite(0), _totalWrite(size) {}
 				size_t availOut() const { return BUFFSIZE - _nWrite; }
 				void advance(size_t num) {
 					_nWrite += num;
@@ -70,14 +70,14 @@ namespace spn {
 						throw std::runtime_error("something wrong");
 					_totalWrite -= num;
 					if(_nWrite >= BUFFSIZE/2) {
-						_os.write(reinterpret_cast<const char*>(_tmp), _nWrite);
+						_aos.write(_tmp, _nWrite);
 						_nWrite = 0;
 					}
 				}
 				uint8_t* getPtr() { return _tmp + _nWrite; }
 				void finalize() const {
 					if(_nWrite > 0)
-						_os.write(reinterpret_cast<const char*>(_tmp), _nWrite);
+						_aos.write(_tmp, _nWrite);
 					if(_totalWrite != 0)
 						throw std::runtime_error("something wrong");
 				}
@@ -151,7 +151,7 @@ namespace spn {
 			Decompress(ob, as, sz.first, sz.second);
 			return std::move(ob._buff);
 		}
-		void LocalHeader::Extract(std::ostream& os, AdaptStream& as) {
+		void LocalHeader::Extract(AdaptOStream& aos, AdaptStream& as) {
 			auto sz = LoadHeader(as);
 			if(sz.first == sz.second) {
 				// 無圧縮
@@ -160,13 +160,13 @@ namespace spn {
 				for(;;) {
 					size_t len = std::min(sz.first, BUFFSIZE);
 					as.read(tmp, len);
-					os.write(tmp, len);
+					aos.write(tmp, len);
 					if(sz.first <= len)
 						return;
 					sz.first -= len;
 				}
 			}
-			OutStream ofs(os, sz.second);
+			OutStream ofs(aos, sz.second);
 			Decompress(ofs, as, sz.first, sz.second);
 		}
 
@@ -213,9 +213,9 @@ namespace spn {
 			as.seekg(_hdrDir[n]->core.relative_offset, as.beg);
 			return LocalHeader::Extract(as);
 		}
-		void ZipFile::extract(std::ostream& os, int n, AdaptStream& as) const {
+		void ZipFile::extract(AdaptOStream& aos, int n, AdaptStream& as) const {
 			as.seekg(_hdrDir[n]->core.relative_offset, as.beg);
-			LocalHeader::Extract(os, as);
+			LocalHeader::Extract(aos, as);
 		}
 	}
 }
