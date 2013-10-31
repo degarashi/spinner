@@ -9,6 +9,7 @@
 #include "resmgr.hpp"
 #include "pqueue.hpp"
 #include "unittest.hpp"
+#include "size.hpp"
 
 using namespace spn;
 namespace {
@@ -94,8 +95,6 @@ namespace {
 		}
 	}
 }
-// FileとDirを区別しない
-// 新たにファイルを作成する場合は
 int main(int argc, char **argv) {
 	MatTest();
 	PoseTest();
