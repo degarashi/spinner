@@ -14,7 +14,7 @@ namespace spn {
 			if(!name.empty())
 				lpath.popBack();
 		}
-		void Directory::addItem(const DirHeader* hdr, spn::PathBlock& lpath) {
+		void Directory::addItem(int idx, spn::PathBlock& lpath) {
 			if(lpath.segments() == 0)
 				throw std::runtime_error("invalid path (addItem)");
 
@@ -22,7 +22,7 @@ namespace spn {
 			lpath.popFront();
 
 			if(lpath.segments() == 0) {
-				flist.push_back(UPtr<FTree>(new File(seg0, hdr)));
+				flist.push_back(UPtr<FTree>(new File(seg0, idx)));
 			} else {
 				auto itr = std::find_if(flist.begin(), flist.end(), [&seg0](const UPtr<FTree>& ft) {
 					return ft->name == seg0;
@@ -31,7 +31,7 @@ namespace spn {
 					flist.push_back(UPtr<FTree>(new Directory(seg0)));
 					itr = flist.end()-1;
 				}
-				(*itr)->addItem(hdr, lpath);
+				(*itr)->addItem(idx, lpath);
 			}
 		}
 		const File* Directory::findFile(spn::PathBlock& lpath) const {
@@ -44,7 +44,7 @@ namespace spn {
 			return nullptr;
 		}
 
-		File::File(spn::To8Str str, const DirHeader* hdr): FTree(str), header(hdr) {}
+		File::File(spn::To8Str str, int idx): FTree(str), index(idx) {}
 		void File::enumFile(const boost::regex& re, spn::PathBlock& lpath, EnumCB cb) const {
 			lpath.pushBack(name);
 			boost::smatch m;
@@ -52,7 +52,7 @@ namespace spn {
 				cb(lpath, *this);
 			lpath.popBack();
 		}
-		void File::addItem(const DirHeader* hdr, spn::PathBlock& lpath) {
+		void File::addItem(int idx, spn::PathBlock& lpath) {
 			throw std::runtime_error("invalid operation (addItem)");
 		}
 		const File* File::findFile(spn::PathBlock& lpath) const {
@@ -61,18 +61,20 @@ namespace spn {
 			return this;
 		}
 
-		ZipTree::ZipTree(AdaptStream&& as): _zf(std::move(as)), _froot("") {
+		ZipTree::ZipTree(AdaptStream&& as): ZipTree(as) {}
+		ZipTree::ZipTree(AdaptStream& as): ZipFile(std::move(as)), _froot("") {
 			_init();
 		}
-		ZipTree::ZipTree(std::istream& ifs): _zf(AdaptStd(ifs)), _froot("") {
+		ZipTree::ZipTree(std::istream& ifs): ZipFile(AdaptStd(ifs)), _froot("") {
 			_init();
 		}
 		void ZipTree::_init() {
-			auto& hdr = _zf.headers();
-			for(auto& f : hdr) {
-				auto* fp = f.get();
+			auto& hdr = headers();
+			int nHdr = hdr.size();
+			for(int i=0 ; i<nHdr ; i++) {
+				auto* fp = hdr[i].get();
 				spn::PathBlock lpath(fp->file_name);
-				_froot.addItem(fp, lpath);
+				_froot.addItem(i, lpath);
 			}
 		}
 		void ZipTree::enumFile(const boost::regex& re, FTree::EnumCB cb) const {
