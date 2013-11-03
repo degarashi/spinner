@@ -55,4 +55,7 @@ namespace spn {
 			//! ワイルドカードから正規表現への書き換え
 			static boost::regex ToRegEx(const std::string& s);
 	};
+	using ToPathStr = Dir::ToStrType;
+	using PathStr = Dir::StrType;
+	using PathCh = Dir::ChType;
 }
