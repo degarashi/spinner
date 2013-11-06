@@ -8,18 +8,16 @@ namespace spn {
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
 	}
-	template <class ItrO, class ItrI, class CB>
-	void PathBlock::_ReWriteSC(ItrO dst, ItrI from, ItrI to, char32_t sc, CB cb) {
+	template <class Itr, class CB>
+	void PathBlock::_ReWriteSC(Itr from, Itr to, char32_t sc, CB cb) {
 		int count = 0;
 		while(from != to) {
 			if(_IsSC(*from)) {
+				*from = sc;
 				cb(count);
 				count = 0;
-				*dst++ = sc;
-			} else {
+			} else
 				++count;
-				*dst++ = *from;
-			}
 			++from;
 		}
 		if(count > 0)
@@ -45,9 +43,9 @@ namespace spn {
 			--ptrE;
 			--len;
 		}
-		_path.resize(len);
+		_path.assign(ptr, ptrE);
 		_segment.clear();
-		_ReWriteSC(_path.begin(), ptr, ptrE, SC, [this](int n){ _segment.push_back(n); });
+		_ReWriteSC(_path.begin(), _path.end(), SC, [this](int n){ _segment.push_back(n); });
 	}
 	bool PathBlock::isAbsolute() const {
 		return _bAbsolute;
@@ -68,9 +66,8 @@ namespace spn {
 
 		if(!_path.empty())
 			_path.push_back(SC);
-		size_t pathLen = _path.size();
-		_path.resize(pathLen+(srcE-src));
-		_ReWriteSC(_path.begin()+pathLen, src, srcE, SC, [this](int n){ _segment.push_back(n); });
+		_path.insert(_path.end(), src, srcE);
+		_ReWriteSC(_path.begin()+(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
 	}
 	void PathBlock::popBack() {
 		int sg = segments();
@@ -84,7 +81,7 @@ namespace spn {
 	}
 	void PathBlock::pushFront(To32Str elem) {
 		auto *src = elem.getPtr(),
-		*srcE = src + elem.getLength();
+			*srcE = src + elem.getLength();
 		if(src == srcE)
 			return;
 		if((_bAbsolute = _IsSC(*src)))
@@ -93,9 +90,10 @@ namespace spn {
 			--srcE;
 
 		_path.push_front(SC);
-		_path.insert(_path.begin(), EOS);
+		_path.insert(_path.begin(), src, srcE);
 		int ofs = 0;
-		_ReWriteSC(_path.begin(), src, srcE, SC, [&ofs, this](int n){ _segment.insert(_segment.begin()+(ofs++), n); });
+		_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
+			_segment.insert(_segment.begin()+(ofs++), n); });
 	}
 	void PathBlock::popFront() {
 		int sg = segments();

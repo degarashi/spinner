@@ -21,23 +21,24 @@ namespace spn {
 			bool		_bAbsolute;
 
 			static bool _IsSC(char32_t c);
-			//! パスを分解しながらdstに書き込み
-			template <class ItrO, class ItrI, class CB>
-			static void _ReWriteSC(ItrO dst, ItrI from, ItrI to, char32_t sc, CB cb);
+			//! パスを分解しながらセグメント長をカウントし、コールバック関数を呼ぶ
+			/*! fromからtoまで1文字ずつ見ながら区切り文字を直す */
+			template <class Itr, class CB>
+			static void _ReWriteSC(Itr from, Itr to, char32_t sc, CB cb);
 
 			static int _ExtGetNum(const std::string& ext);
 			static int _ExtIncNum(std::string& ext, int n=1);
 			template <class CB>
 			void _iterateSegment(const char32_t* c, int len, char32_t sc, CB cb) {
 				char32_t tc[128];
-				int wcur = 0;
-				while(*c != U'\0') {
+				auto* pTc = tc;
+				while(*c != EOS) {
 					if(_IsSC(*c)) {
-						tc[wcur] = U'\0';
-						cb(tc, wcur);
-						wcur = 0;
+						*pTc = EOS;
+						cb(tc, pTc-tc);
+						pTc = tc;
 					} else
-						tc[wcur++] = *c;
+						*pTc++ = *c;
 					++c;
 				}
 			}
