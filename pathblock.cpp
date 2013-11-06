@@ -3,7 +3,7 @@
 
 namespace spn {
 	// -------------------------- PathBlock --------------------------
-	PathBlock::PathBlock() {}
+	PathBlock::PathBlock(): _bAbsolute(true) {}
 	PathBlock::PathBlock(PathBlock&& p): _path(std::move(p._path)), _segment(std::move(p._segment)), _bAbsolute(p._bAbsolute) {}
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
@@ -150,7 +150,10 @@ namespace spn {
 	void PathBlock::clear() {
 		_path.clear();
 		_segment.clear();
-		_bAbsolute = false;
+		_bAbsolute = true;
+	}
+	bool PathBlock::empty() const {
+		return _path.empty();
 	}
 	std::string PathBlock::getExtension(bool bRaw) const {
 		std::string rt;
@@ -276,6 +279,7 @@ namespace spn {
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s, bool bRecursive) const {
+		assert(_path.empty() || !PathBlock(s).isAbsolute());
 		return enumEntryRegEx(ToRegEx(s), bRecursive);
 	}
 	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb, bool bRecursive) const {

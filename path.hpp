@@ -73,6 +73,7 @@ namespace spn {
 			int getExtNum() const;
 			int addExtNum(int n=1);
 			void clear();
+			bool empty() const;
 	};
 
 	struct FStatus {

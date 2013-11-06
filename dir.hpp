@@ -33,6 +33,7 @@ namespace spn {
 			void _chmod(PathBlock& lpath, ModCB cb);
 		public:
 			using PathBlock::PathBlock;
+			Dir() = default;
 			Dir(Dir&& d);
 
 			FStatus status() const;
