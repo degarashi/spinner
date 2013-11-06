@@ -20,12 +20,16 @@ namespace spn {
 				~PathReset() { dep.chdir(cwd); }
 			};
 
+			using RegexL = std::vector<boost::regex>;
+			using RegexItr = RegexL::const_iterator;
 			using StrList = std::vector<std::string>;
 			using EnumCB = std::function<void (const PathBlock&)>;
 			using ModCB = std::function<bool (const PathBlock&, FStatus&)>;
+			static RegexL _ParseRegEx(const std::string& r);
+
 			DirDep	_dep;
-			void _enumEntryRegExR(const boost::regex& r, std::string& lpath, size_t baseLen, EnumCB cb) const;
-			void _enumEntryRegEx(const boost::regex& r, const std::string& path, EnumCB cb) const;
+			void _enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const;
+			void _enumEntry(const std::string& s, const std::string& path, EnumCB cb) const;
 			void _chmod(PathBlock& lpath, ModCB cb);
 		public:
 			using PathBlock::PathBlock;
@@ -38,18 +42,18 @@ namespace spn {
 			*			false=失敗(ファイルが存在するなど) */
 			void mkdir(uint32_t mode) const;
 			//! ファイル/ディレクトリ列挙
-			/*! \param[in] path 検索パス(正規表現) */
-			StrList enumEntryRegEx(const boost::regex& r, bool bRecursive) const;
-			/*! \param[in] path 検索パス(ワイルドカード) */
-			StrList enumEntryWildCard(const std::string& s, bool bRecursive) const;
-			void enumEntryRegEx(const boost::regex& r, EnumCB cb, bool bRecursive) const;
-			void enumEntryWildCard(const std::string& s, EnumCB cb, bool bRecursives) const;
+			/*! \param[in] path 検索パス(正規表現) 区切り文字を跨いでのマッチは不可 */
+			StrList enumEntryRegEx(const std::string& r) const;
+			/*! \param[in] path 検索パス(ワイルドカード) 区切り文字を跨いでのマッチは不可 */
+			StrList enumEntryWildCard(const std::string& s) const;
+			void enumEntryRegEx(const std::string& r, EnumCB cb) const;
+			void enumEntryWildCard(const std::string& s, EnumCB cb) const;
 			void chmod(ModCB cb);
 			void chmod(uint32_t mode);
 			bool ChMod(const PathBlock& pb, ModCB cb);
 			FILE* openAsFP(const char* mode) const;
 
 			//! ワイルドカードから正規表現への書き換え
-			static boost::regex ToRegEx(const std::string& s);
+			static std::string ToRegEx(const std::string& s);
 	};
 }

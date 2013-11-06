@@ -271,7 +271,7 @@ namespace spn {
 	}
 
 	Dir::Dir(Dir&& d): PathBlock(std::move(d)), _dep(std::move(d._dep)) {}
-	boost::regex Dir::ToRegEx(const std::string& s) {
+	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
 		// * -> ([\/_ \-\w]+)
 		// ? -> ([\/_ \-\w])
@@ -280,51 +280,89 @@ namespace spn {
 		std::string s2 = boost::regex_replace(s, re[0], R"([\/_ \\-\\w]+)");
 		s2 = boost::regex_replace(s2, re[1], R"([\/_ \\-\\w])");
 		s2 = boost::regex_replace(s2, re[2], R"(\\.)");
-		return boost::regex(s2);
+		return std::move(s2);
 	}
-	Dir::StrList Dir::enumEntryRegEx(const boost::regex& r, bool bRecursive) const {
+	Dir::StrList Dir::enumEntryRegEx(const std::string& r) const {
 		StrList res;
-		enumEntryRegEx(r, [&res](const PathBlock& pb){ res.push_back(pb.plain_utf8()); }, bRecursive);
+		enumEntryRegEx(r, [&res](const PathBlock& pb){ res.push_back(pb.plain_utf8()); });
 		return std::move(res);
 	}
-	Dir::StrList Dir::enumEntryWildCard(const std::string& s, bool bRecursive) const {
+	Dir::StrList Dir::enumEntryWildCard(const std::string& s) const {
 		assert(_path.empty() || !PathBlock(s).isAbsolute());
-		return enumEntryRegEx(ToRegEx(s), bRecursive);
+		return enumEntryRegEx(ToRegEx(s));
 	}
-	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb, bool bRecursive) const {
-		enumEntryRegEx(ToRegEx(s), cb, bRecursive);
+	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb) const {
+		enumEntryRegEx(ToRegEx(s), cb);
 	}
-	void Dir::_enumEntryRegExR(const boost::regex& r, std::string& lpath, size_t baseLen, EnumCB cb) const {
+	Dir::RegexL Dir::_ParseRegEx(const std::string& r) {
+		RegexL rl;
+		auto itr = r.begin(),
+			itrE = r.end(),
+			itr0 = itr;
+		bool bSkip = false;
+		while(itr != itrE) {
+			auto c = *itr;
+			if(bSkip) {
+				if(c == ']')
+					bSkip = false;
+			} else {
+				if(c == '[')
+					bSkip = true;
+				else if(c == '/') {
+					rl.emplace_back(itr0, itr);
+					itr0 = ++itr;
+				}
+			}
+			++itr;
+		}
+		if(itr0 != itr)
+			rl.emplace_back(itr0, itr);
+		return std::move(rl);
+	}
+	void Dir::_enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const {
+		if(itr == itrE) {
+			cb(PathBlock(lpath.substr(baseLen)));
+			return;
+		}
+
 		size_t pl = lpath.size();
-		boost::smatch m;
 		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name) {
+			if(name[0]==PathCh('.')) {
+				if(name[1]==PathCh('\0') || name[1]==PathCh('.'))
+					return;
+			}
 			std::string s(To8Str(name).moveTo());
-			if(s==u8"." || s==u8"..")
-				return;
-			if(!lpath.empty())
-				lpath += '/';
-			lpath += s;
-			if(_dep.isDirectory(ToPathStr(lpath)))
-				_enumEntryRegExR(r, lpath, baseLen, cb);
-			if(boost::regex_match(s, m, r))
-				cb(PathBlock(lpath.substr(baseLen)));
-			lpath.resize(pl);
+			boost::smatch m;
+			if(boost::regex_match(s, m, *itr)) {
+				if(!lpath.empty())
+					lpath += '/';
+				lpath += s;
+
+				if(_dep.isDirectory(ToPathStr(lpath))) {
+					if(++itr != itrE)
+						_enumEntryRegEx(itr, itrE, lpath, baseLen, cb);
+				} else
+					cb(PathBlock(lpath));
+				lpath.resize(pl);
+			}
 		});
 	}
-	void Dir::_enumEntryRegEx(const boost::regex& r, const std::string& path, EnumCB cb) const {
-		boost::smatch m;
-		_dep.enumEntry(path, [&](const PathCh* name) {
+	void Dir::_enumEntry(const std::string& s, const std::string& path, EnumCB cb) const {
+		_dep.enumEntry(path, [&cb](const PathCh* name) {
 			std::string s(To8Str(name).moveTo());
-			if(boost::regex_match(s, m, r))
+			if(s == name)
 				cb(PathBlock(s));
 		});
 	}
-	void Dir::enumEntryRegEx(const boost::regex& r, EnumCB cb, bool bRecursive) const {
+	void Dir::enumEntryRegEx(const std::string& r, EnumCB cb) const {
 		auto path = plain_utf8();
-		if(bRecursive) {
-			_enumEntryRegExR(r, path, path.size()+1, cb);
-		} else
-			_enumEntryRegEx(r, path, cb);
+		try {
+			RegexL rl = _ParseRegEx(r);
+			_enumEntryRegEx(rl.begin(), rl.end(), path, path.size()+1, cb);
+		} catch(const boost::regex_error& e) {
+			// 正規表現に何かエラーがある時は単純に文字列比較とする
+			_enumEntry(r, path, cb);
+		}
 	}
 	void Dir::mkdir(uint32_t mode) const {
 		PathReset preset(_dep);

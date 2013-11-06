@@ -79,7 +79,7 @@ namespace spn {
 			}
 		}
 		void ZipTree::enumFileWildCard(const std::string& wc, FTree::EnumCB cb) const {
-			enumFileRegEx(Dir::ToRegEx(wc), cb);
+			enumFileRegEx(boost::regex(Dir::ToRegEx(wc)), cb);
 		}
 		void ZipTree::enumFileRegEx(const boost::regex& re, FTree::EnumCB cb) const {
 			spn::PathBlock pb;
