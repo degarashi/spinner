@@ -3,10 +3,12 @@
 
 struct stat;
 namespace spn {
-	struct Dir_depLinux {
-		using ToStrType = To8Str;
-		using ChType = char;
+	using ToPathStr = To8Str;
+	using PathCh = char;
+	using PathStr = std::basic_string<PathCh>;
+	using EnumCBD = std::function<void (const PathCh*)>;
 
+	struct Dir_depLinux {
 		std::string getcwd() const;
 		void chdir(To8Str path) const;
 		bool chdir_nt(To8Str path) const;

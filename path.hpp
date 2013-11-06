@@ -118,5 +118,4 @@ namespace spn {
 		FStatus() = default;
 		FStatus(uint32_t flag);
 	};
-	using EnumCBD = std::function<void (const char*)>;
 }

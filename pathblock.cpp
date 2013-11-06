@@ -280,7 +280,7 @@ namespace spn {
 		std::string s2 = boost::regex_replace(s, re[0], R"([\/_ \\-\\w]+)");
 		s2 = boost::regex_replace(s2, re[1], R"([\/_ \\-\\w])");
 		s2 = boost::regex_replace(s2, re[2], R"(\\.)");
-		return boost::regex(s2.c_str());
+		return boost::regex(s2);
 	}
 	Dir::StrList Dir::enumEntryRegEx(const boost::regex& r, bool bRecursive) const {
 		StrList res;
@@ -288,7 +288,7 @@ namespace spn {
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s, bool bRecursive) const {
-		assert(_path.empty() || PathBlock(s).isAbsolute());
+		assert(_path.empty() || !PathBlock(s).isAbsolute());
 		return enumEntryRegEx(ToRegEx(s), bRecursive);
 	}
 	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb, bool bRecursive) const {
@@ -297,13 +297,14 @@ namespace spn {
 	void Dir::_enumEntryRegExR(const boost::regex& r, std::string& lpath, size_t baseLen, EnumCB cb) const {
 		size_t pl = lpath.size();
 		boost::smatch m;
-		_dep.enumEntry(lpath, [&, pl, this, baseLen](const char* name) {
-			std::string s(name);
+		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name) {
+			std::string s(To8Str(name).moveTo());
 			if(s==u8"." || s==u8"..")
 				return;
-			lpath += '/';
+			if(!lpath.empty())
+				lpath += '/';
 			lpath += s;
-			if(_dep.isDirectory(lpath))
+			if(_dep.isDirectory(ToPathStr(lpath)))
 				_enumEntryRegExR(r, lpath, baseLen, cb);
 			if(boost::regex_match(s, m, r))
 				cb(PathBlock(lpath.substr(baseLen)));
@@ -312,14 +313,14 @@ namespace spn {
 	}
 	void Dir::_enumEntryRegEx(const boost::regex& r, const std::string& path, EnumCB cb) const {
 		boost::smatch m;
-		_dep.enumEntry(path, [&](const char* name) {
-			std::string s(name);
+		_dep.enumEntry(path, [&](const PathCh* name) {
+			std::string s(To8Str(name).moveTo());
 			if(boost::regex_match(s, m, r))
 				cb(PathBlock(s));
 		});
 	}
 	void Dir::enumEntryRegEx(const boost::regex& r, EnumCB cb, bool bRecursive) const {
-		auto path = plain_utf8(false);
+		auto path = plain_utf8();
 		if(bRecursive) {
 			_enumEntryRegExR(r, path, path.size()+1, cb);
 		} else
@@ -362,7 +363,7 @@ namespace spn {
 		}
 	}
 	void Dir::_chmod(PathBlock& lpath, ModCB cb) {
-		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const ChType* name) {
+		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const PathCh* name) {
 			lpath <<= name;
 			if(ChMod(lpath, cb))
 				_chmod(lpath, cb);
@@ -370,7 +371,7 @@ namespace spn {
 		});
 	}
 	bool Dir::ChMod(const PathBlock& pb, ModCB cb) {
-		ToStrType path = pb.plain_utf32();
+		ToPathStr path = pb.plain_utf32();
 		FStatus fstat = _dep.status(path);
 		bool bDir = fstat.flag & FStatus::DirectoryType;
 		if(bDir)
@@ -391,7 +392,7 @@ namespace spn {
 		});
 	}
 	FILE* Dir::openAsFP(const char* mode) const {
-		ToStrType path = plain_utf32();
+		ToPathStr path = plain_utf32();
 		return std::fopen(path.getPtr(), mode);
 	}
 }

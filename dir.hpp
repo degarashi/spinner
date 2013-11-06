@@ -11,14 +11,10 @@
 namespace spn {
 	//! ディレクトリ管理
 	class Dir : public PathBlock {
-		public:
-			using ToStrType = typename DirDep::ToStrType;
-			using ChType = typename DirDep::ChType;
-			using StrType = std::basic_string<ChType>;
 		private:
 			struct PathReset {
-				const DirDep& dep;
-				std::string cwd;
+				const DirDep& 	dep;
+				PathStr 		cwd;
 
 				PathReset(const DirDep& d): dep(d), cwd(dep.getcwd()) {}
 				~PathReset() { dep.chdir(cwd); }
@@ -56,7 +52,4 @@ namespace spn {
 			//! ワイルドカードから正規表現への書き換え
 			static boost::regex ToRegEx(const std::string& s);
 	};
-	using ToPathStr = Dir::ToStrType;
-	using PathStr = Dir::StrType;
-	using PathCh = Dir::ChType;
 }
