@@ -19,6 +19,7 @@ namespace spn {
 				PathReset(const DirDep& d): dep(d), cwd(dep.getcwd()) {}
 				~PathReset() { dep.chdir(cwd); }
 			};
+			const static char SC, DOT, EOS, *SC_P, LBK, RBK;
 
 			using RegexL = std::vector<boost::regex>;
 			using RegexItr = RegexL::const_iterator;

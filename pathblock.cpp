@@ -270,6 +270,12 @@ namespace spn {
 		return _dep.status(plain_utf8());
 	}
 
+	const char Dir::SC('/'),
+				Dir::DOT('.'),
+				Dir::EOS('\0'),
+				*Dir::SC_P(u8"/"),
+				Dir::LBK('['),
+				Dir::RBK(']');
 	Dir::Dir(Dir&& d): PathBlock(std::move(d)), _dep(std::move(d._dep)) {}
 	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
@@ -303,14 +309,16 @@ namespace spn {
 		while(itr != itrE) {
 			auto c = *itr;
 			if(bSkip) {
-				if(c == ']')
+				if(c == RBK)
 					bSkip = false;
 			} else {
-				if(c == '[')
+				if(c == LBK)
 					bSkip = true;
-				else if(c == '/') {
-					rl.emplace_back(itr0, itr);
+				else if(c == SC) {
+					if(itr0 != itr)
+						rl.emplace_back(itr0, itr);
 					itr0 = ++itr;
+					continue;
 				}
 			}
 			++itr;
@@ -324,15 +332,15 @@ namespace spn {
 
 		size_t pl = lpath.size();
 		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name, bool) {
-			if(name[0]==PathCh('.')) {
-				if(name[1]==PathCh('\0') || name[1]==PathCh('.'))
+			if(name[0]==PathCh(DOT)) {
+				if(name[1]==PathCh(EOS) || name[1]==PathCh(DOT))
 					return;
 			}
 			std::string s(To8Str(name).moveTo());
 			boost::smatch m;
 			if(boost::regex_match(s, m, *itr)) {
-				if(!lpath.empty())
-					lpath += '/';
+				if(lpath.back() != SC)
+					lpath += SC;
 				lpath += s;
 				if(_dep.isDirectory(ToPathStr(lpath))) {
 					if(++itr != itrE)
@@ -365,7 +373,7 @@ namespace spn {
 	void Dir::mkdir(uint32_t mode) const {
 		PathReset preset(_dep);
 		if(isAbsolute())
-			_dep.chdir(u8"/");
+			_dep.chdir(SC_P);
 		mode |= FStatus::UserRWX;
 
 		auto path32 = plain_utf32(false);
