@@ -23,7 +23,7 @@ namespace spn {
 			using RegexL = std::vector<boost::regex>;
 			using RegexItr = RegexL::const_iterator;
 			using StrList = std::vector<std::string>;
-			using EnumCB = std::function<void (const PathBlock&)>;
+			using EnumCB = std::function<void (const PathBlock&, bool)>;
 			using ModCB = std::function<bool (const PathBlock&, FStatus&)>;
 			static RegexL _ParseRegEx(const std::string& r);
 

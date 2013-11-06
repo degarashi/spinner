@@ -85,7 +85,7 @@ namespace spn {
 		std::unique_ptr<DIR, DIR_Rel> dir(opendir(path.getPtr()));
 		if(dir) {
 			while(dirent* ent = readdir(dir.get()))
-				cb(ent->d_name);
+				cb(ent->d_name, S_ISDIR(ent->d_type));
 		}
 	}
 	FStatus Dir_depLinux::status(To8Str path) const {

@@ -284,7 +284,7 @@ namespace spn {
 	}
 	Dir::StrList Dir::enumEntryRegEx(const std::string& r) const {
 		StrList res;
-		enumEntryRegEx(r, [&res](const PathBlock& pb){ res.push_back(pb.plain_utf8()); });
+		enumEntryRegEx(r, [&res](const PathBlock& pb, bool){ res.push_back(pb.plain_utf8()); });
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s) const {
@@ -320,13 +320,10 @@ namespace spn {
 		return std::move(rl);
 	}
 	void Dir::_enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const {
-		if(itr == itrE) {
-			cb(PathBlock(lpath.substr(baseLen)));
-			return;
-		}
+		assert(itr != itrE);
 
 		size_t pl = lpath.size();
-		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name) {
+		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name, bool) {
 			if(name[0]==PathCh('.')) {
 				if(name[1]==PathCh('\0') || name[1]==PathCh('.'))
 					return;
@@ -337,21 +334,22 @@ namespace spn {
 				if(!lpath.empty())
 					lpath += '/';
 				lpath += s;
-
 				if(_dep.isDirectory(ToPathStr(lpath))) {
 					if(++itr != itrE)
 						_enumEntryRegEx(itr, itrE, lpath, baseLen, cb);
+					else
+						cb(PathBlock(lpath), true);
 				} else
-					cb(PathBlock(lpath));
+					cb(PathBlock(lpath), false);
 				lpath.resize(pl);
 			}
 		});
 	}
 	void Dir::_enumEntry(const std::string& s, const std::string& path, EnumCB cb) const {
-		_dep.enumEntry(path, [&cb](const PathCh* name) {
+		_dep.enumEntry(path, [&cb](const PathCh* name, bool bDir) {
 			std::string s(To8Str(name).moveTo());
 			if(s == name)
-				cb(PathBlock(s));
+				cb(PathBlock(s), bDir);
 		});
 	}
 	void Dir::enumEntryRegEx(const std::string& r, EnumCB cb) const {
@@ -401,7 +399,7 @@ namespace spn {
 		}
 	}
 	void Dir::_chmod(PathBlock& lpath, ModCB cb) {
-		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const PathCh* name) {
+		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const PathCh* name, bool) {
 			lpath <<= name;
 			if(ChMod(lpath, cb))
 				_chmod(lpath, cb);

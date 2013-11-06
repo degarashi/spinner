@@ -6,7 +6,7 @@ namespace spn {
 	using ToPathStr = To8Str;
 	using PathCh = char;
 	using PathStr = std::basic_string<PathCh>;
-	using EnumCBD = std::function<void (const PathCh*)>;
+	using EnumCBD = std::function<void (const PathCh*, bool)>;
 
 	struct Dir_depLinux {
 		std::string getcwd() const;
