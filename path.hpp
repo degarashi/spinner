@@ -42,6 +42,10 @@ namespace spn {
 					++c;
 				}
 			}
+			//! 前後の余分な区切り文字を省く
+			/*! \return [NeedOperation, AbsoluteFlag] */
+			template <class Itr>
+			static std::pair<bool,bool> _StripSC(Itr& from, Itr& to);
 
 		public:
 			PathBlock();

@@ -35,14 +35,13 @@ namespace spn {
 					*ptrE = ptr + len;
 		// 分割文字を探し、それに統一しながらsegment数を数える
 		// 絶対パスの先頭SCは除く
-		if((_bAbsolute = _IsSC(*ptr))) {
-			++ptr;
-			--len;
+		auto res = _StripSC(ptr, ptrE);
+		if(!res.first) {
+			clear();
+			return;
 		}
-		if(_IsSC(*(ptrE-1))) {
-			--ptrE;
-			--len;
-		}
+		_bAbsolute = res.second;
+
 		_path.assign(ptr, ptrE);
 		_segment.clear();
 		_ReWriteSC(_path.begin(), _path.end(), SC, [this](int n){ _segment.push_back(n); });
@@ -57,12 +56,9 @@ namespace spn {
 	void PathBlock::pushBack(To32Str elem) {
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
-		if(src == srcE)
+		auto res = _StripSC(src, srcE);
+		if(!res.first)
 			return;
-		if(_IsSC(*src))
-			++src;
-		if(_IsSC(*(srcE-1)))
-			--srcE;
 
 		if(!_path.empty())
 			_path.push_back(SC);
@@ -79,15 +75,28 @@ namespace spn {
 				clear();
 		}
 	}
+	template <class Itr>
+	std::pair<bool, bool> PathBlock::_StripSC(Itr& from, Itr& to) {
+		if(from == to)
+			return std::make_pair(false, false);
+		bool ret;
+		if((ret = _IsSC(*from)))
+			++from;
+		if(from != to) {
+			if(_IsSC(*to))
+				--to;
+			return std::make_pair(from!=to, ret);
+		}
+		return std::make_pair(true, ret);
+	}
 	void PathBlock::pushFront(To32Str elem) {
+		assert(!_bAbsolute || empty());
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
-		if(src == srcE)
+		auto res = _StripSC(src, srcE);
+		if(!res.first)
 			return;
-		if((_bAbsolute = _IsSC(*src)))
-			++src;
-		if(_IsSC(*(srcE-1)))
-			--srcE;
+		_bAbsolute = res.second;
 
 		_path.push_front(SC);
 		_path.insert(_path.begin(), src, srcE);
@@ -279,7 +288,7 @@ namespace spn {
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s, bool bRecursive) const {
-		assert(_path.empty() || !PathBlock(s).isAbsolute());
+		assert(_path.empty() || PathBlock(s).isAbsolute());
 		return enumEntryRegEx(ToRegEx(s), bRecursive);
 	}
 	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb, bool bRecursive) const {
@@ -310,7 +319,7 @@ namespace spn {
 		});
 	}
 	void Dir::enumEntryRegEx(const boost::regex& r, EnumCB cb, bool bRecursive) const {
-		auto path = plain_utf8();
+		auto path = plain_utf8(false);
 		if(bRecursive) {
 			_enumEntryRegExR(r, path, path.size()+1, cb);
 		} else
