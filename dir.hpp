@@ -43,7 +43,8 @@ namespace spn {
 			*			false=失敗(ファイルが存在するなど) */
 			void mkdir(uint32_t mode) const;
 			//! ファイル/ディレクトリ列挙
-			/*! \param[in] path 検索パス(正規表現) 区切り文字を跨いでのマッチは不可 */
+			/*! \param[in] path 検索パス(正規表現) 区切り文字を跨いでのマッチは不可<br>
+								相対パスならDirが指しているディレクトリ以下の階層を探索 */
 			StrList enumEntryRegEx(const std::string& r) const;
 			/*! \param[in] path 検索パス(ワイルドカード) 区切り文字を跨いでのマッチは不可 */
 			StrList enumEntryWildCard(const std::string& s) const;

@@ -328,7 +328,8 @@ namespace spn {
 		return std::move(rl);
 	}
 	void Dir::_enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const {
-		assert(itr != itrE);
+		if(itr == itrE)
+			return;
 
 		size_t pl = lpath.size();
 		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name, bool) {
