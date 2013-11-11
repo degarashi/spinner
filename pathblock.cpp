@@ -441,6 +441,8 @@ namespace spn {
 		return std::fopen(path.getPtr(), mode);
 	}
 	// -------------------------- URI --------------------------
+	const std::string URI::SEP(u8"://");
+	const std::u32string URI::SEP32(U"://");
 	URI::URI() {}
 	URI::URI(URI&& u): PathBlock(std::move(u)), _type(std::move(u._type)) {}
 	URI::URI(To8Str p) {
@@ -467,5 +469,17 @@ namespace spn {
 	}
 	PathBlock& URI::path() {
 		return *this;
+	}
+	std::string URI::plainUri_utf8() const {
+		auto ret = _type;
+		ret.append(SEP);
+		ret.append(plain_utf8());
+		return std::move(ret);
+	}
+	std::u32string URI::plainUri_utf32() const {
+		auto ret = To32Str(_type).moveTo();
+		ret.append(SEP32);
+		ret.append(plain_utf32());
+		return std::move(ret);
 	}
 }

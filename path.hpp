@@ -80,6 +80,8 @@ namespace spn {
 			bool empty() const;
 	};
 	class URI : public PathBlock {
+		const static std::string SEP;
+		const static std::u32string SEP32;
 		std::string		_type;
 		public:
 			URI();
@@ -89,6 +91,8 @@ namespace spn {
 
 			void setPath(To8Str p);
 			const std::string& getType_utf8() const;
+			std::string plainUri_utf8() const;
+			std::u32string plainUri_utf32() const;
 			void setType(const std::string& typ);
 			const PathBlock& path() const;
 			PathBlock& path();
