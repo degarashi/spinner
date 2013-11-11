@@ -440,4 +440,32 @@ namespace spn {
 		ToPathStr path = plain_utf32();
 		return std::fopen(path.getPtr(), mode);
 	}
+	// -------------------------- URI --------------------------
+	URI::URI() {}
+	URI::URI(URI&& u): PathBlock(std::move(u)), _type(std::move(u._type)) {}
+	URI::URI(To8Str p) {
+		setPath(p);
+	}
+	void URI::setPath(To8Str p) {
+		std::string path(p.moveTo());
+		boost::regex re("^([\\w\\d_]+)://");
+		boost::smatch m;
+		if(boost::regex_search(path, m, re)) {
+			_type = m.str(1);
+			PathBlock::setPath(path.substr(m[0].length()));
+		} else
+			PathBlock::setPath(p);
+	}
+	const std::string& URI::getType_utf8() const {
+		return _type;
+	}
+	void URI::setType(const std::string& typ) {
+		_type = typ;
+	}
+	const PathBlock& URI::path() const {
+		return *this;
+	}
+	PathBlock& URI::path() {
+		return *this;
+	}
 }

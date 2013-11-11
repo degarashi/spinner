@@ -79,6 +79,20 @@ namespace spn {
 			void clear();
 			bool empty() const;
 	};
+	class URI : public PathBlock {
+		std::string		_type;
+		public:
+			URI();
+			URI(To8Str p);
+			URI(const URI& u) = default;
+			URI(URI&& u);
+
+			void setPath(To8Str p);
+			const std::string& getType_utf8() const;
+			void setType(const std::string& typ);
+			const PathBlock& path() const;
+			PathBlock& path();
+	};
 
 	struct FStatus {
 		enum Flag : uint32_t {
