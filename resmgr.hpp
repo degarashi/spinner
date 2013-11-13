@@ -361,13 +361,7 @@ namespace spn {
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
 				Entry& ent = _dataVec.get(sh.getIndex());
-				#ifdef DEBUG
-					if(ent.magic != sh.getMagic()) {
-						std::stringstream ss;
-						ss << "ResMgr: invalid magic number(Ent:" << ent.magic << " != Handle:" << sh.getMagic() << ")";
-						throw std::runtime_error(ss.str());
-					}
-				#endif
+				AssertP(Trap, ent.magic==sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
 				return ent;
 			}
 			const Entry& _refSH(SHdl sh) const {
@@ -470,14 +464,8 @@ namespace spn {
 			template <class CB>
 			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
 				auto& ent = _refSH(sh);
-				#ifdef DEBUG
-					// 簡易マジックナンバーチェック
-					if(ent.magic != sh.getMagic()) {
-						std::stringstream ss;
-						ss << "ResMgr: invalid magic number(Ent:" << ent.magic << " != Handle:" << sh.getMagic() << ")";
-						throw std::runtime_error(ss.str());
-					}
-				#endif
+				// 簡易マジックナンバーチェック
+				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
 				if(--ent.count == 0) {
 					cb(ent);
 					// オブジェクトの解放

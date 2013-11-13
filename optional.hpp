@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <algorithm>
+#include "error.hpp"
 
 namespace spn {
 	struct none_t{};
@@ -88,8 +89,7 @@ namespace spn {
 			}
 
 			decltype(_buffer.castT()) get() {
-				if(!*this)
-					throw std::runtime_error("optional: bad_get");
+				Assert(Trap, *this, "optional: bad_get")
 				return _buffer.castT();
 			}
 			decltype(_buffer.castCT()) get() const {

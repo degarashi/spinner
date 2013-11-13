@@ -1,11 +1,11 @@
 #include "watch_depLinux.hpp"
 #include <sys/inotify.h>
 #include <unistd.h>
+#include "error.hpp"
 
 namespace spn {
 	FNotify_depLinux::FNotify_depLinux() {
-		if((fd = inotify_init()) < 0)
-			throw std::runtime_error("failed to initialize inotify");
+		Assert(Trap, (fd = inotify_init()) >= 0, "failed to initialize inotify")
 	}
 	FNotify_depLinux::~FNotify_depLinux() {
 		close(fd);

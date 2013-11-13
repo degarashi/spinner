@@ -12,19 +12,20 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include "error.hpp"
 
-namespace {
+// namespace {
 	class PError : public std::runtime_error {
 		public:
 			PError(const PError&) = default;
-			PError(const char* name): std::runtime_error("") {
-				perror(name);
-				std::stringstream ss;
-				ss << "posix-error at " << name << ' ' << errno << std::endl;
-				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
+			PError(const std::string& name): std::runtime_error("") {
+// 				perror(name);
+// 				std::stringstream ss;
+// 				ss << "posix-error at " << name << ' ' << errno << std::endl;
+// 				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
 			}
 	};
-}
+// }
 namespace spn {
 	std::string Dir_depLinux::getcwd() const {
 		char tmp[512];
@@ -32,31 +33,25 @@ namespace spn {
 		return std::string(tmp);
 	}
 	void Dir_depLinux::chdir(To8Str path) const {
-		if(::chdir(path.getPtr()) < 0)
-			throw PError("chdir");
+		AssertT(Throw, ::chdir(path.getPtr()) >= 0, (PError)(const char*), "chdir")
 	}
 	bool Dir_depLinux::chdir_nt(To8Str path) const {
 		return ::chdir(path.getPtr()) >= 0;
 	}
 	void Dir_depLinux::mkdir(To8Str path, uint32_t mode) const {
-		if(::mkdir(path.getPtr(), ConvertFlag_S2L(mode)) < 0)
-			throw PError("mkdir");
+		AssertT(Throw, ::mkdir(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "mkdir")
 	}
 	void Dir_depLinux::chmod(To8Str path, uint32_t mode) const {
-		if(::chmod(path.getPtr(), ConvertFlag_S2L(mode)) < 0)
-			throw PError("chmod");
+		AssertT(Throw, ::chmod(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "chmod")
 	}
 	void Dir_depLinux::rmdir(To8Str path) const {
-		if(::rmdir(path.getPtr()) < 0)
-			throw PError("rmdir");
+		AssertT(Throw, ::rmdir(path.getPtr()) >= 0, (PError)(const char*), "rmdir")
 	}
 	void Dir_depLinux::remove(To8Str path) const {
-		if(::unlink(path.getPtr()) < 0)
-			throw PError("remove");
+		AssertT(Throw, ::unlink(path.getPtr()) >= 0, (PError)(const char*), "remove")
 	}
 	void Dir_depLinux::move(To8Str from, To8Str to) const {
-		if(::rename(from.getPtr(), to.getPtr()) < 0)
-			throw PError("move");
+		AssertT(Throw, ::rename(from.getPtr(), to.getPtr()) >= 0, (PError)(const char*), "move")
 	}
 	void Dir_depLinux::copy(To8Str from, To8Str to) const {
 		using Size = std::streamsize;

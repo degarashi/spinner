@@ -4,7 +4,7 @@
 #include <boost/format.hpp>
 #include <iostream>
 #include <sstream>
-#include "misc.hpp"
+#include "argholder.hpp"
 
 #ifdef ANDROID
 	#include <android/log.h>
@@ -26,8 +26,8 @@
 // Debug=warning, Release=none		[Assert_WarnP]
 
 #define _Assert_Base(expr, act, ...)			{if(!(expr)) { act.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
-#define _AssertT(act, expr, throwtype)			_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>()), BOOST_PP_SEQ_ELEM(0,throwtype)::GetErrorName())
-#define _AssertTArg(act, expr, throwtype, ...)	_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>(__VA_ARGS__)), BOOST_PP_SEQ_ELEM(0,throwtype)::GetErrorName())
+#define _AssertT(act, expr, throwtype)			_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>()), BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(0,throwtype)))
+#define _AssertTArg(act, expr, throwtype, ...)	_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>(__VA_ARGS__)), BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(0,throwtype)))
 #define AssertT(act, expr, ...)					BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _AssertT, _AssertTArg)(act,expr,__VA_ARGS__)
 
 #define _Assert(act, expr)						_AssertArg(act, expr, "Assertion failed")
@@ -89,7 +89,7 @@ struct AAct_Throw : spn::ArgHolder<Ts...> {
 		AAct_Warn<E>().onError(str);
 		throw E(std::forward<T2>(t), std::forward<Ts2>(ts)...); }
 	void onError(const std::string& str) {
-		this->inorder([&str](typename std::remove_reference<Ts>::type&... args){
+		this->inorder([&str](Ts... args){
 			_Throw(str, args...);
 		});
 	}

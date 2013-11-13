@@ -1,6 +1,7 @@
 #include "zip.hpp"
 #include <zlib.h>
 #include <cstring>
+#include "error.hpp"
 
 namespace spn {
 	namespace zip {
@@ -51,8 +52,7 @@ namespace spn {
 				void advance(size_t num) { _ptr += num; }
 				uint8_t* getPtr() { return _ptr; }
 				void finalize() const {
-					if(_ptr != (&_buff[0] + _buff.size()))
-						throw std::runtime_error("something wrong");
+					AssertP(Trap, _ptr == (&_buff[0] + _buff.size()), "something wrong")
 				}
 			};
 			struct OutStream {
@@ -66,8 +66,7 @@ namespace spn {
 				size_t availOut() const { return BUFFSIZE - _nWrite; }
 				void advance(size_t num) {
 					_nWrite += num;
-					if(_nWrite > BUFFSIZE)
-						throw std::runtime_error("something wrong");
+					Assert(Trap, _nWrite <= BUFFSIZE, "something wrong")
 					_totalWrite -= num;
 					if(_nWrite >= BUFFSIZE/2) {
 						_aos.write(_tmp, _nWrite);
@@ -78,8 +77,7 @@ namespace spn {
 				void finalize() const {
 					if(_nWrite > 0)
 						_aos.write(_tmp, _nWrite);
-					if(_totalWrite != 0)
-						throw std::runtime_error("something wrong");
+					Assert(Trap, _totalWrite == 0, "something wrong")
 				}
 			};
 			template <class OB>
@@ -131,8 +129,7 @@ namespace spn {
 				LocalHeader hdr;
 				auto& core = hdr.core;
 				ReadData(core, as);
-				if(core.signature != LocalHeader::SIGNATURE)
-					throw std::runtime_error("invalid local header");
+				Assert(Trap, core.signature == LocalHeader::SIGNATURE, "invalid local header")
 				as.seekg(core.file_namelen + core.extra_fieldlen, as.cur);
 				if(core.compress_method == 0)
 					return SizePair(size_t(core.compressed_size), size_t(core.compressed_size));
@@ -203,7 +200,7 @@ namespace spn {
 					_hdrEnd = std::move(up);
 					break;
 				} else
-					throw std::runtime_error("unknown format");
+					Assert(Trap, false, "unknown format")
 			}
 		}
 		const ZipFile::DirHeaderL& ZipFile::headers() const {

@@ -2,6 +2,7 @@
 	#if !defined(QUAT_H_) || INCLUDE_QUAT_LEVEL >= 1
 		#define QUAT_H_
 		#include "matrix.hpp"
+		#include "error.hpp"
 		// 要求された定義レベルを実体化
 		#ifndef INCLUDE_QUAT_LEVEL
 			#define INCLUDE_QUAT_LEVEL 0
@@ -144,8 +145,7 @@
 				if(elem[i] > elem[idx])
 					idx = i;
 			}
-			if(elem[idx] >= 0)
-				throw std::runtime_error("invalid matrix error");
+			Assert(Trap, elem[idx] < 0, "invalid matrix error")
 
 			// 最大要素の値を算出
 			QuatT res;
@@ -365,7 +365,7 @@
 					axF[1] = AXIS_Z;
 					break;
 				default:
-					throw std::runtime_error("invalid axis flag");
+					Assert(Trap, false, "invalid axis flag")
 			}
 
 			axis[axF[0]] = at - pos;

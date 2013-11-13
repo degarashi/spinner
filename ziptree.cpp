@@ -16,8 +16,7 @@ namespace spn {
 				lpath.popBack();
 		}
 		void Directory::addItem(int idx, spn::PathBlock& lpath) {
-			if(lpath.segments() == 0)
-				throw std::runtime_error("invalid path (addItem)");
+			Assert(Trap, lpath.segments() != 0, "invalid path (addItem)")
 
 			auto seg0 = lpath.getFirst_utf8();
 			lpath.popFront();
@@ -54,11 +53,10 @@ namespace spn {
 			lpath.popBack();
 		}
 		void File::addItem(int idx, spn::PathBlock& lpath) {
-			throw std::runtime_error("invalid operation (addItem)");
+			Assert(Trap, false, "invalid operation (addItem)")
 		}
 		const File* File::findFile(spn::PathBlock& lpath) const {
-			if(lpath.segments() > 0)
-				throw std::runtime_error("invalid operation (findFile)");
+			Assert(Trap, lpath.segments() <= 0, "invalid operation (findFile)")
 			return this;
 		}
 

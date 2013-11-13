@@ -393,10 +393,8 @@ namespace spn {
 		if(i == nsg)
 			return;
 
-		if(_dep.isFile(ns)) {
-			// パスがファイルだったので失敗とする
-			throw std::runtime_error("there is file at the path");
-		}
+		// パスがファイルだったら失敗とする
+		Assert(Throw, !_dep.isFile(ns), "there is file at the path")
 		for(;;) {
 			_dep.mkdir(ns, mode);
 			_dep.chdir(ns);
