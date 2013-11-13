@@ -14,18 +14,18 @@
 #include <iostream>
 #include "error.hpp"
 
-// namespace {
+namespace {
 	class PError : public std::runtime_error {
 		public:
 			PError(const PError&) = default;
-			PError(const std::string& name): std::runtime_error("") {
-// 				perror(name);
-// 				std::stringstream ss;
-// 				ss << "posix-error at " << name << ' ' << errno << std::endl;
-// 				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
+			PError(const char* name): std::runtime_error("") {
+				perror(name);
+				std::stringstream ss;
+				ss << "posix-error at " << name << ' ' << errno << std::endl;
+				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
 			}
 	};
-// }
+}
 namespace spn {
 	std::string Dir_depLinux::getcwd() const {
 		char tmp[512];
