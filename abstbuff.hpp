@@ -46,6 +46,7 @@ namespace spn {
 			if(_bRelease)
 				delete _buffM;
 		}
+		AbstBuffer(std::nullptr_t): AbstBuffer(nullptr, 0) {}
 		//! initialize by const-pointer
 		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz), _bRelease(false) {}
 		//! initialize by movable-vector
@@ -97,6 +98,9 @@ namespace spn {
 				return _pSrc;
 			return &(*_buffC)[0];
 		}
+		bool empty() const {
+			return getLength() == 0;
+		}
 	};
 
 	struct StrLen {
@@ -123,6 +127,7 @@ namespace spn {
 		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
 		mutable bool	_bNonNull;	//!< non null-terminatedでない場合にtrue (バイト長は必ず持っている条件)
 		public:
+			AbstString(std::nullptr_t): base_type(nullptr), _bStrLen(false), _bNonNull(true) {}
 			// 文字数カウント機能を追加
 			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true), _bNonNull(false) {}
 			// Not NullTerminatedかもしれないのでフラグを立てておく
