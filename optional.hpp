@@ -29,8 +29,9 @@ namespace spn {
 		T*		_buffer;
 
 		_OptionalBuff() = default;
+		_OptionalBuff(T* t): _buffer(t) {}
 		template <class T2>
-		_OptionalBuff(T2&& t): _buffer(t) {}
+		_OptionalBuff(T2&& t): _buffer(&t) {}
 		void operator = (T&& t) { _buffer = &t; }
 		void operator = (T& t) { _buffer = &t; }
 		T& castT() { return *_buffer; }
