@@ -18,6 +18,24 @@ namespace spn {
 			height *= s;
 			return *this;
 		}
+		template <class V>
+		void shiftR(int n, typename std::enable_if<std::is_integral<V>::value>::type* = nullptr) {
+			width >>= n;
+			height >>= n;
+		}
+		template <class V>
+		void shiftR(int n, typename std::enable_if<!std::is_integral<V>::value>::type* = nullptr) { *this *= std::pow(2.f, n); }
+		_Size& operator >>= (int n) {
+			shiftR<T>(n);
+			return *this;
+		}
+		//! 指定したビット数分、右シフトしてもし値がゼロになったら1をセットする
+		void shiftR_one(int n) {
+			width >>= n;
+			width |= ~Bit::ZeroOrFull(width) & 0x01;
+			height >>= n;
+			height |= ~Bit::ZeroOrFull(height) & 0x01;
+		}
 	};
 	using Size = _Size<uint32_t>;
 	using SizeF = _Size<float>;
