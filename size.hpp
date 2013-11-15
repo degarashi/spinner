@@ -36,6 +36,15 @@ namespace spn {
 			height >>= n;
 			height |= ~Bit::ZeroOrFull(height) & 0x01;
 		}
+		bool operator == (const _Size& s) const {
+			return width == s.width &&
+					height == s.height;
+		}
+		bool operator != (const _Size& s) const { return !(this->operator == (s)); }
+		bool operator <= (const _Size& s) const {
+			return width <= s.width &&
+					height <= s.height;
+		}
 	};
 	using Size = _Size<uint32_t>;
 	using SizeF = _Size<float>;
