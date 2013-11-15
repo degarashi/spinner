@@ -36,6 +36,17 @@ namespace spn {
 			height >>= n;
 			height |= ~Bit::ZeroOrFull(height) & 0x01;
 		}
+		//! 1右ビットシフトした値を2の累乗に合わせる
+		void shiftR_2pow() {
+			auto fn = [](const T& t) -> T {
+				auto v = Bit::LowClear(t);
+				if(v != t)
+					return v;
+				return v >> 1;
+			};
+			width = fn(width);
+			height = fn(height);
+		}
 		bool operator == (const _Size& s) const {
 			return width == s.width &&
 					height == s.height;
