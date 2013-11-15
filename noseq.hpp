@@ -79,10 +79,12 @@ namespace spn {
 
 	//! 順序なしのID付きリスト
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
-	template <class T, class IDType=unsigned int>
+	template <class T, class IDType=unsigned int, unsigned int MaxID=std::numeric_limits<IDType>::max()>
 	class noseq_list {
 		using ID = typename std::make_unsigned<IDType>::type;
-		constexpr static ID INVALID_ID = std::numeric_limits<ID>::max();
+		constexpr static bool Validation(ID id) {
+			return id < MaxID;
+		}
 		using RT = typename std::remove_reference<T>::type;
 		//! ユーザーの要素を格納
 		struct UData {
@@ -157,7 +159,7 @@ namespace spn {
 				return ret;
 			}
 			void rem(ID uindex) {
-				assert(uindex != INVALID_ID);
+				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
 				if(!_bRemoving) {
 					_bRemoving = true;
 
@@ -193,12 +195,12 @@ namespace spn {
 				return std::pair<ID,Ref>(id, get(id));
 			}
 			Ref get(ID uindex) {
-				assert(uindex != INVALID_ID);
+				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
 				ID idx = boost::get<ObjID>(_array[uindex].ids);
 				return *_array[idx].udata.value;
 			}
 			const Ref get(ID uindex) const {
-				assert(uindex != INVALID_ID);
+				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
 

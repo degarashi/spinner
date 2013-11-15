@@ -95,8 +95,6 @@ namespace {
 		}
 	}
 }
-short Tekito(int);
-int Tekito(...);
 int main(int argc, char **argv) {
 	MatTest();
 	PoseTest();
@@ -104,9 +102,5 @@ int main(int argc, char **argv) {
 	ResourceTest();
 	spn::unittest::PQueue();
 	spn::unittest::Math();
-
-	spn::Optional<int> asd(123);
-	spn::Optional<int> asd2(asd);
-	std::cout << asd2.get() << std::endl;
 	return 0;
 }
