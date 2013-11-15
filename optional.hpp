@@ -73,18 +73,18 @@ namespace spn {
 
 			Optional(): _bInit(false) {}
 			Optional(none_t): _bInit(false) {}
-			template <class T2>
-			Optional(T2&& t): _buffer(std::forward<T2>(t)), _bInit(true) {}
+			Optional(const Optional<T>& t): _bInit(t) {
+				if(t)
+					_buffer = t._buffer.castCT();
+			}
 			Optional(Optional<T>&& t): _bInit(t) {
 				if(t) {
 					_buffer = std::move(t._buffer.castT());
 					t.t__release();
 				}
 			}
-			Optional(const Optional<T>& t): _bInit(t) {
-				if(t)
-					_buffer = t._buffer.castT();
-			}
+			template <class T2>
+			Optional(T2&& t, typename std::enable_if<!std::is_same<typename std::decay<T2>::type, Optional<T>>::value>::type* = nullptr): _buffer(std::forward<T2>(t)), _bInit(true) {}
 			~Optional() {
 				_release();
 			}
