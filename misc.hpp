@@ -13,8 +13,29 @@
 
 //! 32bitの4文字チャンクを生成
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
+//! 特定のメソッドを持っているかチェック
+/*! DEF_HASMETHOD(func)
+	HasMethod_func(nullptr) -> std::true_type or std::false_type */
+#define DEF_HASMETHOD(method) \
+	template <class T> \
+	std::true_type HasMethod_##method(decltype(&T::method) = &T::method) { return std::true_type(); } \
+	template <class T> \
+	std::false_type HasMethod_##method(...) { return std::false_type(); }
+//! 特定の型を持っているかチェック
+/*! DEF_HASTYPE(type_name)
+	HasType_type_name(nullptr) -> std::true_type or std::false_type */
+#define DEF_HASTYPE(name) \
+	template <class T> \
+	std::true_type HasType_##name(typename T::name*) { return std::true_type(); } \
+	template <class T> \
+	std::false_type HasType_##name(...) { return std::false_type(); }
 
 namespace spn {
+	//! 関数の戻り値型を取得
+	/*! decltype(ReturnType(Func)) のように使う */
+	template <class RT, class... Args>
+	auto ReturnType(RT (*)(Args...)) -> RT;
+
 	//! 指定した順番で関数を呼び、クラスの初期化をする(マネージャの初期化用)
 	/*! デストラクタは初期化の時と逆順で呼ばれる */
 	template <class... Ts>
