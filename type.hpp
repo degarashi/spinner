@@ -108,6 +108,27 @@ namespace spn {
 	struct TypeSum<T, TS...> {
 		enum { result=sizeof(T)+TypeSum<TS...>::result };
 	};
+	//! インデックス指定による先頭からのサイズ累計
+	template <int N, template <class> class Getter, class... Ts2>
+	struct _SumN {
+		constexpr static int result = 0; };
+	template <int N, template <class> class Getter, class T0, class... Ts2>
+	struct _SumN<N, Getter, T0, Ts2...> {
+		constexpr static int result = Getter<T0>::get() * (N>0 ? 1 : 0) + _SumN<N-1, Getter, Ts2...>::result; };
+	//! タイプ指定による先頭からのサイズ累計
+	template <class T, template <class> class Getter, class... Ts2>
+	struct _SumT;
+	template <class T, template <class> class Getter, class T0, class... Ts2>
+	struct _SumT<T, Getter, T0, Ts2...> {
+		constexpr static int result = Getter<T0>::get() + _SumT<T, Getter, Ts2...>::result; };
+	template <class T, template <class> class Getter, class... Ts2>
+	struct _SumT<T, Getter, T, Ts2...> {
+		constexpr static int result = 0; };
+	//! 通常の型サイズ取得クラス
+	template <class T>
+	struct GetSize_Normal {
+		static constexpr int get() { return sizeof(T); }
+	};
 
 	template <class... TS>
 	struct CType {
@@ -155,5 +176,12 @@ namespace spn {
 			constexpr static int sum = TypeSum<TS...>::result,
 								maxbit = MaxBit<TS...>::result;
 		};
+		template <int N, template <class> class Getter=GetSize_Normal>
+		struct SumN {
+			static_assert(N<sizeof...(TS),"Sum: out of index");
+			constexpr static int result = _SumN<N, Getter, TS...>::result; };
+		template <class T, template <class> class Getter=GetSize_Normal>
+		struct SumT {
+			constexpr static int result = _SumT<T, Getter, TS...>::result; };
 	};
 }
