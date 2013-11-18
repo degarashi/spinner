@@ -128,6 +128,10 @@ namespace spn {
 		struct _At {
 			using type = typename __At<TValue<N,sizeof...(TS)>::lesser, N,DEFAULT>::type;
 		};
+		template <class... TS2>
+		using ConcatAfter = CType<TS..., TS2...>;
+		template <class... TS2>
+		using ConcatBefore = CType<TS2..., TS...>;
 
 		template <class T>
 		struct _Find {
@@ -138,9 +142,7 @@ namespace spn {
 			static_assert(_Find<T>::result>=0, "Find: not found");
 		};
 		template <class T>
-		struct Has {
-			enum { result= (_Find<T>::result>=0) ? 1:0 };
-		};
+		struct Has : std::integral_constant<bool, _Find<T>::result>=0> {};
 		using AsTuple = std::tuple<TS...>;
 		template <class Dummy=void>
 		struct Another {
