@@ -32,9 +32,18 @@
 
 namespace spn {
 	//! 関数の戻り値型を取得
-	/*! decltype(ReturnType(Func)) のように使う */
+	/*! ReturnType<T>::type */
+	template <class T>
+	struct ReturnType;
 	template <class RT, class... Args>
-	auto ReturnType(RT (*)(Args...)) -> RT;
+	struct ReturnType<RT (*)(Args...)> {
+		using type = RT; };
+	template <class RT, class OBJ, class... Args>
+	struct ReturnType<RT (OBJ::*)(Args...)> {
+		using type = RT; };
+	template <class RT, class OBJ, class... Args>
+	struct ReturnType<RT (OBJ::*)(Args...) const> {
+		using type = RT; };
 
 	//! 指定した順番で関数を呼び、クラスの初期化をする(マネージャの初期化用)
 	/*! デストラクタは初期化の時と逆順で呼ばれる */
