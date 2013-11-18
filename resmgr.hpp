@@ -12,16 +12,16 @@ namespace spn {
 	//! 型を保持しない強参照ハンドル値
 	/*! インデックスに14bit, リソースIDに6bit, (デバッグ用)マジックナンバーに12bitを使用 */
 	class SHandle {
-		#ifdef DEBUG
-			// デバッグ時のみ簡易マジックナンバーを保持
-			struct MyDef : BitDef<uint32_t, BitF<0,14>, BitF<14,6>, BitF<20,12>> {
-				enum { INDEX, RESID, MAGIC }; };
-		#else
-			struct MyDef : BitDef<uint32_t, BitF<0,14>, BitF<14,6>> {
-				enum { INDEX, RESID }; };
-		#endif
 		public:
-			using Value = BitField<MyDef>;
+			#ifdef DEBUG
+				// デバッグ時のみ簡易マジックナンバーを保持
+				struct HandleBits : BitDef<uint32_t, BitF<0,14>, BitF<14,6>, BitF<20,12>> {
+					enum { INDEX, RESID, MAGIC }; };
+			#else
+				struct HandleBits : BitDef<uint32_t, BitF<0,14>, BitF<14,6>> {
+					enum { INDEX, RESID }; };
+			#endif
+			using Value = BitField<HandleBits>;
 			using VWord = Value::Word;
 		private:
 			Value _value;
@@ -348,7 +348,7 @@ namespace spn {
 		private:
 			friend SHdl;
 			friend WHdl;
-			using AVec = noseq_list<Entry, uint16_t, SHandle::Value::BFAt<0>::length>;
+			using AVec = noseq_list<Entry, uint16_t, SHandle::Value::BFAt<SHandle::HandleBits::INDEX>::length>;
 
 			#ifdef DEBUG
 				uint32_t	_sMagicIndex = 0;
