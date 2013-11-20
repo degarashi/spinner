@@ -14,13 +14,26 @@
 //! 32bitの4文字チャンクを生成
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
 //! 特定のメソッドを持っているかチェック
-/*! DEF_HASMETHOD(func)
-	HasMethod_func(nullptr) -> std::true_type or std::false_type */
+/*! DEF_HASMETHOD(method)
+	HasMethod_method<class_name>(nullptr) -> std::true_type or std::false_type */
 #define DEF_HASMETHOD(method) \
 	template <class T> \
 	std::true_type HasMethod_##method(decltype(&T::method) = &T::method) { return std::true_type(); } \
 	template <class T> \
 	std::false_type HasMethod_##method(...) { return std::false_type(); }
+//! 特定のオーバーロードされたメソッドを持っているかチェック
+/*! DEF_HASMETHOD_OV(name, method)
+	予めクラスにspn::none method(...); を持たせておく
+	暗黙の変換も含まれる
+	HasMethod_name<class_name>() -> std::true_type or std::false_type */
+#define DEF_HASMETHOD_OV(name, method, ...) \
+	DEF_CHECKMETHOD_OV(name, method) \
+	template <class T> \
+	decltype(CheckMethod_##name<T, __VA_ARGS__>()) HasMethod_##name() { return decltype(CheckMethod_##name<T, __VA_ARGS__>())(); }
+#define DEF_CHECKMETHOD_OV(name, method) \
+	template <class T, class... Args> \
+	std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value> CheckMethod_##name();
+
 //! 特定の型を持っているかチェック
 /*! DEF_HASTYPE(type_name)
 	HasType_type_name(nullptr) -> std::true_type or std::false_type */
@@ -31,6 +44,9 @@
 	std::false_type HasType_##name(...) { return std::false_type(); }
 
 namespace spn {
+	//! 任意の戻り値を返す関数 (定義のみ)
+	template <class T>
+	T ReturnT();
 	//! 関数の戻り値型を取得
 	/*! ReturnType<T>::type */
 	template <class T>
