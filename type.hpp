@@ -172,6 +172,18 @@ namespace spn {
 		constexpr static int size = sizeof...(TS),
 							sum = TypeSum<TS...>::result,
 							maxsize = TMax<sizeof(TS)...>::result;
+		// タイプリストの位置に対する比較
+		template <class T0, class T1>
+		using Less = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::lesser>;
+		template <class T0, class T1>
+		using Greater = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::greater>;
+		template <class T0, class T1>
+		using Equal = std::is_same<T0,T1>;
+		template <class T0, class T1>
+		using LessEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::less_eq>;
+		template <class T0, class T1>
+		using GreatEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::great_eq>;
+
 		// 型がimcompleteなケースを考えてテンプレートクラスとしてある
 		template <class Dummy=void>
 		struct Size {
