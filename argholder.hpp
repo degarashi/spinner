@@ -2,6 +2,7 @@
 #include <type_traits>
 
 namespace spn {
+	struct none_t{};
 	//! rvalue-reference wrapper
 	template <class T>
 	struct _RRef {

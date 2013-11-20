@@ -4,7 +4,6 @@
 #include "error.hpp"
 
 namespace spn {
-	struct none_t{};
 	extern none_t none;
 	template <class T>
 	struct _OptionalBuff {
