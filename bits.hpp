@@ -211,6 +211,15 @@ namespace spn {
 		}
 	};
 
+	//! コンパイル時計算
+	namespace CTBit {
+		template <unsigned int N>
+		struct MSB_N { constexpr static int result = 1 + MSB_N<(N >> 1)>::result; };
+		template <>
+		struct MSB_N<1> { constexpr static int result = 0; };
+		template <>
+		struct MSB_N<0> { constexpr static int result = 0; };
+	};
 	struct Bit {
 		static bool Check(uint32_t val, uint32_t flag) {
 			return val & flag;

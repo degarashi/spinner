@@ -169,13 +169,13 @@ namespace spn {
 		struct Another {
 			using result = CType<decltype(TS()())...>;
 		};
-		constexpr static int size = sizeof...(TS);
+		constexpr static int size = sizeof...(TS),
+							sum = TypeSum<TS...>::result,
+							maxsize = TMax<sizeof(TS)...>::result;
 		// 型がimcompleteなケースを考えてテンプレートクラスとしてある
 		template <class Dummy=void>
 		struct Size {
-			constexpr static int sum = TypeSum<TS...>::result,
-								maxbit = MaxBit<TS...>::result;
-		};
+			constexpr static int maxbit = MaxBit<TS...>::result; };
 		template <int N, template <class> class Getter=GetSize_Normal>
 		struct SumN {
 			static_assert(N<sizeof...(TS),"Sum: out of index");
