@@ -32,7 +32,8 @@
 	decltype(CheckMethod_##name<T, __VA_ARGS__>()) HasMethod_##name() { return decltype(CheckMethod_##name<T, __VA_ARGS__>())(); }
 #define DEF_CHECKMETHOD_OV(name, method) \
 	template <class T, class... Args> \
-	std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value> CheckMethod_##name();
+	std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value> CheckMethod_##name() { \
+		return std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value>(); }
 
 //! 特定の型を持っているかチェック
 /*! DEF_HASTYPE(type_name)

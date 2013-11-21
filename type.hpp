@@ -190,7 +190,7 @@ namespace spn {
 			constexpr static int maxbit = MaxBit<TS...>::result; };
 		template <int N, template <class> class Getter=GetSize_Normal>
 		struct SumN {
-			static_assert(N<sizeof...(TS),"Sum: out of index");
+			static_assert(N<=sizeof...(TS),"Sum: out of index");
 			constexpr static int result = _SumN<N, Getter, TS...>::result; };
 		template <class T, template <class> class Getter=GetSize_Normal>
 		struct SumT {
