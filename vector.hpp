@@ -512,9 +512,8 @@
 					return *this;
 				}
 				VT VT::operator * (const QuatT<ALIGNB>& q) const {
-					VecT tmp(*this);
-					tmp *= q;
-					return tmp;
+					auto tq = q.conjugation() * QuatT<ALIGNB>(*this,0) * q;
+					return tq.getVector();
 				}
 				VT&& VT::operator * (QuatT<ALIGNB>&& q) const {
 					VT& rVT = *reinterpret_cast<VT*>(&q);

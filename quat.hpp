@@ -28,9 +28,11 @@
 	namespace spn {
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		template <>
-		struct QuatT<ALIGNB> : QuatBase {
+		struct ALIGN16 QuatT<ALIGNB> : QuatBase {
 			union {
-				float	x,y,z,w;
+				struct {
+					float	x,y,z,w;
+				};
 				float	m[4];
 			};
 
@@ -38,6 +40,7 @@
 			QuatT(const QuatT<false>& q);
 			QuatT(const QuatT<true>& q);
 			QuatT(_TagIdentity);
+			QuatT(const Vec3& v, float fw);
 			QuatT(float fx, float fy, float fz, float fw);
 			reg128 loadPS() const;
 
@@ -92,6 +95,7 @@
 			float len_sq() const;
 			float length() const;
 			float angle() const;
+			VEC3 getVector() const;
 			VEC3 getAxis() const;
 
 			float dot(const QuatT& q) const;
@@ -119,6 +123,10 @@
 		QT::QuatT(const QuatT<false>& q) { STORETHIS(LOADPSU(q.m)); }
 		QT::QuatT(const QuatT<true>& q) { STORETHIS(LOADPS(q.m)); }
 		QT::QuatT(_TagIdentity) { STORETHIS(reg_setr_ps(0,0,0,1)); }
+		QT::QuatT(const Vec3& v, float fw) {
+			x=v.x; y=v.y; z=v.z;
+			w = fw;
+		}
 		QT::QuatT(float fx, float fy, float fz, float fw) {
 			x = fx;
 			y = fy;
@@ -145,7 +153,7 @@
 				if(elem[i] > elem[idx])
 					idx = i;
 			}
-			Assert(Trap, elem[idx] < 0, "invalid matrix error")
+			Assert(Trap, elem[idx] >= 0, "invalid matrix error")
 
 			// 最大要素の値を算出
 			QuatT res;
@@ -431,6 +439,9 @@
 		}
 		float QT::angle() const {
 			return std::acos(w)*2;
+		}
+		VEC3 QT::getVector() const {
+			return VEC3(x,y,z);
 		}
 		VEC3 QT::getAxis() const {
 			float s_theta = std::sqrt(1.0f - Square(w));
