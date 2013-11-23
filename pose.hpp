@@ -67,6 +67,7 @@ namespace spn {
 			const Vec2& getScale() const;
 
 			const AMat32& getToWorld() const;
+			AMat32 getToLocal() const;
 			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();
@@ -130,6 +131,7 @@ namespace spn {
 			const AQuat& getRot() const;
 			const AVec3& getScale() const;
 			const AMat43& getToWorld() const;
+			AMat43 getToLocal() const;
 			uint32_t getAccum() const;
 			void setAll(const AVec3& ofs, const AQuat& q, const AVec3& sc);
 			// Scaleに変更を加える

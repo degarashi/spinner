@@ -92,6 +92,12 @@ namespace spn {
 		_refresh();
 		return _finalMat;
 	}
+	AMat32 Pose2D::getToLocal() const {
+		AMat33 m = getToWorld().convertA33();
+		m.invert();
+		// AMat32とAMat33の使用メモリ領域は同じ
+		return reinterpret_cast<const AMat32&>(m);
+	}
 	void Pose2D::setAll(const Vec2& ofs, float ang, const Vec2& sc) {
 		_rflag = PRF_ALL;
 		_ofs = ofs;
@@ -221,6 +227,12 @@ namespace spn {
 		if(_rflag != 0)
 			_refresh();
 		return _finalMat;
+	}
+	AMat43 Pose3D::getToLocal() const {
+		AMat44 toW = getToWorld().convertA44();
+		toW.invert();
+		// AMat43とAMat44の使用メモリ領域は同じ
+		return reinterpret_cast<const AMat43&>(toW);
 	}
 	uint32_t Pose3D::getAccum() const {
 		return _accum;
