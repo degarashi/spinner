@@ -1,5 +1,7 @@
 #pragma once
 #include "vector.hpp"
+#include "matrix.hpp"
+#include "quat.hpp"
 #include "bits.hpp"
 #include "abstbuff.hpp"
 #include "error.hpp"
@@ -533,6 +535,15 @@ namespace spn {
 	Vec3 CramersRule(const Vec3& v0, const Vec3& v1, const Vec3& v2, const Vec3& a0, float detInv);
 	//! 2元1次方程式を計算
 	Vec2 CramersRule(const Vec2& v0, const Vec2& v1, const Vec2& a0, float detInv);
+	//! グラム・シュミットの正規直交化法
+	void GramSchmidtOrth(Vec3& v0, Vec3& v1, Vec3& v2);
+	struct AffineParts {
+		AVec3 offset,
+				scale;
+		AQuat rotation;
+	};
+	//! アフィン成分分解
+	AffineParts DecompAffine(const AMat43& m);
 
 	//! 汎用シングルトン
 	template <typename T>
