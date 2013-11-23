@@ -99,6 +99,7 @@
 			VEC3 getAxis() const;
 
 			float dot(const QuatT& q) const;
+			QuatT operator >> (const QuatT& q) const;
 			QuatT& operator >>= (const QuatT& q);
 			QuatT lerp(const QuatT& q, float t) const;
 
@@ -419,7 +420,9 @@
 		QT QT::rotation(const VEC3& axis, float ang) const {
 			return Rotation(axis, ang) * *this;
 		}
-
+		QT QT::operator >> (const QuatT& q) const {
+			return q * *this;
+		}
 		QT& QT::operator >>= (const QuatT& q) {
 			return *this = (q * *this);
 		}
