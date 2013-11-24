@@ -50,6 +50,8 @@
 			float dot(const VEC3& p) const;
 			void move(float d);
 			const VEC3& getNormal() const;
+			PlaneT operator * (const MatT<4,3,ALIGNB>& m) const;
+			PlaneT& operator *= (const MatT<4,3,ALIGNB>& m);
 		};
 
 		using BOOST_PP_CAT(ALIGNA, Plane) = PlaneT<ALIGNB>;
@@ -123,6 +125,14 @@
 			AVec3 v(-p0.d, -p1.d, 0);
 			v *= mInv;
 			return std::make_tuple(v, nml, true);
+		}
+		PT PT::operator * (const MatT<4,3,ALIGNB>& m) const {
+			auto& nml = getNormal();
+			VEC3 tmp(nml * -d);
+			return PT::FromPtDir(tmp.asVec4(1)*m, nml.asVec4(0)*m);
+		}
+		PT& PT::operator *= (const MatT<4,3,ALIGNB>& m) {
+			return *this = (*this * m);
 		}
 	#endif
 	}
