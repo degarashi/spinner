@@ -50,8 +50,10 @@
 			float dot(const VEC3& p) const;
 			void move(float d);
 			const VEC3& getNormal() const;
-			PlaneT operator * (const MatT<4,3,ALIGNB>& m) const;
-			PlaneT& operator *= (const MatT<4,3,ALIGNB>& m);
+			template <bool A>
+			PlaneT operator * (const MatT<4,3,A>& m) const;
+			template <bool A>
+			PlaneT& operator *= (const MatT<4,3,A>& m);
 		};
 
 		using BOOST_PP_CAT(ALIGNA, Plane) = PlaneT<ALIGNB>;
@@ -126,14 +128,20 @@
 			v *= mInv;
 			return std::make_tuple(v, nml, true);
 		}
-		PT PT::operator * (const MatT<4,3,ALIGNB>& m) const {
+		template <bool A>
+		PT PT::operator * (const MatT<4,3,A>& m) const {
 			auto& nml = getNormal();
 			VEC3 tmp(nml * -d);
 			return PT::FromPtDir(tmp.asVec4(1)*m, nml.asVec4(0)*m);
 		}
-		PT& PT::operator *= (const MatT<4,3,ALIGNB>& m) {
+		template <bool A>
+		PT& PT::operator *= (const MatT<4,3,A>& m) {
 			return *this = (*this * m);
 		}
+		template PT PT::operator * (const MatT<4,3,false>&) const;
+		template PT PT::operator * (const MatT<4,3,true>& m) const;
+		template PT& PT::operator *= (const MatT<4,3,false>& m);
+		template PT& PT::operator *= (const MatT<4,3,true>& m);
 	#endif
 	}
 	#include "local_unmacro.hpp"
