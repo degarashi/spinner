@@ -619,10 +619,18 @@ namespace spn {
 		\param[in] vExcept target value
 		\param[in] vEps value threshold */
 	template <class T>
-	bool IsNear(const T& val, const T& vExcept, const T& vEps) {
+	bool IsNear(const T& val, const T& vExcept, const T& vEps = std::numeric_limits<T>::epsilon()) {
 		return IsInRange(val, vExcept-vEps, vExcept+vEps);
 	}
-
+	//! 浮動少数点数の値がNaNになっているか
+	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
+	bool IsNaN(const T& val) {
+		return !(val==T(0)) && (val!=T(0)); }
+	//! 浮動少数点数の値がNaN又は無限大になっているか
+	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
+	bool IsOutstanding(const T& val) {
+		auto valA = std::fabs(val);
+		return valA==std::numeric_limits<float>::infinity() || IsNaN(valA); }
 	//! クラメルの公式で使う行列式を計算
 	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2);
 	float CramerDet(const Vec2& v0, const Vec2& v1);
