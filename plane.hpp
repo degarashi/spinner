@@ -3,6 +3,7 @@
 	#if !defined(PLANE_H_) || INCLUDE_PLANE_LEVEL >= 1
 		#define PLANE_H_
 		#include <tuple>
+		#include "optional.hpp"
 
 		// 要求された定義レベルを実体化
 		#ifndef INCLUDE_PLANE_LEVEL
@@ -54,6 +55,9 @@
 			PlaneT operator * (const MatT<4,3,A>& m) const;
 			template <bool A>
 			PlaneT& operator *= (const MatT<4,3,A>& m);
+			VEC3 placeOnPlane(const VEC3& src, float offset) const;
+			spn::Optional<float> placeOnPlaneDirDist(const VEC3& dir, const VEC3& src) const;
+			VEC3 getOrigin() const;
 		};
 
 		using BOOST_PP_CAT(ALIGNA, Plane) = PlaneT<ALIGNB>;
@@ -69,6 +73,21 @@
 		PT::PlaneT(const VEC3& orig, float dist) {
 			STORETHIS(LOADTHISPS(orig.m));
 			d = dist;
+		}
+		VEC3 PT::placeOnPlane(const VEC3& src, float offset) const {
+			float d = dot(src);
+			return src + VEC3(a, b, c) * (-d+offset);
+		}
+		spn::Optional<float> PT::placeOnPlaneDirDist(const VEC3& dir, const VEC3& src) const {
+			float r = dir.dot(getNormal());
+			if(std::fabs(r) < 1e-6f)
+				return spn::none;
+			auto v = src - getOrigin();
+			float act = dot(v);
+			return act * Rcp22Bit(r);
+		}
+		VEC3 PT::getOrigin() const {
+			return VEC3(a,b,c) * -d;
 		}
 		const VEC3& PT::getNormal() const {
 			return *reinterpret_cast<const VEC3*>(this);
