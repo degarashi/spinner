@@ -5,6 +5,7 @@
 #include "bits.hpp"
 #include "abstbuff.hpp"
 #include "error.hpp"
+#include "optional.hpp"
 #include <cassert>
 #include <cstring>
 #include <cwchar>
@@ -47,6 +48,22 @@
 	std::false_type HasType_##name(...) { return std::false_type(); }
 
 namespace spn {
+	//! Y軸を上とした時のZベクトルに対するXベクトルを算出, またはベクトルに垂直なベクトルを得る
+	template <bool A>
+	VecT<3,A> GetVerticalVec(const VecT<3,A>& zvec) {
+		using VT = VecT<3,A>;
+		auto vt = zvec % VT(0,1,0);
+		if(vt.len_sq() < 1e-6f)
+			vt = zvec % VT(1,0,0);
+		return vt.normalization();
+	}
+	template <bool A>
+	spn::Optional<VecT<3,A>> NormalFromPoints(const VecT<3,A>& v0,const VecT<3,A>& v1, const VecT<3,A>& v2) {
+		auto tmp = (v1 - v0) % (v2 - v0);
+		if(tmp.len_sq() < 1e-6f)
+			return spn::none;
+		return tmp.normalization();
+	}
 	//! 任意の戻り値を返す関数 (定義のみ)
 	template <class T>
 	T ReturnT();
