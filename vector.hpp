@@ -117,6 +117,10 @@
 				float length() const;
 				/*! \return ベクトル長の2乗 */
 				float len_sq() const;
+				//! 要素の何れかがNaNになっているか
+				bool isNaN() const;
+				//! 要素の何れかがNaN又はinfになっているか
+				bool isOutstanding() const;
 
 				void saturate(float fMin, float fMax);
 				VecT saturation(float fMin, float fMax) const;
@@ -217,6 +221,34 @@
 				STORETHIS(LOADPS(v.m)); }
 			VT::VecT(const UVec& v) {
 				STORETHIS(LOADPSU(v.m)); }
+			bool VT::isNaN() const {
+				reg128 r0 = LOADTHISZ(),
+					r_zero = reg_setzero_ps();
+				reg128 res = reg_or_ps(reg_cmple_ps(r0, r_zero),
+										reg_cmpgt_ps(r0, r_zero));
+				res = reg_andnot_ps(res, xmm_fullbit);
+				SUMVEC(res)
+				float f;
+				reg_store_ss(&f, res);
+				return f != 0;
+			}
+			bool VT::isOutstanding() const {
+				const float f = std::numeric_limits<float>::infinity();
+				reg128 r_inf = reg_load1_ps(&f),
+						r_zero = reg_setzero_ps(),
+						r0 = reg_and_ps(LOADTHIS(), xmm_absmask);
+				reg128 r1 = reg_or_ps(reg_cmple_ps(r0, r_zero),
+									reg_cmpgt_ps(r0, r_zero));
+				r0 = reg_cmpeq_ps(r0, r_inf);
+
+				r1 = reg_andnot_ps(r1, xmm_fullbit);
+				r0 = reg_or_ps(r0, r1);
+				SUMVEC(r0)
+
+				float fv;
+				reg_store_ss(&fv, r0);
+				return fv != 0;
+			}
 
 			VT& VT::operator = (const AVec& v) {
 				STORETHIS(LOADPS(v.m));

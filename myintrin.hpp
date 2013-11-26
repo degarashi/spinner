@@ -54,8 +54,11 @@
 	#define reg_sqrt_ss		_mm_sqrt_ss
 
 	#define reg_cmpeq_ps	_mm_cmpeq_ps
+	#define reg_cmpneq_ps	_mm_cmpneq_ps
 	#define reg_cmplt_ps	_mm_cmplt_ps
 	#define reg_cmpnle_ps	_mm_cmpnle_ps
+	#define reg_cmple_ps	_mm_cmple_ps
+	#define reg_cmpgt_ps	_mm_cmpgt_ps
 
 	#define reg_cvtepi32_ps	_mm_cvtepi32_ps
 	#define reg_cvttss_si32	_mm_cvttss_si32
@@ -133,6 +136,7 @@
 		static T Div(T t0, T t1) { return t0 / t1; }
 		static T CmpLT(T t0, T t1) { return t0<t1 ? 1 : 0; }
 		static T CmpEQ(T t0, T t1) { return t0==t1 ? 1 : 0; }
+		static T CmpNEQ(T t0, T t1) { return t0!=t1 ? 1 : 0; }
 		static T CmpGR(T t0, T t1) { return t0>t1 ? 1 : 0; }
 		static T Min(T t0, T t1) { return t0<t1 ? t0 : t1; }
 		static T Max(T t0, T t1) { return t0>t1 ? t0 : t1; }
@@ -144,6 +148,7 @@
 		DEF_REG_OPERATOR(/, Div)
 		DEF_REG_OPERATOR(<, CmpLT)
 		DEF_REG_OPERATOR(==, CmpEQ)
+		DEF_REG_OPERATOR(!=, CmpNEQ)
 		DEF_REG_OPERATOR(>, CmpGR)
 
 		_rbase get_min(const _rbase& r) const { return _operate<N>(r, Min); }
@@ -289,8 +294,11 @@
 	#define reg_sqrt_ss(a)			((a).sqrtSS())
 
 	#define reg_cmpeq_ps(a,b)		((a) == (b))
+	#define reg_cmpneq_ps(a,b)		((a) != (b))
 	#define reg_cmplt_ps(a,b)		((a) < (b))
 	#define reg_cmpnle_ps(a,b)		((a) > (b))
+	#define reg_cmple_ps(a,b)		((a) <= (b))
+	#define reg_cmpgt_ps(a,b)		((a) > (b))
 
 	#define reg_cvtepi32_ps(a)		reg128(a)
 	#define reg_cvttss_si32(a)		static_cast<int32_t>((a)[0])

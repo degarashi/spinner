@@ -57,6 +57,8 @@ inline float RSqrt(float s) {
 	return Rcp22Bit(spn::Sqrt(s));
 }
 
+const static uint32_t fullbit = 0xffffffff,
+					absbit = 0x7fffffff;
 constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 // ベクトルレジスタ用の定数
 const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
@@ -66,7 +68,9 @@ const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
 					xmm_tmp1111(_mmSetPs(1)),
 					xmm_epsilon(_mmSetPs(FLOAT_EPSILON)),
 					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON)),
-					xmm_minus0(_mmSetPs(-0.f, -0.f, -0.f, -0.f));
+					xmm_minus0(_mmSetPs(-0.f, -0.f, -0.f, -0.f)),
+					xmm_fullbit(reg_load1_ps(reinterpret_cast<const float*>(&fullbit))),
+					xmm_absmask(reg_load1_ps(reinterpret_cast<const float*>(&absbit)));
 
 //! レジスタ要素が全てゼロか判定 (+0 or -0)
 inline bool _mmIsZero(reg128 r) {
