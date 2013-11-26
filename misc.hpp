@@ -625,7 +625,7 @@ namespace spn {
 	//! 浮動少数点数の値がNaNになっているか
 	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
 	bool IsNaN(const T& val) {
-		return !(val==T(0)) && (val!=T(0)); }
+		return !(val>=T(0)) && !(val<T(0)); }
 	//! 浮動少数点数の値がNaN又は無限大になっているか
 	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
 	bool IsOutstanding(const T& val) {
