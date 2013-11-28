@@ -138,6 +138,10 @@ namespace spn {
 			}
 			noseq_list(noseq_list&& sl): _array(std::forward<noseq_vec<T>>(sl._array)), _nFree(sl._nFree), _firstFree(sl._firstFree) {}
 
+			template <class... Ts>
+			ID emplace(Ts&&... ts) {
+				return add(T(std::forward<Ts>(ts)...));
+			}
 			template <class T2>
 			ID add(T2&& t) {
 				if(_nFree == 0) {
