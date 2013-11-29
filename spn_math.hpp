@@ -42,6 +42,14 @@ inline reg128 _mmSetPs(float w, float z, float y, float x) {
 inline reg128 _mmSetPs(float s) {
 	return reg_load1_ps(&s);
 }
+inline reg128 _mmSetPdw(int32_t w, int32_t z, int32_t y, int32_t x) {
+	const int32_t tmp[4] = {w,z,y,x};
+	return reg_loadu_ps(reinterpret_cast<const float*>(tmp));
+}
+inline reg128 _mmSetPdw(int32_t d) {
+	return _mmSetPdw(d,d,d,d);
+}
+
 inline float Rcp22Bit(float s) {
 	reg128 tmp = reg_load_ss(&s);
 	RCP22BIT(tmp)
@@ -61,11 +69,11 @@ const static uint32_t fullbit = 0xffffffff,
 					absbit = 0x7fffffff;
 constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 // ベクトルレジスタ用の定数
-const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)),
-					xmm_tmp0111(_mmSetPs(1,1,1,0)),
-					xmm_tmp0000(_mmSetPs(0,0,0,0)),
-					xmm_tmp1000(_mmSetPs(0,0,0,1)),
-					xmm_tmp1111(_mmSetPs(1)),
+const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)), xmm_tmp0001_i(_mmSetPdw(-1,0,0,0)),
+					xmm_tmp0111(_mmSetPs(1,1,1,0)), xmm_tmp0111_i(_mmSetPdw(-1,-1,-1,0)),
+					xmm_tmp0000(_mmSetPs(0,0,0,0)), xmm_tmp0000_i(_mmSetPdw(0,0,0,0)),
+					xmm_tmp1000(_mmSetPs(0,0,0,1)), xmm_tmp1000_i(_mmSetPdw(0,0,0,-1)),
+					xmm_tmp1111(_mmSetPs(1,1,1,1)), xmm_tmp1111_i(_mmSetPdw(-1)),
 					xmm_epsilon(_mmSetPs(FLOAT_EPSILON)),
 					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON)),
 					xmm_minus0(_mmSetPs(-0.f, -0.f, -0.f, -0.f)),
@@ -178,8 +186,8 @@ struct TrivialWrapper<T[N]> {
 #define LOADPS_A3(ptr)		LOADPS_A4(ptr)
 #define LOADPS_3(ptr)		LOADPS_4(ptr)
 #define LOADPS_BASE3(ptr,src,lfunc)	reg_mul_ps(src, lfunc(ptr))
-#define LOADPS_ZA3(ptr)		reg_mul_ps(spn::xmm_tmp0111, reg_load_ps(ptr))
-#define LOADPS_Z3(ptr)		reg_mul_ps(spn::xmm_tmp0111, reg_loadu_ps(ptr))
+#define LOADPS_ZA3(ptr)		reg_and_ps(spn::xmm_tmp0111_i, reg_load_ps(ptr))
+#define LOADPS_Z3(ptr)		reg_and_ps(spn::xmm_tmp0111_i, reg_loadu_ps(ptr))
 #define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
 										reg_or_ps(spn::xmm_matI[3], LOADPS_ZA3(ptr)), \
 										LOADPS_ZA3(ptr))
