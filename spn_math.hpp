@@ -220,7 +220,7 @@ struct TrivialWrapper<T[N]> {
 #define GET_LAST(tup) BOOST_PP_TUPLE_ELEM(BOOST_PP_DEC(BOOST_PP_TUPLE_SIZE(tup)), tup)
 //! 要素のサイズを考慮しつつ, 16byte alignedになるよう前後に適切なパディングを入れる
 #define GAP_TFUNC_OUTER(z,nAr,idx,elem) \
-		GAP_DUMMY(_,idx,4-nAr) \
+		GAP_DUMMY(_,idx,nAr) \
 		BOOST_PP_REPEAT(BOOST_PP_TUPLE_SIZE(elem), GAP_TFUNC_INNER, elem) \
 		GAP_DUMMY(_B,idx,4-nAr-COUNT_SIZE(elem))
 //! 奇数要素と偶数要素を連結して変数宣言とする
@@ -231,7 +231,7 @@ struct TrivialWrapper<T[N]> {
 
 //! アライン済みベクトルの隙間を埋める定義
 #define GAP_VECTOR(vecname, n, seq) GAP_VECTOR_DEF(NOTHING, vecname, n, seq)
-#define GAP_VECTOR_DEF(prefix, vecname, n, seq)	union { prefix BOOST_PP_CAT(spn::AVec, n) vecname; struct { float _dummy[4-n]; BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_VEC, NOTHING, seq) }; };
+#define GAP_VECTOR_DEF(prefix, vecname, n, seq)	union { prefix BOOST_PP_CAT(spn::AVec, n) vecname; struct { float _dummy[n]; BOOST_PP_SEQ_FOR_EACH(GAP_TFUNC_VEC, NOTHING, seq) }; };
 #define GAP_TFUNC_VEC(z,dummy,elem)	elem;
 
 // ----------- ベクトルや行列のプロトタイプ定義 -----------

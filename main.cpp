@@ -94,12 +94,93 @@ namespace {
 			std::cout << (*itr).first << std::endl;
 		}
 	}
+	template <int M, int N>
+	const float* SetValue(MatT<M,N,true>& m, const float* src) {
+		for(int i=0 ; i<M ; i++)
+			for(int j=0 ; j<N ; j++)
+				m.ma[i][j] = *src++;
+		return src;
+	}
+	template <int M, int N>
+	const float* CheckValue(MatT<M,N,true>& m, const float* src) {
+		for(int i=0 ; i<M ; i++)
+			for(int j=0 ; j<N ; j++)
+				Assert(Trap, m.ma[i][j]==*src++)
+		return src;
+	}
+	template <int N>
+	const float* SetValue(VecT<N,true>& v, const float* src) {
+		for(int i=0 ; i<N ; i++)
+			v.m[i] = *src++;
+		return src;
+	}
+	template <int N>
+	const float* CheckValue(VecT<N,true>& v, const float* src) {
+		for(int i=0 ; i<N ; i++)
+			Assert(Trap, v.m[i]==*src++)
+		return src;
+	}
+	void GapTest() {
+		std::random_device rdev;
+		std::array<uint_least32_t, 32> seed;
+		std::generate(seed.begin(), seed.end(), std::ref(rdev));
+		std::seed_seq seq(seed.begin(), seed.end());
+		std::mt19937 mt(seq);
+		std::uniform_real_distribution<float> dist{-std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()};
+		auto gen = std::bind(dist, mt);
+		std::array<float,16> tmp;
+		std::generate(tmp.begin(), tmp.end(), std::ref(gen));
+
+		#define SETAUX(z,n,data)	aux##n = *data++;
+		#define CHECKAUX(z,n,data) Assert(Trap, aux##n==*data++)
+		{
+			GAP_MATRIX(mat, 4,3,
+					(((float, aux0)))
+					(((float, aux1)))
+					(((float, aux2)))
+					(((float, aux3)))
+			)
+			auto* src = SetValue(mat, &tmp[0]);
+			BOOST_PP_REPEAT(4, SETAUX, src)
+			src = CheckValue(mat, &tmp[0]);
+			BOOST_PP_REPEAT(4, CHECKAUX, src)
+		}
+		{
+			GAP_MATRIX(mat, 4,2,
+					(((float, aux0), (float, aux4)))
+					(((float, aux1), (float, aux5)))
+					(((float, aux2), (float, aux6)))
+					(((float, aux3), (float, aux7)))
+			)
+			auto* src = SetValue(mat, &tmp[0]);
+			BOOST_PP_REPEAT(8, SETAUX, src)
+			src = CheckValue(mat, &tmp[0]);
+			BOOST_PP_REPEAT(8, CHECKAUX, src)
+		}
+		{
+			GAP_VECTOR(vec, 3, (float aux0))
+			auto* src = SetValue(vec, &tmp[0]);
+			BOOST_PP_REPEAT(1, SETAUX, src)
+			src = CheckValue(vec, &tmp[0]);
+			BOOST_PP_REPEAT(1, CHECKAUX, src)
+		}
+		{
+			GAP_VECTOR(vec, 2, (float aux0)(float aux1))
+			auto* src = SetValue(vec, &tmp[0]);
+			BOOST_PP_REPEAT(2, SETAUX, src)
+			src = CheckValue(vec, &tmp[0]);
+			BOOST_PP_REPEAT(2, CHECKAUX, src)
+		}
+		#undef SETAUX
+		#undef CHECKAUX
+	}
 }
 int main(int argc, char **argv) {
 	MatTest();
 	PoseTest();
 	BitFieldTest();
 	ResourceTest();
+	GapTest();
 	spn::unittest::PQueue();
 	spn::unittest::Math();
 	return 0;
