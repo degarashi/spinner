@@ -299,6 +299,7 @@
 				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)() const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 				#undef DEF_CONV
+				//TODO: サイズの合わない行列(DIM_N != n0)の演算関数は定義しない
 				//! 行列との積算 (3 operands)
 				#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
@@ -780,14 +781,14 @@
 			*/
 			#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const {\
 				ALIGN16 MatT<DIM_M, n1, ALIGNB> ret; \
-				BOOST_PP_REPEAT(n0, MUL_OUTER, BOOST_PP_IF(align, NOTHING, U)) \
+				BOOST_PP_REPEAT(DIM_M, MUL_OUTER, (BOOST_PP_IF(align, NOTHING, U))(n1)) \
 				return ret; \
 			}
 			#define MUL_INNER(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER(z,n,AU)	{ reg128 tm = LOADTHIS(n); \
-				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
-				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER, AU) \
-				STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ret.ma[n], accum); }
+			#define MUL_OUTER(z,n,AU_n1)	{ reg128 tm = LOADTHIS(n); \
+				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), BOOST_PP_CAT(LOADPS, BOOST_PP_SEQ_ELEM(0,AU_n1))(m.ma[0])); \
+				BOOST_PP_REPEAT_FROM_TO(1,BOOST_PP_SEQ_ELEM(1,AU_n1), MUL_INNER, BOOST_PP_SEQ_ELEM(0,AU_n1)) \
+				STORETHISPS(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
 		}
 		#else
@@ -817,8 +818,8 @@
 			#define MUL_INNER2(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
 			#define MUL_OUTER2(z,n,AU)	{ reg128 tm = LOADTHIS(n); \
 					reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
-					BOOST_PP_REPEAT_FROM_TO(1,DIM_M, MUL_INNER2, AU) \
-					STORETHISPS/*BOOST_PP_CAT(STOREPS_, BOOST_PP_CAT(AFLAG(ALIGN),4))*/(ma[n], accum); }
+					BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER2, AU) \
+					STORETHISPS(ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
 
 			// 他の行列やベクトルと計算するメソッドを定義
