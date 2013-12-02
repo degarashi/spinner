@@ -103,9 +103,12 @@
 			QuatT& operator >>= (const QuatT& q);
 			QuatT lerp(const QuatT& q, float t) const;
 
-			VEC3 getXAxis() const;
-			VEC3 getYAxis() const;
-			VEC3 getZAxis() const;
+			VEC3 getXAxis() const;			//!< 回転を行列表現した時のX軸
+			VEC3 getXAxisInv() const;		//!< 正規直行座標に回転を掛けた後のX軸
+			VEC3 getYAxis() const;			//!< 回転を行列表現した時のY軸
+			VEC3 getYAxisInv() const;		//!< 正規直行座標に回転を掛けた後のY軸
+			VEC3 getZAxis() const;			//!< 回転を行列表現した時のZ軸
+			VEC3 getZAxisInv() const;		//!< 正規直行座標に回転を掛けた後のZ軸
 
 			float distance(const QuatT& q) const;
 
@@ -454,16 +457,25 @@
 			return VEC3(x*s_theta, y*s_theta, z*s_theta);
 		}
 
+		#define ELEM00 (1-2*y*y-2*z*z)
+		#define ELEM01 (2*x*y-2*w*z)
+		#define ELEM02 (2*x*z+2*w*y)
+		#define ELEM10 (2*x*y+2*w*z)
+		#define ELEM11 (1-2*x*x-2*z*z)
+		#define ELEM12 (2*y*z-2*w*x)
+		#define ELEM20 (2*x*z-2*w*y)
+		#define ELEM21 (2*y*z+2*w*x)
+		#define ELEM22 (1-2*x*x-2*y*y)
 		MAT33 QT::asMat33() const {
-			MAT33 ret(1-2*y*y-2*z*z, 2*x*y-2*w*z, 2*x*z+2*w*y,
-						2*x*y+2*w*z, 1-2*x*x-2*z*z, 2*y*z-2*w*x,
-						2*x*z-2*w*y, 2*y*z+2*w*x, 1-2*x*x-2*y*y);
+			MAT33 ret(ELEM00, ELEM01, ELEM02,
+						ELEM10, ELEM11, ELEM12,
+						ELEM20, ELEM21, ELEM22);
 			return ret;
 		}
 		MAT44 QT::asMat44() const {
-			MAT44 ret(1-2*y*y-2*z*z, 2*x*y-2*w*z, 2*x*z+2*w*y, 0,
-						2*x*y+2*w*z, 1-2*x*x-2*z*z, 2*y*z-2*w*x, 0,
-						2*x*z-2*w*y, 2*y*z+2*w*x, 1-2*x*x-2*y*y, 0,
+			MAT44 ret(ELEM00, ELEM01, ELEM02, 0,
+						ELEM10, ELEM11, ELEM12, 0,
+						ELEM20, ELEM21, ELEM22, 0,
 						0,0,0,1);
 			return ret;
 		}
@@ -471,14 +483,17 @@
 			return EQT(*this);
 		}
 		VEC3 QT::getXAxis() const {
-			return VEC3(1-2*y*y-2*z*z, 2*x*y+2*w*z, 2*x*z-2*w*y);
-		}
+			return VEC3(ELEM00, ELEM10, ELEM20); }
+		VEC3 QT::getXAxisInv() const {
+			return VEC3(ELEM00, ELEM01, ELEM02); }
 		VEC3 QT::getYAxis() const {
-			return VEC3(2*x*y-2*w*z, 1-2*x*x-2*z*z, 2*y*z+2*w*x);
-		}
+			return VEC3(ELEM01, ELEM11, ELEM21); }
+		VEC3 QT::getYAxisInv() const {
+			return VEC3(ELEM10, ELEM11, ELEM12); }
 		VEC3 QT::getZAxis() const {
-			return VEC3(2*x*z+2*w*y, 2*y*z-2*w*x, 1-2*x*x-2*y*y);
-		}
+			return VEC3(ELEM02, ELEM12, ELEM22); }
+		VEC3 QT::getZAxisInv() const {
+			return VEC3(ELEM20, ELEM21, ELEM22); }
 		QT QT::RotationYPR(float yaw, float pitch, float roll) {
 			QuatT q(0,0,0,1);
 			// roll
