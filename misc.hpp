@@ -552,7 +552,7 @@ namespace spn {
 		protected:
 			CheckAlign() {
 				// 16byteアラインメントチェック
-				assert((((uintptr_t)this)&(N-1)) == 0);
+				AssertP(Trap, (((uintptr_t)this)&(N-1)) == 0)
 			}
 		private:
 			static void AlignedDelete(void* ptr) {

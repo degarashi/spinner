@@ -219,6 +219,8 @@ namespace spn {
 		struct MSB_N<1> { constexpr static int result = 0; };
 		template <>
 		struct MSB_N<0> { constexpr static int result = 0; };
+		template <unsigned int N>
+		struct LowClear { constexpr static unsigned int result = 1 << MSB_N<N>::result; };
 	};
 	struct Bit {
 		static bool Check(uint32_t val, uint32_t flag) {
