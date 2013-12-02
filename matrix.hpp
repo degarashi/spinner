@@ -75,6 +75,7 @@
 				MatT() = default;
 				BOOST_PP_IF(ALIGN, NOTHING, explicit) MatT(const AMat& m);
 				BOOST_PP_IF(ALIGN, explicit, NOTHING) MatT(const UMat& m);
+				MatT& mul_self();
 
 				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
 				#define DIAGONAL(z,n,data)		BOOST_PP_REPEAT_##z(DIM_N, DIAGONAL2, n)
@@ -299,16 +300,32 @@
 				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)() const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 				#undef DEF_CONV
-				//TODO: サイズの合わない行列(DIM_N != n0)の演算関数は定義しない
+				// サイズの合わない行列(DIM_N != n0)の演算関数は定義しない
 				//! 行列との積算 (3 operands)
+				#define DEF_MUL0(n0,n1,align) \
+					BOOST_PP_IF( \
+						BOOST_PP_EQUAL(DIM_N, n0), \
+						DEF_MUL, \
+						NOTHING_ARG \
+					)(n0,n1,align)
 				#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const;
-				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
+				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
 				#undef DEF_MUL
 				//! 行列との積算 (2 operands)
+				#define DEF_MULE0(n0,n1,align) \
+					BOOST_PP_IF( \
+						BOOST_PP_AND( \
+							BOOST_PP_EQUAL(DIM_N, n0), \
+							BOOST_PP_EQUAL(n1, DIM_N) \
+						), \
+						DEF_MULE, \
+						NOTHING_ARG \
+					)(n0,n1,align)
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
-				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
-				MT& operator = (const MT& m);
+				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE0)
 				#undef DEF_MULE
+				//! 行列の代入
+				MT& operator = (const MT& m);
 
 				//! 行列との積算 (右から掛ける)
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
@@ -747,9 +764,20 @@
 					return ret;
 				}
 			*/
-			#define ITR_COPY_I(n,dim,align)	BOOST_PP_CAT(BOOST_PP_CAT(STOREPS_, AFLAG(align)), dim)(ret.ma[n], BOOST_PP_IF(BOOST_PP_LESS(n,DIM_M), \
-												LOADTHISI(n), \
-												xmm_matI[n]));
+			#define ITR_COPY_I(n,dim,align)	\
+				BOOST_PP_CAT( \
+					BOOST_PP_CAT( \
+						STOREPS_, \
+						AFLAG(align) \
+					), \
+					dim \
+				) \
+				(ret.ma[n], \
+					BOOST_PP_IF( \
+						BOOST_PP_LESS(n,DIM_M), \
+						LOADTHISI(n), \
+						xmm_matI[n]) \
+				);
 			#define ITR_COPY(z,n,data)		ITR_COPY_I(n, BOOST_PP_SEQ_ELEM(0,data), BOOST_PP_SEQ_ELEM(1,data))
 			#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> MT::BOOST_PP_CAT( \
 					BOOST_PP_CAT( \
@@ -763,6 +791,15 @@
 		}
 		#elif BOOST_PP_FRAME_FLAGS(1) == 2
 		namespace spn {
+			#define DEF_MULSELF *this = *this * *this;
+			MT& MT::mul_self() {
+				BOOST_PP_IF(
+					BOOST_PP_EQUAL(DIM_M, DIM_N),
+					DEF_MULSELF,
+					NOTHING
+				)
+				return *this;
+			}
 			// 行列の積算
 			/*	Pseudo-code:
 				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
@@ -779,17 +816,23 @@
 					return ret;
 				}
 			*/
+			#define DEF_MUL0(n0,n1,align) \
+				BOOST_PP_IF( \
+					BOOST_PP_EQUAL(DIM_N, n0), \
+					DEF_MUL, \
+					NOTHING_ARG \
+				)(n0,n1,align)
 			#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const {\
 				ALIGN16 MatT<DIM_M, n1, ALIGNB> ret; \
 				BOOST_PP_REPEAT(DIM_M, MUL_OUTER, (BOOST_PP_IF(align, NOTHING, U))(n1)) \
 				return ret; \
 			}
 			#define MUL_INNER(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER(z,n,AU_n1)	{ reg128 tm = LOADTHIS(n); \
+			#define MUL_OUTER(z,n,AU_n1)	{ reg128 tm = LOADTHISZ(n); \
 				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), BOOST_PP_CAT(LOADPS, BOOST_PP_SEQ_ELEM(0,AU_n1))(m.ma[0])); \
 				BOOST_PP_REPEAT_FROM_TO(1,BOOST_PP_SEQ_ELEM(1,AU_n1), MUL_INNER, BOOST_PP_SEQ_ELEM(0,AU_n1)) \
 				STORETHISPS(ret.ma[n], accum); }
-			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL)
+			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
 		}
 		#else
 		namespace spn {
@@ -811,16 +854,34 @@
 					return *this;
 				}
 			*/
-			#define DEF_MULE(n0,n1,align)	MT& MT::operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m) { \
-						if((intptr_t)&m == (intptr_t)this) return *this = *this * *this; \
-						BOOST_PP_REPEAT(DIM_M, MUL_OUTER2, BOOST_PP_IF(align, NOTHING, U)) \
-						return *this; }
-			#define MUL_INNER2(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER2(z,n,AU)	{ reg128 tm = LOADTHIS(n); \
-					reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
-					BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER2, AU) \
-					STORETHISPS(ma[n], accum); }
-			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE)
+			#define DEF_MULE0(n0,n1,align) \
+				BOOST_PP_IF( \
+					BOOST_PP_AND( \
+						BOOST_PP_EQUAL(DIM_N, n0), \
+						BOOST_PP_EQUAL(n1, DIM_N) \
+					), \
+					DEF_MULE, \
+					NOTHING_ARG \
+				)(n0,n1,align)
+			#define DEF_MULE(n0,n1,align) \
+				MT& MT::operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m) { \
+					if((intptr_t)&m == (intptr_t)this) return mul_self(); \
+						BOOST_PP_REPEAT( \
+							DIM_M, MUL_OUTER2, \
+							BOOST_PP_IF(align, NOTHING, U) \
+						) \
+					return *this; }
+			#define MUL_INNER2(z,n,AU) \
+				accum = reg_add_ps( \
+					accum, \
+					reg_mul_ps(reg_shuffle_ps(tm,tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])) \
+				);
+			#define MUL_OUTER2(z,n,AU) { \
+				reg128 tm = LOADTHIS(n); \
+				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS##AU(m.ma[0])); \
+				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER2, AU) \
+				STORETHISPS(ma[n], accum); }
+			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE0)
 
 			// 他の行列やベクトルと計算するメソッドを定義
 			/*	Pseudo-code:
@@ -830,9 +891,19 @@
 					return v * tmpM;
 				}
 			*/
-			#define DEF_MULOP(z,align,dummy)	template <> VecT<DIM_N,ALIGNB> MT::operator * (const VecT<DIM_N,BOOLNIZE(align)>& v) const { \
-				auto tmpM = BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(transposition().convert, AFLAG(ALIGN)), DIM_N), DIM_N)(); \
-				return v * tmpM; }
+			#define DEF_MULOP(z,align,dummy) \
+				template <> VecT<DIM_N,ALIGNB> MT::operator * (const VecT<DIM_N,BOOLNIZE(align)>& v) const { \
+					auto tmpM = BOOST_PP_CAT( \
+									BOOST_PP_CAT( \
+										BOOST_PP_CAT( \
+											transposition().convert, \
+											AFLAG(ALIGN) \
+										), \
+										DIM_N \
+									), \
+									DIM_N \
+								)(); \
+					return v * tmpM; }
 			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
 			#undef DEF_MULOP
 		}

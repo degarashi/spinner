@@ -82,7 +82,7 @@ namespace spn {
 	void Pose2D::_refresh() const {
 		if(_rflag & (PRF_SCALE|PRF_ROTATE)) {
 			_finalMat = AMat32::Scaling(_scale->x, _scale->y);
-			_finalMat *= AMat32::Rotation(_angle);
+			_finalMat = _finalMat.convertA33() * AMat32::Rotation(_angle);
 			_finalMat.getRow(2) = _ofs;
 		} else if(_rflag & PRF_OFFSET)
 			_finalMat.getRow(2) = _ofs;
