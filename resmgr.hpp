@@ -263,7 +263,7 @@ namespace spn {
 
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
-		using RMList = noseq_list<ResMgrBase*, int>;
+		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
 		static RMList s_rmList;
 		protected:
 			int _addManager(ResMgrBase* p);
@@ -302,7 +302,7 @@ namespace spn {
 		using result = T;
 	};
 	//! 名前なしリソース (anonymous-only)
-	template <class DAT, class DERIVED>
+	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator>
 	class ResMgrA : public Singleton<DERIVED>, public ResMgrBase {
 		public:
 			using data_type = typename DecayWrap<DAT>::result;
@@ -348,7 +348,7 @@ namespace spn {
 		private:
 			friend SHdl;
 			friend WHdl;
-			using AVec = noseq_list<Entry, uint16_t, SHandle::Value::BFAt<SHandle::HandleBits::INDEX>::length>;
+			using AVec = noseq_list<Entry, Allocator, uint16_t, SHandle::Value::BFAt<SHandle::HandleBits::INDEX>::length>;
 
 			#ifdef DEBUG
 				uint32_t	_sMagicIndex = 0;
@@ -546,14 +546,14 @@ namespace spn {
 			static HL<AnotherSHandle<NDATA>> Cast(const HL<AnotherSHandle<DATA>>& lh) {
 				return HL<AnotherSHandle<NDATA>>(lh); }
 	};
-	template <class DAT, class DERIVED>
-	const std::function<void (typename ResMgrA<DAT,DERIVED>::Entry&)> ResMgrA<DAT,DERIVED>::cs_defCB = [](Entry&){};
+	template <class DAT, class DERIVED, template <class> class Allocator>
+	const std::function<void (typename ResMgrA<DAT,DERIVED,Allocator>::Entry&)> ResMgrA<DAT,DERIVED,Allocator>::cs_defCB = [](Entry&){};
 
 	//! 名前付きリソース (with anonymous)
-	template <class DAT, class DERIVED, class KEY=std::string>
-	class ResMgrN : public ResMgrA<ResWrap<DAT,KEY>, DERIVED> {
+	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator, class KEY=std::string>
+	class ResMgrN : public ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator> {
 		public:
-			using base_type = ResMgrA<ResWrap<DAT,KEY>, DERIVED>;
+			using base_type = ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator>;
 			using LHdl = typename base_type::LHdl;
 			using SHdl = typename base_type::SHdl;
 		private:

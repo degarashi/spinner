@@ -79,7 +79,7 @@ namespace spn {
 
 	//! 順序なしのID付きリスト
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
-	template <class T, class IDType=unsigned int, unsigned int MaxID=std::numeric_limits<IDType>::max()>
+	template <class T, template <class> class Allocator=std::allocator, class IDType=unsigned int, unsigned int MaxID=std::numeric_limits<IDType>::max()>
 	class noseq_list {
 		using ID = typename std::make_unsigned<IDType>::type;
 		constexpr static bool Validation(ID id) {
@@ -117,7 +117,7 @@ namespace spn {
 			operator typename TheType<T>::type () { return *udata.value; }
 			operator typename TheType<T>::ctype () const { return *udata.value; }
 		};
-		using Array = std::vector<Entry>;
+		using Array = std::vector<Entry, Allocator<Entry>>;
 		Array		_array;
 		ID			_nFree = 0,		//!< 空きブロック数
 					_firstFree;		//!< 最初の空きブロックインデックス

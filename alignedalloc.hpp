@@ -55,8 +55,9 @@ namespace spn {
 				return reinterpret_cast<pointer>(ret2);
 			}
 			//! 割当て済みの領域を初期化する
-			void construct(pointer p, const T& value) {
-				new( (void*)p ) T(value);
+			template <class... Ts>
+			void construct(pointer p, Ts&&... ts) {
+				new( (void*)p ) T(std::forward<Ts>(ts)...);
 			}
 
 			//! メモリを解放する
@@ -88,4 +89,10 @@ namespace spn {
 	bool operator!=(const AlignedPool<T1,A1>&, const AlignedPool<T2,A2>&) noexcept { return true; }
 	template <class T, size_t Align>
 	bool operator!=(const AlignedPool<T,Align>&, const AlignedPool<T,Align>&) noexcept { return false; }
+
+	#define DEF_APOOL(num)	template <class T> using Alloc##num = AlignedPool<T, num>;
+	DEF_APOOL(32)
+	DEF_APOOL(16)
+	DEF_APOOL(8)
+	#undef DEF_APOOL
 }
