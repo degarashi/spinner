@@ -202,13 +202,21 @@
 				// 行列拡張Get = Mat::getRowE()
 				void identity();
 				static MatT Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f)));
+				#if (DMIN == 2 || DMIN == 3) && DIM_M == 3
+					//! 2次元移動
+					static MatT Translation(const UVec2& v);
+				#endif
+				#if DIM_M == 4 && DIM_N >= 3
+					//! 3次元移動
+					static MatT Translation(const UVec3& v);
+					static MatT LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up);
+					static MatT LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up);
+					static MatT LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up);
+					static MatT LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up);
+				#endif
 				#if DMIN == 2
 					//! 2D回転
 					static MatT Rotation(float ang);
-					#if DIM_M == 3
-						//! 2次元移動
-						static MatT Translation(const UVec2& v);
-					#endif
 				#elif DMIN >= 3
 						//! X軸周りの回転
 						static MatT RotationX(float ang);
@@ -218,15 +226,7 @@
 						static MatT RotationZ(float ang);
 						//! 任意軸周りの回転
 						static MatT RotationAxis(const UVec3& axis, float ang);
-					#if DIM_M == 4
-						//! 3次元移動
-						static MatT Translation(const UVec3& v);
-						static MatT LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up);
-						static MatT LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up);
-						static MatT LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up);
-						static MatT LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up);
-					#endif
-					#if DIM_M==4 && DIM_N==4
+					#if DMIN == 4
 						//! 透視変換行列
 						static MatT PerspectiveFovLH(float fov, float aspect, float nz, float fz);
 						static MatT PerspectiveFovRH(float fov, float aspect, float nz, float fz);
@@ -375,6 +375,43 @@
 				return MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, SET_ARGS2, f)));
 			}
 			#undef SET_ARGS2
+			#if (DMIN == 2 || DMIN == 3) && DIM_M == 3
+				MT MT::Translation(const VecT<2,false>& v) {
+					MatT mt(TagIdentity);
+					mt.ma[2][0] = v.x;
+					mt.ma[2][1] = v.y;
+					return mt;
+				}
+			#endif
+			#if DIM_M == 4 && DIM_N >= 3
+				MT MT::Translation(const UVec3& v) {
+					MatT mt(TagIdentity);
+					mt.ma[3][0] = v.x;
+					mt.ma[3][1] = v.y;
+					mt.ma[3][2] = v.z;
+					return mt;
+				}
+				MT MT::LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up) {
+					return LookDirLH(pos, (at-pos).normalization(), up);
+				}
+				MT MT::LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
+					AVec3 xA(up % dir);
+					xA.normalize();
+
+					MatT ret;
+					STORETHISPS(ret.ma[0], reg_setr_ps(xA.x, up.x, dir.x, 0));
+					STORETHISPS(ret.ma[1], reg_setr_ps(xA.y, up.y, dir.y, 0));
+					STORETHISPS(ret.ma[2], reg_setr_ps(xA.z, up.z, dir.z, 0));
+					STORETHISPS(ret.ma[3], reg_setr_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
+					return ret;
+				}
+				MT MT::LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up) {
+					return LookDirLH(pos, (pos-at).normalization(), up);
+				}
+				MT MT::LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
+					return LookDirLH(pos, -dir, up);
+				}
+			#endif
 			#if DMIN == 2
 				MT MT::Rotation(float ang) {
 					float s = std::sin(ang),
@@ -386,14 +423,6 @@
 					mt.ma[1][1] = c;
 					return mt;
 				}
-				#if DIM_M == 3
-					MT MT::Translation(const VecT<2,false>& v) {
-						MatT mt(TagIdentity);
-						mt.ma[2][0] = v.x;
-						mt.ma[2][1] = v.y;
-						return mt;
-					}
-				#endif
 			#elif DMIN >= 3
 					MT MT::RotationX(float ang) {
 						float C = std::cos(ang),
@@ -451,36 +480,7 @@
 						#endif
 						return mt;
 					}
-				#if DIM_M == 4
-					MT MT::Translation(const UVec3& v) {
-						MatT mt(TagIdentity);
-						mt.ma[3][0] = v.x;
-						mt.ma[3][1] = v.y;
-						mt.ma[3][2] = v.z;
-						return mt;
-					}
-					MT MT::LookAtLH(const UVec3& pos, const UVec3& at, const UVec3& up) {
-						return LookDirLH(pos, (at-pos).normalization(), up);
-					}
-					MT MT::LookDirLH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
-						AVec3 xA(up % dir);
-						xA.normalize();
-
-						MatT ret;
-						STORETHISPS(ret.ma[0], reg_setr_ps(xA.x, up.x, dir.x, 0));
-						STORETHISPS(ret.ma[1], reg_setr_ps(xA.y, up.y, dir.y, 0));
-						STORETHISPS(ret.ma[2], reg_setr_ps(xA.z, up.z, dir.z, 0));
-						STORETHISPS(ret.ma[3], reg_setr_ps(-pos.dot(xA), -pos.dot(up), -pos.dot(dir), 1));
-						return ret;
-					}
-					MT MT::LookAtRH(const UVec3& pos, const UVec3& at, const UVec3& up) {
-						return LookDirLH(pos, (pos-at).normalization(), up);
-					}
-					MT MT::LookDirRH(const UVec3& pos, const UVec3& dir, const UVec3& up) {
-						return LookDirLH(pos, -dir, up);
-					}
-				#endif
-				#if DIM_M==4 && DIM_N==4
+				#if DMIN == 4
 					MT MT::_PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff) {
 						float h = 1.0f / std::tan(fov/2),
 								w = h / aspect,
