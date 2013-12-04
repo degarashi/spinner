@@ -655,6 +655,11 @@ namespace spn {
 	};
 	//! アフィン成分分解
 	AffineParts DecompAffine(const AMat43& m);
+	//! ソースコード文字列に行番号を付ける
+	/*! \param[in] src 元のソースコード
+		\param[in] bPrevLR 最初に改行を入れるか
+		\param[in] bPostLR 最後に改行を入れるか*/
+	std::string AddLineNumber(const std::string& src, bool bPrevLR, bool bPostLR);
 
 	//! 汎用シングルトン
 	template <typename T>

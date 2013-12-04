@@ -42,6 +42,27 @@ namespace spn {
 		ap.rotation = Quat::FromAxis(colm[0], colm[1], colm[2]);
 		return ap;
 	}
+	std::string AddLineNumber(const std::string& src, bool bPrevLR, bool bPostLR) {
+		std::string::size_type pos[2] = {};
+		std::stringstream ss;
+		if(bPrevLR)
+			ss << std::endl;
+		int lnum = 1;
+		for(;;) {
+			ss << lnum++ << ":\t";
+			pos[1] = src.find_first_of('\n', pos[0]);
+			if(pos[1] == std::string::npos) {
+				ss.write(&src[pos[0]], src.length()-pos[0]);
+				break;
+			}
+			ss.write(&src[pos[0]], pos[1]-pos[0]);
+			ss << std::endl;
+			pos[0] = pos[1]+1;
+		}
+		if(bPostLR)
+			ss << std::endl;
+		return ss.str();
+	}
 	bool IsInTriangle(const Vec3& vtx0, const Vec3& vtx1, const Vec3& vtx2, const Vec3& pos) {
 		Vec3 normal = *NormalFromPoints(vtx0, vtx1, vtx2);
 		Vec3 tv0, tv1, tv2, tv3;
