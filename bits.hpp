@@ -201,7 +201,7 @@ namespace spn {
 
 		//! ビットフィールドで使う場所以外をゼロクリアした値を取得
 		Word cleanedValue() const {
-			constexpr Word msk = (1 << maxbit)-1;
+			constexpr Word msk = (maxbit >= 64) ? ~0 : ((uint64_t(1) << maxbit)-1);
 			return value() & msk;
 		}
 		bool operator == (const BitField& bf) const { return cleanedValue() == bf.cleanedValue(); }
