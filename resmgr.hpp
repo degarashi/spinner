@@ -348,7 +348,7 @@ namespace spn {
 		private:
 			friend SHdl;
 			friend WHdl;
-			using AVec = noseq_list<Entry, Allocator, uint16_t, SHandle::Value::BFAt<SHandle::HandleBits::INDEX>::length>;
+			using AVec = noseq_list<Entry, Allocator, uint16_t, (1 << SHandle::Value::BFAt<SHandle::HandleBits::INDEX>::length)>;
 
 			#ifdef DEBUG
 				uint32_t	_sMagicIndex = 0;
