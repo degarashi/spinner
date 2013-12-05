@@ -67,7 +67,8 @@ extern LogOUT g_logOut;
 void LogOutput(const std::string& s);
 template <class... Ts>
 void LogOutput(const char* fmt, Ts&&... ts) {
-	LogOutput(ConcatMessage(boost::format(fmt), std::forward<Ts>(ts)...));
+	boost::format msg(fmt);
+	LogOutput(ConcatMessage(msg, std::forward<Ts>(ts)...));
 }
 
 //! エラー時にメッセージ出力だけする
