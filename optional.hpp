@@ -55,11 +55,11 @@ namespace spn {
 			_OptionalBuff<T> _buffer;
 			bool	_bInit;
 
-			void t__release() {
+			void t__release() noexcept {
 				_buffer.dtor();
 				_bInit = false;
 			}
-			void _release() {
+			void _release() noexcept {
 				if(_bInit)
 					t__release();
 			}
@@ -130,7 +130,7 @@ namespace spn {
 				}
 				return *this;
 			}
-			Optional& operator = (Optional<T>&& t) noexcept {
+			Optional& operator = (Optional<T>&& t) {
 				_release();
 				if(t) {
 					_buffer = std::move(t._buffer.castT());
@@ -140,8 +140,7 @@ namespace spn {
 				return *this;
 			}
 			Optional& operator = (_AsInitialized) noexcept {
-				if(_bInit)
-					_release();
+				_release();
 				_bInit = true;
 				return *this;
 			}
