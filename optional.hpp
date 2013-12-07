@@ -2,12 +2,26 @@
 #include <cstdint>
 #include <algorithm>
 #include "error.hpp"
+#include "bits.hpp"
 
 namespace spn {
+	struct alignas(16) Align128 {};
+	struct alignas(32) Align256 {};
+	struct alignas(64) Align512 {};
+	using CTAlign = CType<uint8_t, uint16_t, uint32_t, uint64_t, Align128, Align256, Align512>;
+	template <int NByte, int AByte>
+	struct AlignedBuff {
+		using AlignType = typename CTAlign::template At<CTBit::MSB_N<AByte>::result>::type;
+		union {
+			uint8_t 	_buffer[NByte];
+			AlignType	_align_dummy;
+		};
+	};
+
 	extern none_t none;
 	template <class T>
-	struct _OptionalBuff {
-		uint8_t _buffer[sizeof(T)];
+	struct _OptionalBuff : AlignedBuff<sizeof(T), std::alignment_of<T>::value> {
+		using base = AlignedBuff<sizeof(T), std::alignment_of<T>::value>;
 
 		_OptionalBuff() = default;
 		template <class T2>
@@ -16,10 +30,10 @@ namespace spn {
 		}
 		template <class T2>
 		void operator = (T2&& t) {
-			new(_buffer) T(std::forward<T2>(t));
+			new(base::_buffer) T(std::forward<T2>(t));
 		}
-		T& castT() { return *reinterpret_cast<T*>(_buffer); }
-		const T& castCT() const { return *reinterpret_cast<const T*>(_buffer); }
+		T& castT() { return *reinterpret_cast<T*>(base::_buffer); }
+		const T& castCT() const { return *reinterpret_cast<const T*>(base::_buffer); }
 		void dtor() { castT().~T(); }
 	};
 
