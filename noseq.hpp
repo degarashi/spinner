@@ -9,7 +9,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/variant.hpp>
 #include <boost/serialization/traits.hpp>
-#include <boost/serialization/tracking_enum.hpp>
+#include "serialization/traits.hpp"
 #include "type.hpp"
 #include "optional.hpp"
 
@@ -312,13 +312,4 @@ namespace spn {
 			}
 	};
 }
-namespace boost {
-	namespace serialization {
-		template <class T, template <class> class Allocator, class IDType, unsigned int MaxID>
-		struct version<spn::noseq_list<T, Allocator, IDType, MaxID>> {
-			typedef mpl::int_<0> type;
-			typedef mpl::integral_c_tag tag;
-			BOOST_STATIC_CONSTANT(int, value = version::type::value);
-		};
-	}
-}
+BOOST_CLASS_VERSION_TEMPLATE((class)(template <class> class)(class)(unsigned int), spn::noseq_list, 0)
