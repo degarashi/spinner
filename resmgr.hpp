@@ -7,6 +7,8 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include "serialization/unordered_map.hpp"
+#include "serialization/traits.hpp"
 
 namespace spn {
 	//! 型を保持しない強参照ハンドル値
@@ -25,6 +27,12 @@ namespace spn {
 			using VWord = Value::Word;
 		private:
 			Value _value;
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int ver) {
+				ar & _value.value();
+			}
 		public:
 			//! デフォルト値は無効なハンドルID
 			SHandle();
@@ -60,6 +68,12 @@ namespace spn {
 			using VWord = Value::Word;
 		private:
 			Value _value;
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int ver) {
+				ar & _value.value();
+			}
 		public:
 			//! デフォルト値は無効なハンドルID
 			WHandle();
@@ -102,6 +116,12 @@ namespace spn {
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) {
 				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
 				_hdl.swap(*(HDL*)&hl);
+			}
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int ver) {
+				ar & _hdl;
 			}
 
 		public:
@@ -281,16 +301,26 @@ namespace spn {
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
 	};
+
 	//! 名前付きリソース管理の為のラッパ
 	template <class T, class KEY>
 	struct ResWrap {
 		T 			value;
 		const KEY*	stp;
 
+		ResWrap(ResWrap&& r): value(std::move(r.value)), stp(r.stp) {}
 		template <class... Ts>
 		ResWrap(Ts&&... ts): value(std::forward<Ts>(ts)...), stp(nullptr) {}
 		operator T&() { return value; }
 		operator const T&() const { return value; }
+
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			bool bStp = stp!=nullptr;
+			ar & value & bStp;
+			if(!bStp)
+				stp = nullptr;
+		}
 	};
 	//! ResWrap<>を取り除く
 	template <class T>
@@ -311,7 +341,11 @@ namespace spn {
 			using WHdl = WHandleT<ThisType>;
 			using LHdl = HdlLock<SHdl>;
 		public:
-			struct Entry {
+			struct Entry : boost::serialization::traits<
+								Entry,
+								boost::serialization::object_serializable,
+								boost::serialization::track_never>
+			{
 				DAT						data;
 				uint32_t				count;
 				typename WHdl::VWord	w_magic;
@@ -344,6 +378,14 @@ namespace spn {
 
 				operator typename TheType<data_type>::type () { return data; }
 				operator typename TheType<data_type>::ctype () const { return data; }
+
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int) {
+					ar & data & count & w_magic;
+					#ifdef DEBUG
+						ar & magic;
+					#endif
+				}
 			};
 		private:
 			friend SHdl;
@@ -357,6 +399,15 @@ namespace spn {
 			AVec			_dataVec;
 			int				_resID;
 
+			friend boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int ver) {
+				#ifdef DEBUG
+					ar & _sMagicIndex;
+				#endif
+				ar & _wMagicIndex & _dataVec & _resID;
+			}
+
 		protected:
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
@@ -369,7 +420,7 @@ namespace spn {
 				return ths->_refSH(sh);
 			}
 			/*! 弱参照用のマジックナンバーチェック */
-			boost::optional<Entry&> _refWH(WHdl wh) {
+			spn::Optional<Entry&> _refWH(WHdl wh) {
 				try {
 					Entry& ent = _dataVec.get(wh.getIndex());
 					if(ent.w_magic == wh.getMagic())
@@ -377,13 +428,13 @@ namespace spn {
 				} catch(const boost::bad_get& e) {
 					// インデックスが既に無効 = オブジェクトは既に存在しない
 				}
-				return boost::none;
+				return spn::none;
 			}
-			boost::optional<const Entry&> _refWH(WHdl wh) const {
+			spn::Optional<const Entry&> _refWH(WHdl wh) const {
 				auto* ths = const_cast<ResMgrA*>(this);
 				if(auto opt = ths->_refWH(wh))
 					return *opt;
-				return boost::none;
+				return spn::none;
 			}
 			LHdl _acquire(DAT&& d) {
 				++_wMagicIndex;
@@ -549,8 +600,19 @@ namespace spn {
 	template <class DAT, class DERIVED, template <class> class Allocator>
 	const std::function<void (typename ResMgrA<DAT,DERIVED,Allocator>::Entry&)> ResMgrA<DAT,DERIVED,Allocator>::cs_defCB = [](Entry&){};
 
+	//! シリアライズ対策の為のstd::stringラッパ
+	/*! boostデフォルトのstd::string定義ではprimitive-typeになっていて同じ文字列が複数回シリアライズされてしまうのでその対策 */
+	class String : public std::string {
+		friend class boost::serialization::access;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & static_cast<std::string&>(*this);
+		}
+		public:
+			using std::string::string;
+	};
 	//! 名前付きリソース (with anonymous)
-	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator, class KEY=std::string>
+	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator, class KEY=String>
 	class ResMgrN : public ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator> {
 		public:
 			using base_type = ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator>;
@@ -595,6 +657,22 @@ namespace spn {
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &(itr->first);
 				return std::make_pair(std::move(lh), true);
+			}
+
+			BOOST_SERIALIZATION_SPLIT_MEMBER();
+			friend boost::serialization::access;
+			template <class Archive>
+			void load(Archive& ar, const unsigned int ver) {
+				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
+				// ポインタの振りなおし
+				for(auto& p : _nameMap) {
+					auto& data = base_type::_refSH(p.second).data;
+					data.stp = &p.first;
+				}
+			}
+			template <class Archive>
+			void save(Archive& ar, const unsigned int ver) const {
+				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
 			}
 
 		public:
@@ -676,6 +754,29 @@ namespace std {
 	struct hash<spn::HdlLock<H>> {
 		size_t operator()(const spn::HdlLock<H>& h) const {
 			return hash<H>()(h.get());
+		}
+	};
+}
+
+BOOST_CLASS_IMPLEMENTATION(spn::SHandle, object_serializable)
+BOOST_CLASS_TRACKING(spn::SHandle, track_never)
+BOOST_CLASS_IMPLEMENTATION(spn::WHandle, object_serializable)
+BOOST_CLASS_TRACKING(spn::WHandle, track_never)
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::HdlLock, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class), spn::HdlLock, track_never)
+
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(class), spn::ResWrap, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::ResWrap, track_selectively)
+BOOST_CLASS_VERSION_TEMPLATE((class)(class)(template<class> class), spn::ResMgrA, 0)
+BOOST_CLASS_VERSION_TEMPLATE((class)(class)(template<class> class)(class), spn::ResMgrN, 0)
+
+BOOST_CLASS_IMPLEMENTATION(spn::String, object_serializable)
+
+namespace std {
+	template <>
+	struct hash<spn::String> {
+		size_t operator()(const spn::String& str) const {
+			return hash<std::string>()(str);
 		}
 	};
 }

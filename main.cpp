@@ -14,6 +14,8 @@
 #include <boost/serialization/access.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 using namespace spn;
 namespace {
@@ -64,10 +66,14 @@ namespace {
 		auto raw = value.value();
 		std::cout << std::endl;
 	}
+	struct MyClass {
+		int first, second;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & first & second;
+		}
+	};
 	void ResourceTest() {
-		struct MyClass {
-			int first, second;
-		};
 		struct MyDerived : MyClass {
 			MyDerived(int v0, int v1) {
 				first = v0;
@@ -97,6 +103,13 @@ namespace {
 		for(auto itr=mm.cbegin() ; itr!=mm.cend() ; itr++) {
 			std::cout << (*itr).first << std::endl;
 		}
+
+		auto hdl2 = mm.acquire("HEXEN", MyClass{256,512});
+		std::stringstream ss;
+		boost::archive::text_oarchive oa(ss);
+		oa << mm;
+		boost::archive::text_iarchive ia(ss);
+		ia >> mm;
 	}
 	template <int M, int N>
 	const float* SetValue(MatT<M,N,true>& m, const float* src) {
