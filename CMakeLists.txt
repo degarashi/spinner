@@ -24,6 +24,6 @@ install(FILES ${HEADERS} DESTINATION include/spinner)
 
 if(NOT DEFINED ${ARCHITECTURE})
 	add_executable(spn_test main.cpp unittest.cpp)
-	target_link_libraries(spn_test spinner boost_regex)
+	target_link_libraries(spn_test spinner boost_regex boost_serialization)
 	install(TARGETS spn_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
 endif()

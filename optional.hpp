@@ -3,6 +3,9 @@
 #include <algorithm>
 #include "error.hpp"
 #include "bits.hpp"
+#define BOOST_PP_VARIADICS 1
+#include <boost/serialization/access.hpp>
+#include "serialization/traits.hpp"
 
 namespace spn {
 	struct alignas(16) Align128 {};
@@ -20,8 +23,14 @@ namespace spn {
 
 	extern none_t none;
 	template <class T>
-	struct _OptionalBuff : AlignedBuff<sizeof(T), std::alignment_of<T>::value> {
+	struct _OptionalBuff : AlignedBuff<sizeof(T), std::alignment_of<T>::value>,
+		boost::serialization::traits<_OptionalBuff<T>, boost::serialization::object_serializable, boost::serialization::track_never, 0>
+	{
 		using base = AlignedBuff<sizeof(T), std::alignment_of<T>::value>;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & castT();
+		}
 
 		_OptionalBuff() = default;
 		template <class T2>
@@ -38,8 +47,12 @@ namespace spn {
 	};
 
 	template <class T>
-	struct _OptionalBuff<T&> {
+	struct _OptionalBuff<T&> : boost::serialization::traits<_OptionalBuff<T&>, boost::serialization::object_serializable, boost::serialization::track_selectively, 0> {
 		T*		_buffer;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & _buffer;
+		}
 
 		_OptionalBuff() = default;
 		_OptionalBuff(T* t): _buffer(t) {}
@@ -51,9 +64,14 @@ namespace spn {
 		const T& castCT() const { return *_buffer; }
 		void dtor() {}
 	};
+
 	template <class T>
-	struct _OptionalBuff<T*> {
+	struct _OptionalBuff<T*> : boost::serialization::traits<_OptionalBuff<T*>, boost::serialization::object_serializable, boost::serialization::track_selectively, 0> {
 		T*		_buffer;
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & _buffer;
+		}
 
 		_OptionalBuff() = default;
 		_OptionalBuff(T* t): _buffer(t) {}
@@ -76,6 +94,13 @@ namespace spn {
 			void _release() noexcept {
 				if(_bInit)
 					t__release();
+			}
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int) {
+				ar & _bInit;
+				if(_bInit)
+					ar & _buffer;
 			}
 
 		public:
@@ -162,3 +187,4 @@ namespace spn {
 	template <class T>
 	const typename Optional<T>::_AsInitialized Optional<T>::AsInitialized{};
 }
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::Optional, object_serializable)
