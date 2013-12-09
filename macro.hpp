@@ -43,3 +43,30 @@
 #define ITR_CLIP_INVALID(src,b0,b1,b2,b3)	BOOST_PP_IF(BOOST_PP_BITAND(b0, b1), NOTHING_ARG, ITR_ADAPTOR_LOCAL_0)(src,b0,b1,b2,b3)
 //! nの下位4ビットを展開してCLIP_INVALIDに渡す
 #define ITERATOR_ADAPTOR(z,n,src)			ITR_CLIP_INVALID(src, PP_GETBIT(n,0), PP_GETBIT(n,1), PP_GETBIT(n,2), PP_GETBIT(n,3))
+//! 大文字アルファベットシーケンス
+#define SEQ_ALPHABET (A)(B)(C)(D)(E)(F)(G)(H)(I)(J)(K)(L)(M)(N)(O)(P)(Q)(R)(S)(T)(U)(V)(W)(X)(Y)(Z)
+//! tupleのsequenceを定義
+#define MAKE_SEQ(size, rel) MAKE_SEQ_D(size, rel)
+#define MAKE_SEQ_D(size, rel) \
+	BOOST_PP_CAT( \
+		MAKE_SEQ_A_ ## size rel, \
+		0X0 \
+	)() \
+	/**/
+
+// size 2
+#define MAKE_SEQ_A_2(x, y) ((x, y)) MAKE_SEQ_B_2
+#define MAKE_SEQ_B_2(x, y) ((x, y)) MAKE_SEQ_A_2
+// size 3
+#define MAKE_SEQ_A_3(x, y, z) ((x, y, z)) MAKE_SEQ_B_3
+#define MAKE_SEQ_B_3(x, y, z) ((x, y, z)) MAKE_SEQ_A_3
+// size 4
+#define MAKE_SEQ_A_4(x, y, z, w) ((x, y, z, w)) MAKE_SEQ_B_4
+#define MAKE_SEQ_B_4(x, y, z, w) ((x, y, z, w)) MAKE_SEQ_A_4
+
+#define MAKE_SEQ_A_20X0()
+#define MAKE_SEQ_B_20X0()
+#define MAKE_SEQ_A_30X0()
+#define MAKE_SEQ_B_30X0()
+#define MAKE_SEQ_A_40X0()
+#define MAKE_SEQ_B_40X0()
