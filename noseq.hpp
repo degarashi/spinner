@@ -3,11 +3,24 @@
 #include <type_traits>
 #include <algorithm>
 #define BOOST_PP_VARIADICS 1
-#include <boost/optional.hpp>
 #include <boost/variant.hpp>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/version.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/variant.hpp>
+#include <boost/serialization/traits.hpp>
+#include <boost/serialization/tracking_enum.hpp>
 #include "type.hpp"
 #include "optional.hpp"
 
+namespace boost {
+	namespace serialization {
+		template <class Archive>
+		void serialize(Archive& ar, boost::blank& blk, const unsigned int) {
+			// 何も出力しない
+		}
+	}
+}
 namespace spn {
 	//! 順序なし配列
 	/*! 基本的にはstd::vectorそのまま
@@ -31,9 +44,15 @@ namespace spn {
 
 	//! 同じ型を(Nを変えて)違う型として扱う為のラップクラス
 	template <class T, int N>
-	struct TypeWrap {
+	struct TypeWrap : boost::serialization::traits<TypeWrap<T,N>, boost::serialization::object_serializable, boost::serialization::track_never, 0> {
 		T value;
 
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & value;
+		}
+
+		TypeWrap() = default;
 		explicit TypeWrap(const T& id): value(id) {}
 		explicit TypeWrap(T&& id): value(std::forward<T>(id)) {}
 		operator T& () { return value; }
@@ -101,6 +120,10 @@ namespace spn {
 				std::swap(uid, r.uid);
 				return *this;
 			}
+			bool operator == (const UData& ud) const {
+				return value == ud.value &&
+						uid == ud.uid;
+			}
 		};
 		struct FreeID : TypeWrap<ID,0> {using TypeWrap<ID,0>::TypeWrap;};
 		struct ObjID : TypeWrap<ID,1> {using TypeWrap<ID,1>::TypeWrap;};
@@ -114,8 +137,15 @@ namespace spn {
 
 			template <class T2>
 			Entry(T2&& t, ID idx): udata(std::forward<T2>(t),idx), ids(ObjID(idx)) {}
+			//! deserialize用
+			Entry(typename UData::OPValue&& value, ID uid, IDS ids): udata(std::move(value), uid), ids(ids) {}
 			operator typename TheType<T>::type () { return *udata.value; }
 			operator typename TheType<T>::ctype () const { return *udata.value; }
+
+			bool operator == (const Entry& e) const {
+				return udata == e.udata &&
+						ids == e.ids;
+			}
 		};
 		using Array = std::vector<Entry, Allocator<Entry>>;
 		Array		_array;
@@ -126,7 +156,35 @@ namespace spn {
 		using RemList = std::vector<ID>;
 		RemList		_remList;
 
+		friend class boost::serialization::access;
+		BOOST_SERIALIZATION_SPLIT_MEMBER();
+		template <class Archive>
+		void load(Archive& ar, const unsigned int ver) {
+			AssertP(Trap, !_bRemoving)
+			int nEnt;
+			ar & nEnt & _nFree & _firstFree & _remList;
+			_array.clear();
+			_array.reserve(nEnt);
+
+			typename UData::OPValue value;
+			ID uid;
+			IDS ids;
+			for(int i=0 ; i<nEnt ; i++) {
+				// Entryの復元
+				ar & value & uid & ids;
+				_array.emplace_back(std::move(value), uid, ids);
+			}
+		}
+		template <class Archive>
+		void save(Archive& ar, const unsigned int ver) const {
+			AssertP(Trap, !_bRemoving)
+			ar & static_cast<const int&>(_array.size()) & _nFree & _firstFree & _remList;
+			for(auto& p : _array)
+				ar & p.udata.value & p.udata.uid & p.ids;
+		}
+
 		public:
+			using entry_type = Entry;
 			using iterator = AdaptItrBase<T, typename Array::iterator>;
 			using const_iterator = AdaptItrBase<const T, typename Array::const_iterator>;
 			using reverse_iterator = AdaptItrBase<T, std::reverse_iterator<typename Array::iterator>>;
@@ -244,5 +302,23 @@ namespace spn {
 			bool empty() const {
 				return size() == 0;
 			}
+			//! 主にデバッグ用。内部状態も含めて比較
+			bool operator == (const noseq_list& lst) const {
+				AssertP(Trap, !_bRemoving)
+				return _nFree == lst._nFree &&
+						_firstFree == lst._firstFree &&
+						_remList == lst._remList &&
+						_array == lst._array;
+			}
 	};
+}
+namespace boost {
+	namespace serialization {
+		template <class T, template <class> class Allocator, class IDType, unsigned int MaxID>
+		struct version<spn::noseq_list<T, Allocator, IDType, MaxID>> {
+			typedef mpl::int_<0> type;
+			typedef mpl::integral_c_tag tag;
+			BOOST_STATIC_CONSTANT(int, value = version::type::value);
+		};
+	}
 }
