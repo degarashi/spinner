@@ -10,6 +10,10 @@
 #include "pqueue.hpp"
 #include "unittest.hpp"
 #include "size.hpp"
+#include <sstream>
+#include <boost/serialization/access.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 using namespace spn;
 namespace {
@@ -120,14 +124,40 @@ namespace {
 			Assert(Trap, v.m[i]==*src++)
 		return src;
 	}
+	struct Random {
+		using OPMT = spn::Optional<std::mt19937>;
+		using OPDistF = spn::Optional<std::uniform_real_distribution<float>>;
+		using OPDistI = spn::Optional<std::uniform_int_distribution<int>>;
+		OPMT	_opMt;
+		OPDistF	_opDistF;
+		OPDistI _opDistI;
+
+		Random() {
+			std::random_device rdev;
+			std::array<uint_least32_t, 32> seed;
+			std::generate(seed.begin(), seed.end(), std::ref(rdev));
+			std::seed_seq seq(seed.begin(), seed.end());
+			_opMt = std::mt19937(seq);
+			_opDistF = std::uniform_real_distribution<float>{std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()};
+			_opDistI = std::uniform_int_distribution<int>{std::numeric_limits<int>::lowest(), std::numeric_limits<int>::max()};
+		}
+		float randomF() {
+			return (*_opDistF)(*_opMt);
+		}
+		int randomI() {
+			return (*_opDistI)(*_opMt);
+		}
+		int randomI(int from, int to) {
+			return std::uniform_int_distribution<int>{from, to}(*_opMt);
+		}
+		static Random& getInstance() {
+			static Random rd;
+			return rd;
+		}
+	};
 	void GapTest() {
-		std::random_device rdev;
-		std::array<uint_least32_t, 32> seed;
-		std::generate(seed.begin(), seed.end(), std::ref(rdev));
-		std::seed_seq seq(seed.begin(), seed.end());
-		std::mt19937 mt(seq);
-		std::uniform_real_distribution<float> dist{-std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()};
-		auto gen = std::bind(dist, mt);
+		auto& rd = Random::getInstance();
+		auto gen = std::bind(&Random::randomF, std::ref(rd));
 		std::array<float,16> tmp;
 		std::generate(tmp.begin(), tmp.end(), std::ref(gen));
 
@@ -174,6 +204,36 @@ namespace {
 		#undef SETAUX
 		#undef CHECKAUX
 	}
+	void SerializeTest() {
+		auto& rd = Random::getInstance();
+		std::stringstream buffer;
+		constexpr int NTEST = 256,
+					NITER = 1024;
+		for(int i=0 ; i<NTEST ; i++) {
+			buffer.str("");
+
+			spn::noseq_list<int> base, loaded;
+			std::vector<decltype(base.add(0))> ids;
+			for(int j=0 ; j<NITER ; j++) {
+				// ランダムにデータを追加/削除する
+				if(base.empty() || ((rd.randomI()&0x3) != 0)) {
+					// 追加
+					ids.push_back(base.add(rd.randomI()));
+				} else {
+					// 削除
+					int idx = rd.randomI(0, ids.size()-1);
+					auto itr = ids.begin() + idx;
+					base.rem(*itr);
+					ids.erase(itr);
+				}
+			}
+			boost::archive::binary_oarchive oa(buffer);
+			oa << base;
+			boost::archive::binary_iarchive ia(buffer);
+			ia >> loaded;
+			Assert(Trap, base == loaded);
+		}
+	}
 }
 int main(int argc, char **argv) {
 	MatTest();
@@ -181,6 +241,7 @@ int main(int argc, char **argv) {
 	BitFieldTest();
 	ResourceTest();
 	GapTest();
+	SerializeTest();
 	spn::unittest::PQueue();
 	spn::unittest::Math();
 	return 0;
