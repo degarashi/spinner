@@ -37,6 +37,14 @@ namespace spn {
 		_OptionalBuff(T2&& t) {
 			operator=(std::forward<T2>(t));
 		}
+		template <class... Ts>
+		void operator = (ArgHolder<Ts...>&& ah) {
+			void* ptr = base::_buffer;
+			auto fn = [ptr](Ts... ts) {
+				new(ptr) T(ts...);
+			};
+			ah.inorder(fn);
+		}
 		template <class T2>
 		void operator = (T2&& t) {
 			new(base::_buffer) T(std::forward<T2>(t));
@@ -80,6 +88,11 @@ namespace spn {
 		const T*& castCT() const { return _buffer; }
 		void dtor() {}
 	};
+	template <class... Ts>
+	auto construct(Ts&&... ts) -> ArgHolder<Ts...> {
+		return ArgHolder<Ts...>(std::forward<Ts>(ts)...);
+	}
+
 	//! noseq_listでboost::optionalを使おうとしたらよくわからないエラーが出たので自作してしまった
 	template <class T>
 	class Optional {
