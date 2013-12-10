@@ -602,17 +602,23 @@ namespace spn {
 
 	//! シリアライズ対策の為のstd::stringラッパ
 	/*! boostデフォルトのstd::string定義ではprimitive-typeになっていて同じ文字列が複数回シリアライズされてしまうのでその対策 */
-	class String : public std::string {
+	template <class T>
+	class String : public T {
 		friend class boost::serialization::access;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & static_cast<std::string&>(*this);
+			ar & static_cast<T&>(*this);
 		}
 		public:
-			using std::string::string;
+			String() = default;
+			String(String&& s): T(std::move(static_cast<T&>(s))) {}
+			String(const String& s): T(static_cast<const T&>(s)) {}
+			String(const T& t): T(t) {}
+			String(T&& t): T(std::move(t)) {}
+			using T::T;
 	};
 	//! 名前付きリソース (with anonymous)
-	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator, class KEY=String>
+	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator, class KEY=String<std::string>>
 	class ResMgrN : public ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator> {
 		public:
 			using base_type = ResMgrA<ResWrap<DAT,KEY>, DERIVED, Allocator>;
@@ -647,13 +653,14 @@ namespace spn {
 			}
 			template <class KEY2, class CB>
 			std::pair<LHdl,bool> _acquire(KEY2&& key, CB cb) {
+				KEY key2(std::forward<KEY2>(key));
 				// 既に同じ名前が登録されていたら既存のハンドルを返す
-				auto itr = _nameMap.find(key);
+				auto itr = _nameMap.find(key2);
 				if(itr != _nameMap.end())
 					return std::make_pair(LHdl(itr->second), false);
 
 				auto lh = cb();
-				itr = _nameMap.emplace(std::forward<KEY2>(key), lh.get()).first;
+				itr = _nameMap.emplace(std::move(key2), lh.get()).first;
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &(itr->first);
 				return std::make_pair(std::move(lh), true);
@@ -770,17 +777,20 @@ BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::ResWrap, track_selectively)
 BOOST_CLASS_VERSION_TEMPLATE((class)(class)(template<class> class), spn::ResMgrA, 0)
 BOOST_CLASS_VERSION_TEMPLATE((class)(class)(template<class> class)(class), spn::ResMgrN, 0)
 
-BOOST_CLASS_IMPLEMENTATION(spn::String, object_serializable)
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::String, object_serializable)
 
-inline bool operator == (const spn::String& s0, const std::string& s1) {
+template <class T>
+inline bool operator == (const spn::String<T>& s0, const T& s1) {
 	return s0 == s1; }
-inline bool operator == (const std::string& s0, const spn::String& s1) {
+template <class T>
+inline bool operator == (const T& s0, const spn::String<T>& s1) {
 	return s0 == s1; }
 namespace std {
-	template <>
-	struct hash<spn::String> {
-		size_t operator()(const spn::String& str) const {
-			return hash<std::string>()(str);
+	//MEMO: 部分特殊化は宜しくないと聞いた気がするが他に思い浮かばないのでとりあえずコレで行く
+	template <class T>
+	struct hash<spn::String<T>> {
+		size_t operator()(const spn::String<T>& str) const {
+			return hash<T>()(str);
 		}
 	};
 }
