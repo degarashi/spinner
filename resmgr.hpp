@@ -772,6 +772,10 @@ BOOST_CLASS_VERSION_TEMPLATE((class)(class)(template<class> class)(class), spn::
 
 BOOST_CLASS_IMPLEMENTATION(spn::String, object_serializable)
 
+inline bool operator == (const spn::String& s0, const std::string& s1) {
+	return s0 == s1; }
+inline bool operator == (const std::string& s0, const spn::String& s1) {
+	return s0 == s1; }
 namespace std {
 	template <>
 	struct hash<spn::String> {
