@@ -265,6 +265,12 @@ namespace spn {
 				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
+			//! IDが有効か判定
+			bool has(ID uindex) const {
+				if(!Validation(uindex) || _array[uindex].ids.which() != 1)
+					return false;
+				return true;
+			}
 
 			// イテレータの範囲はフリー要素を勘定に入れる
 			iterator begin() { return _array.begin(); }
