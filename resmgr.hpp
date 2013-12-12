@@ -347,10 +347,11 @@ namespace spn {
 								boost::serialization::track_never>
 			{
 				DAT						data;
-				uint32_t				count;
+				uint32_t				count,			//!< 参照カウンタ
+										accessCount;	//!< refアクセス回数カウンタ
 				typename WHdl::VWord	w_magic;
 
-				Entry(DAT&& dat, typename WHdl::VWord wmagic): data(std::forward<DAT>(dat)), count(0), w_magic(wmagic) {}
+				Entry(DAT&& dat, typename WHdl::VWord wmagic): data(std::forward<DAT>(dat)), count(0), accessCount(0), w_magic(wmagic) {}
 				#ifdef DEBUG
 					typename SHdl::VWord	magic;
 					// デバッグ版では簡易マジックナンバーチェックが入る
@@ -359,7 +360,7 @@ namespace spn {
 					}
 				#endif
 
-				Entry(Entry&& e): data(std::forward<DAT>(e.data)), count(e.count), w_magic(e.w_magic)
+				Entry(Entry&& e): data(std::forward<DAT>(e.data)), count(e.count), accessCount(e.accessCount), w_magic(e.w_magic)
 				#ifdef DEBUG
 					, magic(e.magic)
 				#endif
@@ -381,7 +382,7 @@ namespace spn {
 
 				template <class Archive>
 				void serialize(Archive& ar, const unsigned int) {
-					ar & data & count & w_magic;
+					ar & data & count & accessCount & w_magic;
 					#ifdef DEBUG
 						ar & magic;
 					#endif
@@ -411,13 +412,18 @@ namespace spn {
 		protected:
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
-				Entry& ent = _dataVec.get(sh.getIndex());
-				AssertP(Trap, ent.magic==sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
-				return ent;
+				const ThisType* ths = this;
+				auto& e = const_cast<Entry&>(ths->_refSH(sh));
+				// 非constアクセス時はアクセスカウンタの加算
+				++e.accessCount;
+				return e;
 			}
 			const Entry& _refSH(SHdl sh) const {
-				auto* ths = const_cast<ResMgrA*>(this);
-				return ths->_refSH(sh);
+				auto& ent = _dataVec.get(sh.getIndex());
+				#ifdef DEBUG
+					AssertP(Trap, ent.magic==sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
+				#endif
+				return ent;
 			}
 			/*! 弱参照用のマジックナンバーチェック */
 			spn::Optional<Entry&> _refWH(WHdl wh) {
@@ -560,6 +566,11 @@ namespace spn {
 			uint32_t count(SHandle sh) const {
 				auto& ent = _refSH(sh);
 				return ent.count;
+			}
+			//! アクセスカウントを得る(変更のチェック用)
+			uint32_t accessCount(SHandle sh) const {
+				auto& ent = _refSH(sh);
+				return ent.accessCount;
 			}
 			data_type& ref(SHandle sh) {
 				auto& ent = _refSH(sh);
