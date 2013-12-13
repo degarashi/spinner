@@ -125,6 +125,10 @@ namespace spn {
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int ver) {
 				ar & _hdl;
+				if(typename Archive::is_loading()) {
+					// ロード時は参照カウンタを増やす
+					_hdl.increment();
+				}
 			}
 
 		public:
@@ -161,6 +165,10 @@ namespace spn {
 					_hdl.release();
 					_hdl = HDL();
 				}
+			}
+			//! 解放せずにハンドルを無効化する
+			void setNull() {
+				_hdl = HDL();
 			}
 			void reset(HDL hdl) {
 				release();
