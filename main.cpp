@@ -304,7 +304,12 @@ namespace {
 			}
 			// 書き出し
 			boost::archive::text_oarchive oa(buffer, boost::archive::no_header);
-			oa << op->asMergeType();
+			// フル書き出しと差分と交互にチェックする
+			if(i&1)
+				oa << op->asMergeType();
+			else
+				oa << *op;
+
 			// 比較元データを保管
 			auto dat0 = op->getNSeq();
 
