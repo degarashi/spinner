@@ -292,7 +292,6 @@ namespace spn {
 		protected:
 			int _addManager(ResMgrBase* p);
 			void _remManager(int id);
-			virtual void _setNoRelease(bool b) = 0;
 		public:
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
@@ -305,6 +304,7 @@ namespace spn {
 			virtual bool release(SHandle sh) = 0;
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
+			virtual void setNoRelease(bool b) = 0;
 			virtual ~ResMgrBase() {}
 	};
 
@@ -508,9 +508,6 @@ namespace spn {
 			static MergeType s_merge;
 
 		protected:
-			void _setNoRelease(bool b) override {
-				_bNoRelease = b;
-			}
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
 				const ThisType* ths = this;
@@ -609,6 +606,9 @@ namespace spn {
 					std::cerr << "ResMgr: there are some unreleased resources...(remaining " << remain << ')' << std::endl;
 
 				_remManager(_resID);
+			}
+			void setNoRelease(bool b) override {
+				_bNoRelease = b;
 			}
 			//! 参照カウンタをインクリメント
 			void increment(SHandle sh) override {

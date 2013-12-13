@@ -8,7 +8,7 @@ namespace spn {
 
 	int ResMgrBase::_addManager(ResMgrBase* p) {
 		assert(std::find(s_rmList.begin(), s_rmList.end(), p) == s_rmList.end());
-		p->_setNoRelease(s_bNoRelease);
+		p->setNoRelease(s_bNoRelease);
 		return s_rmList.add(p);
 	}
 	void ResMgrBase::_remManager(int id) {
@@ -30,7 +30,7 @@ namespace spn {
 		if(s_bNoRelease ^ b) {
 			s_bNoRelease = b;
 			for(auto* p : s_rmList)
-				p->_setNoRelease(b);
+				p->setNoRelease(b);
 		}
 	}
 }
