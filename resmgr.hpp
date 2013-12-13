@@ -519,10 +519,7 @@ namespace spn {
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
 				const ThisType* ths = this;
-				auto& e = const_cast<Entry&>(ths->_refSH(sh));
-				// 非constアクセス時はアクセスカウンタの加算
-				++e.accessCount;
-				return e;
+				return const_cast<Entry&>(ths->_refSH(sh));
 			}
 			const Entry& _refSH(SHdl sh) const {
 				auto& ent = _dataVec.get(sh.getIndex());
@@ -534,12 +531,8 @@ namespace spn {
 			/*! 弱参照用のマジックナンバーチェック */
 			spn::Optional<Entry&> _refWH(WHdl wh) {
 				auto* ths = const_cast<const ResMgrA*>(this);
-				if(auto opt = ths->_refWH(wh)) {
-					// 非constアクセス時はアクセスカウンタの加算
-					auto& ent = const_cast<Entry&>(*opt);
-					++ent.accessCount;
-					return ent;
-				}
+				if(auto op = ths->_refWH(wh))
+					return const_cast<Entry&>(*op);
 				return spn::none;
 			}
 			spn::Optional<const Entry&> _refWH(WHdl wh) const {
@@ -552,6 +545,7 @@ namespace spn {
 				// インデックスが既に無効 = オブジェクトは既に存在しない
 				return spn::none;
 			}
+
 			LHdl _acquire(DAT&& d) {
 				++_wMagicIndex;
 				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
@@ -566,7 +560,6 @@ namespace spn {
 				#endif
 				return LHdl(sh);
 			}
-
 		public:
 			const MergeType& asMergeType() const {
 				s_merge._ths = this;
@@ -636,9 +629,11 @@ namespace spn {
 			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
 			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
-				if(_bNoRelease)
-					return false;
 				auto& ent = _refSH(sh);
+				if(_bNoRelease) {
+					ent.count = std::max(1u, ent.count)-1;
+					return false;
+				}
 				// 簡易マジックナンバーチェック
 				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
 				if(--ent.count == 0) {
@@ -692,6 +687,8 @@ namespace spn {
 			}
 			data_type& ref(SHandle sh) {
 				auto& ent = _refSH(sh);
+				// 非constアクセス時はアクセスカウンタの加算
+				++ent.accessCount;
 				return ent.data;
 			}
 			const data_type& cref(SHandle sh) const {
