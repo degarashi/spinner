@@ -2,7 +2,6 @@
 #include "serialization/traits.hpp"
 #include <memory>
 #include <boost/serialization/split_free.hpp>
-
 namespace boost {
 	namespace serialization {
 		template <class Archive, class T, class D>
@@ -17,7 +16,8 @@ namespace boost {
 		}
 		template <class Archive, class T, class D>
 		void save(Archive& ar, const std::unique_ptr<T,D>& p, const unsigned int) {
-			ar & *p;
+			auto* ptr = p.get();
+			ar & ptr;
 		}
 
 		template <class Archive, class T>
@@ -32,9 +32,12 @@ namespace boost {
 		}
 		template <class Archive, class T>
 		void save(Archive& ar, const std::shared_ptr<T>& p, const unsigned int) {
-			ar & *p;
+			auto* ptr = p.get();
+			ar & ptr;
 		}
 	}
 }
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(class), std::unique_ptr, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class)(class), std::unique_ptr, track_never)
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), std::shared_ptr, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class), std::shared_ptr, track_never)
