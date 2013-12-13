@@ -525,11 +525,12 @@ namespace spn {
 			}
 			/*! 弱参照用のマジックナンバーチェック */
 			spn::Optional<Entry&> _refWH(WHdl wh) {
-				auto* ths = const_cast<ResMgrA*>(this);
+				auto* ths = const_cast<const ResMgrA*>(this);
 				if(auto opt = ths->_refWH(wh)) {
 					// 非constアクセス時はアクセスカウンタの加算
-					++opt->accessCount;
-					return *opt;
+					auto& ent = const_cast<Entry&>(*opt);
+					++ent.accessCount;
+					return ent;
 				}
 				return spn::none;
 			}
