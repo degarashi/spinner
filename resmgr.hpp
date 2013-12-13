@@ -466,7 +466,10 @@ namespace spn {
 						auto tmp = ss.str();
 						size_t len = tmp.length();
 						ar & len & boost::serialization::make_binary_object(&tmp[0], len);
+
 						ss.str("");
+						ss.clear();
+						ss << std::dec;
 					}
 					// DataVecのIDSだけ出力
 					ar & _dataVec.asIDSType();

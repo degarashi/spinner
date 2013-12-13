@@ -224,6 +224,8 @@ namespace {
 		std::stringstream buffer;
 		for(int i=0 ; i<NTEST ; i++) {
 			buffer.str("");
+			buffer.clear();
+			buffer << std::dec;
 
 			spn::noseq_list<int> base, loaded;
 			std::vector<decltype(base.add(0))> ids;
