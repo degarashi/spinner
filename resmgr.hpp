@@ -9,6 +9,9 @@
 #include <iostream>
 #include "serialization/unordered_map.hpp"
 #include "serialization/traits.hpp"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/binary_object.hpp>
 
 namespace spn {
 	//! 型を保持しない強参照ハンドル値
@@ -405,13 +408,101 @@ namespace spn {
 			bool			_bNoRelease = false;
 
 			friend boost::serialization::access;
+			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
-			void serialize(Archive& ar, const unsigned int ver) {
+			void load(Archive& ar, const unsigned int ver) {
+				// 最初にMergeフラグを読む
+				bool bMerge;
+				ar & bMerge;
+				normal_serialize(ar, ver);
+				if(bMerge) {
+					size_t nData;
+					ar & nData;
+
+					// 統合ロード(既に同じリソースが存在している場合(アクセスカウンタ一致)は読み込まない)
+					std::vector<bool> chk(nData);
+					for(size_t i=0 ; i<nData ; i++) {
+						uint32_t ac_count;
+						uint64_t wmagic;
+						ar & ac_count & wmagic;
+
+						bool flag = false;
+						if(_dataVec.has(i)) {
+							Entry& ent = _dataVec.get(i);
+							if(ent.accessCount == ac_count) {
+								if(ent.w_magic == wmagic)
+									flag = true;
+							}
+						}
+						chk[i] = flag;
+					}
+					_dataVec._load_partial(ar, chk);
+				}
+				// 全消しして上書き or IDのみ (フラグで判断)
+				ar & _dataVec;
+			}
+			template <class Archive>
+			void save(Archive& ar, const unsigned int ver) const {
+				ar & s_bMerge;
+				auto* ths = const_cast<ThisType*>(this);
+				ths->normal_serialize(ar, ver);
+				if(s_bMerge) {
+					s_bMerge = false;
+					// 統合ロードの為にリソースハンドル毎に切り出して保存
+					size_t nData = _dataVec.size();
+					ar & nData;
+
+					std::stringstream ss;
+					for(auto& e : _dataVec) {
+						// アクセスカウントとWeakマジックナンバーの出力
+						ar & e.accessCount & e.w_magic;
+					}
+					for(size_t i=0 ; i<nData ; i++) {
+						// データ本体の出力
+						// 一旦ローカルに出力してから・・
+						boost::archive::binary_oarchive oa(ss);
+						oa & _dataVec.getValueOP(i);
+						// 改めて外部に出力
+						auto tmp = ss.str();
+						size_t len = tmp.length();
+						ar & len & boost::serialization::make_binary_object(&tmp[0], len);
+						ss.str("");
+					}
+					// DataVecのIDSだけ出力
+					ar & _dataVec.asIDSType();
+					s_bMerge = true;
+				} else {
+					// 普通に出力
+					ar & _dataVec;
+				}
+			}
+			template <class Archive>
+			void normal_serialize(Archive& ar, const unsigned int ver) {
 				#ifdef DEBUG
 					ar & _sMagicIndex;
 				#endif
-				ar & _wMagicIndex & _dataVec & _resID;
+				ar & _wMagicIndex & _resID;
 			}
+			//! シリアライズの時の分岐
+			static bool s_bMerge;
+			//! シリアライズフラグ切り替え
+			struct MergeType : boost::serialization::traits<MergeType,
+					boost::serialization::object_serializable,
+					boost::serialization::track_never>
+			{
+				const ThisType* _ths;
+
+				BOOST_SERIALIZATION_SPLIT_MEMBER();
+				// セーブ関数しか用意しない
+				template <class Archive>
+				void save(Archive& ar, const unsigned int) const {
+					bool tmp = s_bMerge;
+					s_bMerge = true;
+					ar & (*_ths);
+					s_bMerge = tmp;
+				}
+			};
+			static MergeType s_merge;
 
 		protected:
 			void _setNoRelease(bool b) override {
@@ -434,19 +525,22 @@ namespace spn {
 			}
 			/*! 弱参照用のマジックナンバーチェック */
 			spn::Optional<Entry&> _refWH(WHdl wh) {
-				try {
-					Entry& ent = _dataVec.get(wh.getIndex());
-					if(ent.w_magic == wh.getMagic())
-						return ent;
-				} catch(const boost::bad_get& e) {
-					// インデックスが既に無効 = オブジェクトは既に存在しない
+				auto* ths = const_cast<ResMgrA*>(this);
+				if(auto opt = ths->_refWH(wh)) {
+					// 非constアクセス時はアクセスカウンタの加算
+					++opt->accessCount;
+					return *opt;
 				}
 				return spn::none;
 			}
 			spn::Optional<const Entry&> _refWH(WHdl wh) const {
-				auto* ths = const_cast<ResMgrA*>(this);
-				if(auto opt = ths->_refWH(wh))
-					return *opt;
+				auto idx = wh.getIndex();
+				if(_dataVec.has(idx)) {
+					auto& ent = _dataVec.get(idx);
+					if(ent.w_magic == wh.getMagic())
+						return ent;
+				}
+				// インデックスが既に無効 = オブジェクトは既に存在しない
 				return spn::none;
 			}
 			LHdl _acquire(DAT&& d) {
@@ -465,6 +559,9 @@ namespace spn {
 			}
 
 		public:
+			const MergeType& asMergeType() const {
+				s_merge._ths = this;
+				return s_merge; }
 			class iterator : public AdaptItrBase<data_type, typename AVec::iterator> {
 				public:
 					using Itr = AdaptItrBase<data_type, typename AVec::iterator>;
@@ -599,6 +696,10 @@ namespace spn {
 			size_t size() const {
 				return _dataVec.size();
 			}
+			//! 主にデバッグ用途
+			AVec getNSeq() {
+				return std::move(_dataVec);
+			}
 
 		protected:
 			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
@@ -619,6 +720,10 @@ namespace spn {
 	};
 	template <class DAT, class DERIVED, template <class> class Allocator>
 	const std::function<void (typename ResMgrA<DAT,DERIVED,Allocator>::Entry&)> ResMgrA<DAT,DERIVED,Allocator>::cs_defCB = [](Entry&){};
+	template <class DAT, class DERIVED, template <class> class Allocator>
+	bool ResMgrA<DAT,DERIVED,Allocator>::s_bMerge = false;
+	template <class DAT, class DERIVED, template <class> class Allocator>
+	typename ResMgrA<DAT,DERIVED,Allocator>::MergeType ResMgrA<DAT,DERIVED,Allocator>::s_merge{};
 
 	//! シリアライズ対策の為のstd::stringラッパ
 	/*! boostデフォルトのstd::string定義ではprimitive-typeになっていて同じ文字列が複数回シリアライズされてしまうのでその対策 */
