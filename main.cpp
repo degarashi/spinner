@@ -302,6 +302,8 @@ namespace {
 					handle.erase(handle.begin()+idx);
 				}
 			}
+			for(auto& p : handle)
+				p.setNull();
 			// 書き出し
 			boost::archive::text_oarchive oa(buffer, boost::archive::no_header);
 			// フル書き出しと差分と交互にチェックする
