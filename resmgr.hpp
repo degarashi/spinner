@@ -610,7 +610,16 @@ namespace spn {
 				_remManager(_resID);
 			}
 			void setNoRelease(bool b) override {
-				_bNoRelease = b;
+				if(_bNoRelease ^ b) {
+					// データの接合性チェック
+					#ifdef DEBUG
+						if(_bNoRelease) {
+							for(auto& e : _dataVec)
+								AssertP(Trap, e.count>0, "ResMgr: invalid resource counter(save & load error)")
+						}
+					#endif
+					_bNoRelease = b;
+				}
 			}
 			//! 参照カウンタをインクリメント
 			void increment(SHandle sh) override {
