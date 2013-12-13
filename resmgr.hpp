@@ -342,7 +342,7 @@ namespace spn {
 	class ResMgrA : public Singleton<DERIVED>, public ResMgrBase {
 		public:
 			using data_type = typename DecayWrap<DAT>::result;
-			using ThisType = ResMgrA<DAT,DERIVED>;
+			using ThisType = ResMgrA<DAT,DERIVED,Allocator>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
 			using LHdl = HdlLock<SHdl>;
