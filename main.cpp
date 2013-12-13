@@ -217,11 +217,11 @@ namespace {
 		#undef SETAUX
 		#undef CHECKAUX
 	}
-	void SerializeTest() {
+	constexpr int NTEST = 256,
+				NITER = 1024;
+	void SerializeTest_noseq() {
 		auto& rd = Random::getInstance();
 		std::stringstream buffer;
-		constexpr int NTEST = 256,
-					NITER = 1024;
 		for(int i=0 ; i<NTEST ; i++) {
 			buffer.str("");
 
@@ -244,7 +244,79 @@ namespace {
 			oa << base;
 			boost::archive::binary_iarchive ia(buffer);
 			ia >> loaded;
-			Assert(Trap, base == loaded);
+			Assert(Trap, base == loaded)
+		}
+	}
+	// デフォルトコンストラクタ無し、コピー不可能なテスト用構造体
+	struct MyEnt : boost::serialization::traits<MyEnt,
+				boost::serialization::object_serializable,
+				boost::serialization::track_never>
+	{
+		int value0,
+			value1;
+		MyEnt() = delete;
+		MyEnt(const MyEnt&) = delete;
+		MyEnt(MyEnt&& e): value0(e.value0), value1(e.value1) {}
+		void operator = (const MyEnt&) = delete;
+
+		template <class Archive>
+		void serialize(Archive& ar, const unsigned int) {
+			ar & value0 & value1;
+		}
+		MyEnt(int v0, int v1): value0(v0), value1(v1) {}
+		bool operator == (const MyEnt& e) const {
+			return value0 == e.value0 &&
+					value1 == e.value1;
+		}
+	};
+	struct NRel {
+		NRel() {
+			ResMgrBase::SetNoRelease(true);
+		}
+		~NRel() {
+			ResMgrBase::SetNoRelease(false);
+		}
+	};
+	class TestRM : public ResMgrA<MyEnt, TestRM> {};
+	DEF_HANDLE(TestRM, My, MyEnt)
+
+	void SerializeTest_resmgr() {
+		NRel nrel;
+		auto& rd = Random::getInstance();
+		std::stringstream buffer;
+		for(int i=0 ; i<NTEST ; i++) {
+			Optional<TestRM> op;
+			op = construct();
+			std::vector<HLMy> handle;
+			for(int j=0 ; j<NITER ; j++) {
+				// ランダムにデータを追加・削除
+				if(handle.empty() || rd.randomI(0, 1)==0) {
+					// 追加
+					handle.push_back(op->emplace(rd.randomI(), rd.randomI()));
+				} else {
+					// 削除
+					int idx = rd.randomI(0, handle.size()-1);
+					handle[idx].release();
+					handle.erase(handle.begin()+idx);
+				}
+			}
+			// 書き出し
+			boost::archive::text_oarchive oa(buffer, boost::archive::no_header);
+			oa << op->asMergeType();
+			// 比較元データを保管
+			auto dat0 = op->getNSeq();
+
+			// 一旦クリアしてから読み出し
+			op = construct();
+			boost::archive::text_iarchive ia(buffer, boost::archive::no_header);
+			ia >> *op;
+			auto dat1 = op->getNSeq();
+			// ちゃんとデータがセーブできてるか確認
+			Assert(Trap, dat0 == dat1)
+
+			buffer.str("");
+			buffer.clear();
+			buffer << std::dec;
 		}
 	}
 }
@@ -254,7 +326,8 @@ int main(int argc, char **argv) {
 	BitFieldTest();
 	ResourceTest();
 	GapTest();
-	SerializeTest();
+	SerializeTest_noseq();
+	SerializeTest_resmgr();
 	spn::unittest::PQueue();
 	spn::unittest::Math();
 	return 0;
