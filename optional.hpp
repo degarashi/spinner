@@ -111,6 +111,8 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int) {
+				if(typename Archive::is_loading())
+					_release();
 				ar & _bInit;
 				if(_bInit)
 					ar & _buffer;
