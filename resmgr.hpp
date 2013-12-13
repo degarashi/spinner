@@ -285,15 +285,18 @@ namespace spn {
 	class ResMgrBase {
 		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
 		static RMList s_rmList;
+		static bool s_bNoRelease;
 		protected:
 			int _addManager(ResMgrBase* p);
 			void _remManager(int id);
+			virtual void _setNoRelease(bool b) = 0;
 		public:
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
 			static bool Release(SHandle sh);
 			static SHandle Lock(WHandle wh);
 			static WHandle Weak(SHandle sh);
+			static void SetNoRelease(bool b);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
@@ -399,6 +402,7 @@ namespace spn {
 			uint64_t		_wMagicIndex = 0;
 			AVec			_dataVec;
 			int				_resID;
+			bool			_bNoRelease = false;
 
 			friend boost::serialization::access;
 			template <class Archive>
@@ -410,6 +414,9 @@ namespace spn {
 			}
 
 		protected:
+			void _setNoRelease(bool b) override {
+				_bNoRelease = b;
+			}
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
 				const ThisType* ths = this;
@@ -520,6 +527,8 @@ namespace spn {
 			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
 			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
+				if(_bNoRelease)
+					return false;
 				auto& ent = _refSH(sh);
 				// 簡易マジックナンバーチェック
 				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
