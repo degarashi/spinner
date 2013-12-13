@@ -460,7 +460,7 @@ namespace spn {
 					for(size_t i=0 ; i<nData ; i++) {
 						// データ本体の出力
 						// 一旦ローカルに出力してから・・
-						boost::archive::binary_oarchive oa(ss);
+						boost::archive::binary_oarchive oa(ss, boost::archive::no_header);
 						oa & _dataVec.getValueOP(i);
 						// 改めて外部に出力
 						auto tmp = ss.str();

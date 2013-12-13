@@ -249,7 +249,7 @@ namespace spn {
 					if(!chk[i]) {
 						ss.str(buff);
 						OPValue value;
-						boost::archive::binary_iarchive ia(ss);
+						boost::archive::binary_iarchive ia(ss, boost::archive::no_header);
 						ia >> value;
 						_array[i].udata.value = std::move(value);
 					}
