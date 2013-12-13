@@ -9,6 +9,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/variant.hpp>
 #include <boost/serialization/traits.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include "serialization/traits.hpp"
 #include "type.hpp"
 #include "optional.hpp"
@@ -100,14 +101,15 @@ namespace spn {
 	/*! 全走査を速く、要素の追加削除を速く(走査中はNG)、要素の順序はどうでもいい、あまり余計なメモリは食わないように・・というクラス */
 	template <class T, template <class> class Allocator=std::allocator, class IDType=unsigned int, unsigned int MaxID=std::numeric_limits<IDType>::max()>
 	class noseq_list {
+		using ThisType = noseq_list<T,Allocator,IDType,MaxID>;
 		using ID = typename std::make_unsigned<IDType>::type;
 		constexpr static bool Validation(ID id) {
 			return id < MaxID;
 		}
 		using RT = typename std::remove_reference<T>::type;
+		using OPValue = Optional<T>;
 		//! ユーザーの要素を格納
 		struct UData {
-			using OPValue = Optional<T>;
 			OPValue		value;
 			ID			uid;		//!< ユニークID。要素の配列内移動をする際に使用
 
@@ -138,7 +140,7 @@ namespace spn {
 			template <class T2>
 			Entry(T2&& t, ID idx): udata(std::forward<T2>(t),idx), ids(ObjID(idx)) {}
 			//! deserialize用
-			Entry(typename UData::OPValue&& value, ID uid, IDS ids): udata(std::move(value), uid), ids(ids) {}
+			Entry(OPValue&& value, ID uid, IDS ids): udata(std::move(value), uid), ids(ids) {}
 			operator typename TheType<T>::type () { return *udata.value; }
 			operator typename TheType<T>::ctype () const { return *udata.value; }
 
@@ -160,30 +162,102 @@ namespace spn {
 		BOOST_SERIALIZATION_SPLIT_MEMBER();
 		template <class Archive>
 		void load(Archive& ar, const unsigned int ver) {
-			AssertP(Trap, !_bRemoving)
-			int nEnt;
-			ar & nEnt & _nFree & _firstFree & _remList;
-			_array.clear();
-			_array.reserve(nEnt);
+			AssertP(Trap, !_bRemoving && _remList.empty())
+			bool bIDS;
+			size_t nEnt;
+			ar & bIDS & nEnt & _nFree & _firstFree;
 
-			typename UData::OPValue value;
 			ID uid;
 			IDS ids;
-			for(int i=0 ; i<nEnt ; i++) {
-				// Entryの復元
-				ar & value & uid & ids;
-				_array.emplace_back(std::move(value), uid, ids);
+			if(bIDS) {
+				// IDだけを上書き
+				if(_array.size() > nEnt)
+					_array.erase(_array.begin()+nEnt, _array.end());
+				else {
+					// スペース確保
+					while(_array.size() < nEnt)
+						_array.emplace_back(OPValue(), 0, boost::blank());
+				}
+				for(size_t i=0 ; i<nEnt ; i++) {
+					ar & uid & ids;
+
+					auto& ent = _array[i];
+					ent.udata.uid = uid;
+					ent.ids = ids;
+				}
+			} else {
+				_array.clear();
+				_array.reserve(nEnt);
+				OPValue value;
+				for(size_t i=0 ; i<nEnt ; i++) {
+					// Entryの復元
+					ar & value & uid & ids;
+					_array.emplace_back(std::move(value), uid, ids);
+				}
 			}
 		}
 		template <class Archive>
 		void save(Archive& ar, const unsigned int ver) const {
-			AssertP(Trap, !_bRemoving)
-			ar & static_cast<const int&>(_array.size()) & _nFree & _firstFree & _remList;
-			for(auto& p : _array)
-				ar & p.udata.value & p.udata.uid & p.ids;
+			AssertP(Trap, !_bRemoving && _remList.empty())
+			size_t nEnt = _array.size();
+			ar & s_bIDS & nEnt & _nFree & _firstFree;
+			if(s_bIDS) {
+				// IDのみの出力
+				for(auto& p : _array)
+					ar & p.udata.uid & p.ids;
+			} else {
+				// 通常の出力
+				for(auto& p : _array)
+					ar & p.udata.value & p.udata.uid & p.ids;
+			}
 		}
+		//! IDだけ出力するフラグ
+		static bool s_bIDS;
+		struct IDSType : boost::serialization::traits<IDSType,
+			boost::serialization::object_serializable,
+			boost::serialization::track_never>
+		{
+			const ThisType* _ths;
+			BOOST_SERIALIZATION_SPLIT_MEMBER();
+			// セーブ関数しか用意しない
+			template <class Archive>
+			void save(Archive& ar, const unsigned int) const {
+				bool tmp = s_bIDS;
+				s_bIDS = true;
+				ar & (*_ths);
+				s_bIDS = tmp;
+			}
+		};
+		static IDSType s_ids;
 
 		public:
+			template <class Archive>
+			void _load_partial(Archive& ar, const std::vector<bool>& chk) {
+				size_t nEnt = chk.size();
+				// スペース確保
+				while(_array.size() < nEnt)
+					_array.emplace_back(OPValue(), 0, boost::blank());
+
+				size_t len;
+				std::string buff;
+				std::istringstream ss;
+				for(size_t i=0 ; i<nEnt ; i++) {
+					ar & len;
+					buff.resize(len);
+					ar.load_binary(&buff[0], len);
+
+					if(!chk[i]) {
+						ss.str(buff);
+						OPValue value;
+						boost::archive::binary_iarchive ia(ss);
+						ia >> value;
+						_array[i].udata.value = std::move(value);
+					}
+				}
+			}
+			const IDSType& asIDSType() const {
+				s_ids._ths = this;
+				return s_ids; }
 			using entry_type = Entry;
 			using iterator = AdaptItrBase<T, typename Array::iterator>;
 			using const_iterator = AdaptItrBase<const T, typename Array::const_iterator>;
@@ -194,7 +268,9 @@ namespace spn {
 			noseq_list() {
 				static_assert(std::is_integral<IDType>::value, "typename ID should be Integral type");
 			}
-			noseq_list(noseq_list&& sl): _array(std::forward<noseq_vec<T>>(sl._array)), _nFree(sl._nFree), _firstFree(sl._firstFree) {}
+			noseq_list(noseq_list&& sl): _array(std::move(sl._array)), _nFree(sl._nFree), _firstFree(sl._firstFree) {
+				AssertP(Trap, !_bRemoving && _remList.empty())
+			}
 
 			template <class... Ts>
 			ID emplace(Ts&&... ts) {
@@ -253,7 +329,7 @@ namespace spn {
 			using Ref = decltype(*_array[0].udata.value);
 			//! 要素の領域を先に取得
 			std::pair<ID,Ref> alloc() {
-				ID id = add(UData::OPValue::AsInitialized);
+				ID id = add(OPValue::AsInitialized);
 				return std::pair<ID,Ref>(id, get(id));
 			}
 			Ref get(ID uindex) {
@@ -265,9 +341,14 @@ namespace spn {
 				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
 				return const_cast<noseq_list*>(this)->get(uindex);
 			}
+			//! 主にライブラリ内部用途
+			const OPValue& getValueOP(int index) const {
+				AssertP(Trap, _array.size() > index)
+				return _array[index].udata.value;
+			}
 			//! IDが有効か判定
 			bool has(ID uindex) const {
-				if(!Validation(uindex) || _array[uindex].ids.which() != 1)
+				if(!Validation(uindex) || _array.size() <= uindex || _array[uindex].ids.which() != 1)
 					return false;
 				return true;
 			}
@@ -317,5 +398,9 @@ namespace spn {
 						_array == lst._array;
 			}
 	};
+	template <class T, template <class> class Allocator, class IDType, unsigned int MaxID>
+	bool noseq_list<T,Allocator,IDType,MaxID>::s_bIDS = false;
+	template <class T, template <class> class Allocator, class IDType, unsigned int MaxID>
+	typename noseq_list<T,Allocator,IDType,MaxID>::IDSType noseq_list<T,Allocator,IDType,MaxID>::s_ids{};
 }
 BOOST_CLASS_VERSION_TEMPLATE((class)(template <class> class)(class)(unsigned int), spn::noseq_list, 0)
