@@ -355,11 +355,22 @@ namespace spn {
 			using WHdl = WHandleT<ThisType>;
 			using LHdl = HdlLock<SHdl>;
 		public:
-			struct Entry : boost::serialization::traits<
-								Entry,
-								boost::serialization::object_serializable,
-								boost::serialization::track_never>
+			class Entry : public boost::serialization::traits<Entry,
+							boost::serialization::object_serializable,
+							boost::serialization::track_never>
 			{
+				Entry() = default;
+				friend _OptionalBuff<Entry>;
+				friend boost::serialization::access;
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int) {
+					ar & data & count & accessCount & w_magic;
+					#ifdef DEBUG
+						ar & magic;
+					#endif
+				}
+
+				public:
 				DAT						data;
 				uint32_t				count,			//!< 参照カウンタ
 										accessCount;	//!< refアクセス回数カウンタ
@@ -393,14 +404,6 @@ namespace spn {
 
 				operator typename TheType<data_type>::type () { return data; }
 				operator typename TheType<data_type>::ctype () const { return data; }
-
-				template <class Archive>
-				void serialize(Archive& ar, const unsigned int) {
-					ar & data & count & accessCount & w_magic;
-					#ifdef DEBUG
-						ar & magic;
-					#endif
-				}
 			};
 		private:
 			friend SHdl;
