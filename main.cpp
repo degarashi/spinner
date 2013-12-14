@@ -256,7 +256,7 @@ namespace {
 	{
 		int value0,
 			value1;
-		MyEnt() = delete;
+		MyEnt() = default;
 		MyEnt(const MyEnt&) = delete;
 		MyEnt(MyEnt&& e): value0(e.value0), value1(e.value1) {}
 		void operator = (const MyEnt&) = delete;
