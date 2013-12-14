@@ -52,6 +52,7 @@ namespace spn {
 		T& castT() { return *reinterpret_cast<T*>(base::_buffer); }
 		const T& castCT() const { return *reinterpret_cast<const T*>(base::_buffer); }
 		void dtor() { castT().~T(); }
+		void default_ctor() { new(base::_buffer) T(); }
 	};
 
 	template <class T>
@@ -71,6 +72,7 @@ namespace spn {
 		T& castT() { return *_buffer; }
 		const T& castCT() const { return *_buffer; }
 		void dtor() {}
+		void default_ctor() {}
 	};
 
 	template <class T>
@@ -87,6 +89,7 @@ namespace spn {
 		T*& castT() { return _buffer; }
 		const T*& castCT() const { return _buffer; }
 		void dtor() {}
+		void default_ctor() {}
 	};
 	template <class... Ts>
 	auto construct(Ts&&... ts) -> ArgHolder<Ts...> {
@@ -97,7 +100,8 @@ namespace spn {
 	template <class T>
 	class Optional {
 		private:
-			_OptionalBuff<T> _buffer;
+			using Buffer = _OptionalBuff<T>;
+			Buffer	_buffer;
 			bool	_bInit;
 
 			void t__release() noexcept {
@@ -114,8 +118,11 @@ namespace spn {
 				if(typename Archive::is_loading())
 					_release();
 				ar & _bInit;
-				if(_bInit)
+				if(_bInit) {
+					if(typename Archive::is_loading())
+						_buffer.default_ctor();
 					ar & _buffer;
+				}
 			}
 
 		public:
