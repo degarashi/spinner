@@ -292,7 +292,6 @@ namespace spn {
 	class ResMgrBase {
 		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
 		static RMList s_rmList;
-		static bool s_bNoRelease;
 		protected:
 			int _addManager(ResMgrBase* p);
 			void _remManager(int id);
@@ -302,13 +301,11 @@ namespace spn {
 			static bool Release(SHandle sh);
 			static SHandle Lock(WHandle wh);
 			static WHandle Weak(SHandle sh);
-			static void SetNoRelease(bool b);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
-			virtual void setNoRelease(bool b) = 0;
 			virtual ~ResMgrBase() {}
 	};
 
@@ -412,12 +409,20 @@ namespace spn {
 			uint64_t		_wMagicIndex = 0;
 			AVec			_dataVec;
 			int				_resID;
-			bool			_bNoRelease = false;
+			//! シリアライズ中の時だけtrue
+			/*! シリアライズ中はリソースの確保や解放、参照等のアクセスが不正 */
+			mutable bool	_bSerializing = false;
 
+			bool _checkValidAccess() const {
+				return !_bSerializing;
+			}
 			friend boost::serialization::access;
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
 			void load(Archive& ar, const unsigned int ver) {
+				AssertP(Trap, !_bSerializing)
+				_bSerializing = true;
+
 				// 最初にMergeフラグを読む
 				bool bMerge;
 				ar & bMerge;
@@ -447,9 +452,14 @@ namespace spn {
 				}
 				// 全消しして上書き or IDのみ (フラグで判断)
 				ar & _dataVec;
+
+				// シリアライズフラグの解除はマニュアル
 			}
 			template <class Archive>
 			void save(Archive& ar, const unsigned int ver) const {
+				AssertP(Trap, !_bSerializing)
+				_bSerializing = true;
+
 				ar & s_bMerge;
 				auto* ths = const_cast<ThisType*>(this);
 				ths->normal_serialize(ar, ver);
@@ -485,6 +495,8 @@ namespace spn {
 					// 普通に出力
 					ar & _dataVec;
 				}
+
+				// シリアライズフラグの解除はマニュアル
 			}
 			template <class Archive>
 			void normal_serialize(Archive& ar, const unsigned int ver) {
@@ -521,6 +533,7 @@ namespace spn {
 				return const_cast<Entry&>(ths->_refSH(sh));
 			}
 			const Entry& _refSH(SHdl sh) const {
+				AssertP(Trap, _checkValidAccess(), "accessing resource is invalid operation while serialize")
 				auto& ent = _dataVec.get(sh.getIndex());
 				#ifdef DEBUG
 					AssertP(Trap, ent.magic==sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
@@ -535,6 +548,7 @@ namespace spn {
 				return spn::none;
 			}
 			spn::Optional<const Entry&> _refWH(WHdl wh) const {
+				AssertP(Trap, _checkValidAccess(), "accessing resource is invalid operation while serialize")
 				auto idx = wh.getIndex();
 				if(_dataVec.has(idx)) {
 					auto& ent = _dataVec.get(idx);
@@ -546,6 +560,7 @@ namespace spn {
 			}
 
 			LHdl _acquire(DAT&& d) {
+				AssertP(Trap, _checkValidAccess(), "creating resource is invalid operation while serialize")
 				++_wMagicIndex;
 				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
 				#ifdef DEBUG
@@ -608,17 +623,10 @@ namespace spn {
 
 				_remManager(_resID);
 			}
-			void setNoRelease(bool b) override {
-				if(_bNoRelease ^ b) {
-					// データの接合性チェック
-					#ifdef DEBUG
-						if(_bNoRelease) {
-							for(auto& e : _dataVec)
-								AssertP(Trap, e.count>0, "ResMgr: invalid resource counter(save & load error)")
-						}
-					#endif
-					_bNoRelease = b;
-				}
+			//! シリアライズフラグをリセット
+			void resetSerializeFlag() {
+				AssertP(Trap, !_bSerializing, "serialize flag has already reset")
+				_bSerializing = false;
 			}
 			//! 参照カウンタをインクリメント
 			void increment(SHandle sh) override {
@@ -638,10 +646,6 @@ namespace spn {
 			template <class CB>
 			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
 				auto& ent = _refSH(sh);
-				if(_bNoRelease) {
-					ent.count = std::max(1u, ent.count)-1;
-					return false;
-				}
 				// 簡易マジックナンバーチェック
 				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
 				if(--ent.count == 0) {

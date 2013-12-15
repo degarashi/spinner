@@ -34,7 +34,6 @@ namespace spn {
 			}
 		}
 		void SerializeTest_resmgr() {
-			NRel nrel;
 			auto& rd = Random::getInstance();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {

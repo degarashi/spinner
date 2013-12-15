@@ -30,14 +30,6 @@ namespace spn {
 						value1 == e.value1;
 			}
 		};
-		struct NRel {
-			NRel() {
-				ResMgrBase::SetNoRelease(true);
-			}
-			~NRel() {
-				ResMgrBase::SetNoRelease(false);
-			}
-		};
 		class TestRM : public ResMgrA<MyEnt, TestRM> {};
 		DEF_HANDLE(TestRM, My, MyEnt)
 
