@@ -1,13 +1,8 @@
-#include "unittest.hpp"
-#include "spn_math.hpp"
-#include <random>
-#include <array>
-#include <limits>
-#include <cassert>
-#include <deque>
-#include <iostream>
+#include "test.hpp"
+#include "pqueue.hpp"
+
 namespace spn {
-	namespace unittest {
+	namespace test {
 		void PQueue() {
 			struct MyPair {
 				int a,b;
@@ -38,13 +33,7 @@ namespace spn {
 			}
 
 			using Data = MoveOnly<MoveOnly<int>>;
-			std::random_device rdev;
-			std::array<uint_least32_t, 32> seed;
-			std::generate(seed.begin(), seed.end(), std::ref(rdev));
-			std::seed_seq seq(seed.begin(), seed.end());
-			std::mt19937 mt(seq);
-			std::uniform_int_distribution<int> uni{0, std::numeric_limits<int>::max()};
-
+			Random rd;
 			pqueue<Data, std::deque, std::less<Data>, InsertBefore> q;
 			// 並び順のチェック
 			auto fnCheck = [&q]() {
@@ -57,7 +46,7 @@ namespace spn {
 			// ランダムな値を追加
 			auto fnAddrand = [&](int n) {
 				for(int i=0 ; i<n ; i++)
-					q.push(Data(uni(mt)));
+					q.push(Data(rd.randomIPositive()));
 			};
 
 			fnAddrand(512);
