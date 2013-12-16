@@ -216,7 +216,7 @@ namespace spn {
 		return (val & 0x00ffffff) | ((val&0xff)<<24);
 	}
 
-	struct Text {
+	namespace Text {
 		// エンコードタイプ
 		enum class CODETYPE {
 			UTF_8,
@@ -227,13 +227,13 @@ namespace spn {
 			ANSI
 		};
 		//! SJISコードか判定する
-		static bool sjis_isMBChar(char c);
+		bool sjis_isMBChar(char c);
 		//! SJISコードにおける文字数判定
-		static int sjis_strlen(const char* str);
+		int sjis_strlen(const char* str);
 		//! エンコードタイプと判定に使った文字数を返す
-		static std::pair<CODETYPE, int> GetEncodeType(const void* ptr);
+		std::pair<CODETYPE, int> GetEncodeType(const void* ptr);
 		//! 文字列の先頭4文字から32bitチャンクを生成
-		inline static long MakeChunk(const char* str) {
+		inline long MakeChunk(const char* str) {
 			return ::spn::MakeChunk(str[0], str[1], str[2], str[3]); }
 
 		//! "ASCII文字の16進数値"を数値へ
@@ -242,24 +242,24 @@ namespace spn {
 		uint32_t StrToHex4(const char* src);
 		uint32_t HexToChar(uint32_t hex);
 		//! Base64変換
-		static int base64(char* dst, size_t n_dst, const char* src, int n);
-		static int base64toNum(char* dst, size_t n_dst, const char* src, int n);
+		int base64(char* dst, size_t n_dst, const char* src, int n);
+		int base64toNum(char* dst, size_t n_dst, const char* src, int n);
 		// URL変換
-		static int url_encode_OAUTH(char* dst, size_t n_dst, const char* src, int n);
-		static int url_encode(char* dst, size_t n_dst, const char* src, int n);
+		int url_encode_OAUTH(char* dst, size_t n_dst, const char* src, int n);
+		int url_encode(char* dst, size_t n_dst, const char* src, int n);
 		// UTF-16関連
-		static bool utf16_isSurrogate(char16_t c);
-		static bool utf16_isSpace(char16_t c);
-		static bool utf16_isLF(char16_t c);
-		static bool utf16_isPrivate(char16_t c);	// 私用領域なら1，サロゲート私用領域なら2を返す(予定)
+		bool utf16_isSurrogate(char16_t c);
+		bool utf16_isSpace(char16_t c);
+		bool utf16_isLF(char16_t c);
+		bool utf16_isPrivate(char16_t c);	// 私用領域なら1，サロゲート私用領域なら2を返す(予定)
 		// UTF16 <-> UTF8 相互変換
-		static std::u16string UTFConvertTo16(c8Str src);
-		static std::u16string UTFConvertTo16(c32Str src);
-		static std::u32string UTFConvertTo32(c16Str src);
-		static std::u32string UTFConvertTo32(c8Str src);
-		static std::string UTFConvertTo8(c16Str src);
-		static std::string UTFConvertTo8(c32Str src);
-		static void WriteData(void* pDst, char32_t val, int n);
+		std::u16string UTFConvertTo16(c8Str src);
+		std::u16string UTFConvertTo16(c32Str src);
+		std::u32string UTFConvertTo32(c16Str src);
+		std::u32string UTFConvertTo32(c8Str src);
+		std::string UTFConvertTo8(c16Str src);
+		std::string UTFConvertTo8(c32Str src);
+		void WriteData(void* pDst, char32_t val, int n);
 
 		struct Code {
 			char32_t	code;
@@ -267,14 +267,14 @@ namespace spn {
 		};
 		// nread, nwriteはバイト数ではなく文字数を表す
 		// UTF変換(主に内部用)
-		static Code UTF16To32(char32_t src);
-		static Code UTF32To16(char32_t src);
-		static Code UTF8To32(char32_t src);
+		Code UTF16To32(char32_t src);
+		Code UTF32To16(char32_t src);
+		Code UTF8To32(char32_t src);
 		//! 不正なシーケンスを検出すると例外を発生させる
-		static Code UTF8To32_s(char32_t src);
-		static Code UTF32To8(char32_t src);
-		static Code UTF8To16(char32_t src);
-		static Code UTF16To8(char32_t src);
+		Code UTF8To32_s(char32_t src);
+		Code UTF32To8(char32_t src);
+		Code UTF8To16(char32_t src);
+		Code UTF16To8(char32_t src);
 	};
 
 	//! 配列などのインデックスをフリーリストで管理

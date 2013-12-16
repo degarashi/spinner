@@ -207,40 +207,39 @@ namespace spn {
 		template <class T>
 		static AbstString<T> MakeABS(AbstString<T>&& s);
 	};
-	class To32Str : public c32Str {
+	namespace Text {
+		std::u16string UTFConvertTo16(c8Str src);
+		std::u16string UTFConvertTo16(c32Str src);
+		std::u32string UTFConvertTo32(c16Str src);
+		std::u32string UTFConvertTo32(c8Str src);
+		std::string UTFConvertTo8(c16Str src);
+		std::string UTFConvertTo8(c32Str src);
+	}
+	template <class TO, class FROM> inline AbstString<TO> UTFConvertToN(FROM);
+	template <class TO> inline AbstString<TO> UTFConvertToN(AbstString<TO> src) { return src; }
+	template <> inline c16Str UTFConvertToN<char16_t>(c8Str src) { return Text::UTFConvertTo16(src); }
+	template <> inline c32Str UTFConvertToN<char32_t>(c8Str src) { return Text::UTFConvertTo32(src); }
+	template <> inline c8Str UTFConvertToN<char>(c16Str src) { return Text::UTFConvertTo8(src); }
+	template <> inline c32Str UTFConvertToN<char32_t>(c16Str src) { return Text::UTFConvertTo32(src); }
+	template <> inline c8Str UTFConvertToN<char>(c32Str src) { return Text::UTFConvertTo8(src); }
+	template <> inline c16Str UTFConvertToN<char16_t>(c32Str src) { return Text::UTFConvertTo16(src); }
+	template <class T>
+	class ToNStrT : public AbstString<T> {
+		using base = AbstString<T>;
 		public:
-			To32Str() = default;
-			To32Str(c8Str c);
-			To32Str(c16Str c);
-			To32Str(c32Str& c) noexcept;
-			To32Str(c32Str&& c) noexcept;
-			To32Str& operator = (To32Str& c) noexcept;
-			To32Str& operator = (To32Str&& c) noexcept;
+			ToNStrT() = default;
+			template <class T2>
+			ToNStrT(AbstString<T2> c): base(UTFConvertToN<T>(c)) {}
+			ToNStrT& operator = (ToNStrT& c) noexcept {
+				this->~ToNStrT();
+				new(this) ToNStrT(c);
+				return *this;
+			}
+			ToNStrT& operator = (ToNStrT&& c) noexcept { return this->operator =(c); }
 			template <class... Ts>
-			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
+			ToNStrT(Ts&&... ts): ToNStrT(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
-	class To16Str : public c16Str {
-		public:
-			To16Str() = default;
-			To16Str(c32Str c);
-			To16Str(c8Str c);
-			To16Str(c16Str& c) noexcept;
-			To16Str(c16Str&& c) noexcept;
-			To16Str& operator = (To16Str& c) noexcept;
-			To16Str& operator = (To16Str&& c) noexcept;
-			template <class... Ts>
-			To16Str(Ts&&... ts): To16Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
-	};
-	class To8Str : public c8Str {
-		public:
-			To8Str() = default;
-			To8Str(c32Str c);
-			To8Str(c16Str c);
-			To8Str(c8Str& c) noexcept;
-			To8Str(c8Str&& c) noexcept;
-			To8Str& operator = (To8Str& c) noexcept;
-			To8Str& operator = (To8Str&& c) noexcept;
-			template <class... Ts>
-			To8Str(Ts&&... ts): To8Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
-	};
+	using To8Str = ToNStrT<char>;
+	using To16Str = ToNStrT<char16_t>;
+	using To32Str = ToNStrT<char32_t>;
 }
