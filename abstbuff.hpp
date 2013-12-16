@@ -19,9 +19,10 @@ namespace spn {
 			Buff*		_buffM;
 			const Buff*	_buffC;
 		};
-		size_t	_size;
-		bool	_bRelease;
+		size_t		_size;
+		AbstBuffer* _parent = nullptr;
 
+		//! 内部メモリを解放せずに無効化
 		void _invalidate() {
 			_pSrc = nullptr;
 			_type = Type::Invalid;
@@ -29,39 +30,40 @@ namespace spn {
 		}
 
 	public:
-		AbstBuffer(const AbstBuffer& ab) {
+		AbstBuffer(const AbstBuffer&) = delete;
+		AbstBuffer(AbstBuffer&& ab): AbstBuffer(ab) {}
+		AbstBuffer(AbstBuffer& ab) {
+			_parent = &ab;
 			_type = ab._type;
 			_pSrc = ab._pSrc;
 			_size = ab._size;
-			_bRelease = false;
-		}
-		AbstBuffer(AbstBuffer&& ab) {
-			_type = ab._type;
-			_buffM = ab._buffM;
-			_size = ab._size;
-			if((_bRelease = ab._bRelease))
+			if(ab._type == Type::Movable)
 				ab._invalidate();
 		}
 		~AbstBuffer() {
-			if(_bRelease)
+			if(_type == Type::Movable)
 				delete _buffM;
 		}
+		AbstBuffer(): AbstBuffer(nullptr) {}
 		AbstBuffer(std::nullptr_t): AbstBuffer(nullptr, 0) {}
 		//! initialize by const-pointer
-		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz), _bRelease(false) {}
+		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz) {}
 		//! initialize by movable-vector
-		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(new Buff(std::move(buff))), _size(_buffM->size()), _bRelease(true) {}
+		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(new Buff(std::move(buff))), _size(_buffM->size()) {}
 		//! initialize by const-vector
-		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()), _bRelease(false) {}
+		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()) {}
 
 		AbstBuffer& operator = (AbstBuffer&& a) {
+			return this->operator = (a); }
+		AbstBuffer& operator = (AbstBuffer& a) {
 			_type = a._type;
 			_buffM = a._buffM;
 			_size = a._size;
-			if((_bRelease = a._bRelease))
+			if(a._type == Type::Movable)
 				a._invalidate();
 			return *this;
 		}
+		//! バッファを外部に出力 (movableはmove)
 		void setTo(Buff& dst) {
 			switch(_type) {
 				case Type::ConstPtr:
@@ -81,10 +83,16 @@ namespace spn {
 		}
 		Buff moveTo() {
 			switch(_type) {
-				case Type::ConstPtr: return Buff(_pSrc, _pSrc+_size);
-				case Type::Movable: return std::move(*_buffM);
-				case Type::Const: return *_buffC;
-				default: assert(false);
+				case Type::ConstPtr:
+					return Buff(_pSrc, _pSrc+_size);
+				case Type::Movable: {
+					auto* tmp = _buffM;
+					_invalidate();
+					return std::move(*tmp); }
+				case Type::Const:
+						return *_buffC;
+				default:
+					assert(false);
 			}
 		}
 
@@ -127,6 +135,7 @@ namespace spn {
 		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
 		mutable bool	_bNonNull;	//!< non null-terminatedでない場合にtrue (バイト長は必ず持っている条件)
 		public:
+			AbstString(): AbstString(nullptr) {}
 			AbstString(std::nullptr_t): base_type(nullptr), _bStrLen(false), _bNonNull(true) {}
 			// 文字数カウント機能を追加
 			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true), _bNonNull(false) {}
@@ -134,11 +143,14 @@ namespace spn {
 			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false), _bNonNull(true) {}
 			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false), _bNonNull(false) {}
 			AbstString(const Str& str): base_type(str), _bStrLen(false), _bNonNull(false) {}
-			AbstString(const AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
-			AbstString(AbstString&& str): base_type(std::move(str)), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
+			AbstString(AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
+			AbstString(AbstString&& str): AbstString(str) {}
+			AbstString(const AbstString&) = delete;
 
 			AbstString& operator = (AbstString&& a) {
-				reinterpret_cast<base_type&>(*this) = std::move(reinterpret_cast<base_type&>(a));
+				return this->operator = (a); }
+			AbstString& operator = (AbstString& a) {
+				reinterpret_cast<base_type&>(*this) = reinterpret_cast<base_type&>(a);
 				_strLenP = a._strLenP;
 				_bStrLen = a._bStrLen;
 				_bNonNull = a._bNonNull;
@@ -187,35 +199,40 @@ namespace spn {
 		template <class T>
 		static AbstString<T> MakeABS(std::basic_string<T>&& s);
 		template <class T>
+		static AbstString<T> MakeABS(std::basic_string<T>& s);
+		template <class T>
 		static AbstString<T> MakeABS(const std::basic_string<T>& s);
 		template <class T>
-		static AbstString<T> MakeABS(const AbstString<T>& s);
+		static AbstString<T> MakeABS(AbstString<T>& s);
 		template <class T>
 		static AbstString<T> MakeABS(AbstString<T>&& s);
 	};
 	class To32Str : public c32Str {
 		public:
+			To32Str() = default;
 			To32Str(c8Str c);
 			To32Str(c16Str c);
-			To32Str(const c32Str& c);
+			To32Str(c32Str& c);
 			To32Str(c32Str&& c);
 			template <class... Ts>
 			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
 	class To16Str : public c16Str {
 		public:
+			To16Str() = default;
 			To16Str(c32Str c);
 			To16Str(c8Str c);
-			To16Str(const c16Str& c);
+			To16Str(c16Str& c);
 			To16Str(c16Str&& c);
 			template <class... Ts>
 			To16Str(Ts&&... ts): To16Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
 	class To8Str : public c8Str {
 		public:
+			To8Str() = default;
 			To8Str(c32Str c);
 			To8Str(c16Str c);
-			To8Str(const c8Str& c);
+			To8Str(c8Str& c);
 			To8Str(c8Str&& c);
 			template <class... Ts>
 			To8Str(Ts&&... ts): To8Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
