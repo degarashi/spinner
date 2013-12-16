@@ -53,6 +53,8 @@ namespace spn {
 			PathBlock(PathBlock&& p);
 			PathBlock(To32Str p);
 
+			PathBlock& operator = (const PathBlock&) = default;
+			PathBlock& operator = (PathBlock&& p);
 			PathBlock& operator <<= (To32Str elem);
 
 			void pushBack(To32Str elem);
@@ -88,6 +90,9 @@ namespace spn {
 			URI(To8Str p);
 			URI(const URI& u) = default;
 			URI(URI&& u);
+
+			URI& operator = (const URI&) = default;
+			URI& operator = (URI&& u);
 
 			void setPath(To8Str p);
 			const std::string& getType_utf8() const;

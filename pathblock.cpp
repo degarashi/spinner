@@ -4,9 +4,22 @@
 namespace spn {
 	// -------------------------- PathBlock --------------------------
 	PathBlock::PathBlock(): _bAbsolute(true) {}
-	PathBlock::PathBlock(PathBlock&& p): _path(std::move(p._path)), _segment(std::move(p._segment)), _bAbsolute(p._bAbsolute) {}
+	PathBlock::PathBlock(PathBlock&& p):
+		_path(std::move(p._path)),
+		_segment(std::move(p._segment)),
+		_bAbsolute(p._bAbsolute)
+	{
+		p.clear();
+	}
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
+	}
+	PathBlock& PathBlock::operator = (PathBlock&& p) {
+		_path = std::move(p._path);
+		_segment = std::move(p._segment);
+		_bAbsolute = p._bAbsolute;
+		p.clear();
+		return *this;
 	}
 	template <class Itr, class CB>
 	void PathBlock::_ReWriteSC(Itr from, Itr to, char32_t sc, CB cb) {
@@ -445,6 +458,11 @@ namespace spn {
 	URI::URI(URI&& u): PathBlock(std::move(u)), _type(std::move(u._type)) {}
 	URI::URI(To8Str p) {
 		setPath(p);
+	}
+	URI& URI::operator = (URI&& u) {
+		static_cast<PathBlock&>(*this) = std::move(u);
+		_type = std::move(u._type);
+		return *this;
 	}
 	void URI::setPath(To8Str p) {
 		std::string path(p.moveTo());
