@@ -214,6 +214,8 @@ namespace spn {
 			To32Str(c16Str c);
 			To32Str(c32Str& c) noexcept;
 			To32Str(c32Str&& c) noexcept;
+			To32Str& operator = (To32Str& c) noexcept;
+			To32Str& operator = (To32Str&& c) noexcept;
 			template <class... Ts>
 			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
@@ -224,6 +226,8 @@ namespace spn {
 			To16Str(c8Str c);
 			To16Str(c16Str& c) noexcept;
 			To16Str(c16Str&& c) noexcept;
+			To16Str& operator = (To16Str& c) noexcept;
+			To16Str& operator = (To16Str&& c) noexcept;
 			template <class... Ts>
 			To16Str(Ts&&... ts): To16Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
@@ -234,6 +238,8 @@ namespace spn {
 			To8Str(c16Str c);
 			To8Str(c8Str& c) noexcept;
 			To8Str(c8Str&& c) noexcept;
+			To8Str& operator = (To8Str& c) noexcept;
+			To8Str& operator = (To8Str&& c) noexcept;
 			template <class... Ts>
 			To8Str(Ts&&... ts): To8Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};

@@ -440,14 +440,32 @@ namespace spn {
 	To32Str::To32Str(c16Str c): c32Str(Text::UTFConvertTo32(c)) {}
 	To32Str::To32Str(c32Str& c) noexcept: c32Str(c) {}
 	To32Str::To32Str(c32Str&& c) noexcept: c32Str(c) {}
+	To32Str& To32Str::operator = (To32Str& c) noexcept {
+		this->~To32Str();
+		new(this) To32Str(c);
+		return *this;
+	}
+	To32Str& To32Str::operator = (To32Str&& c) noexcept { return this->operator =(c); }
 	// -------------------------- To16Str --------------------------
 	To16Str::To16Str(c8Str c): c16Str(Text::UTFConvertTo16(c)) {}
 	To16Str::To16Str(c32Str c): c16Str(Text::UTFConvertTo16(c)) {}
 	To16Str::To16Str(c16Str& c) noexcept: c16Str(c) {}
 	To16Str::To16Str(c16Str&& c) noexcept: c16Str(c) {}
+	To16Str& To16Str::operator = (To16Str& c) noexcept {
+		this->~To16Str();
+		new(this) To16Str(c);
+		return *this;
+	}
+	To16Str& To16Str::operator = (To16Str&& c) noexcept { return this->operator =(c); }
 	// -------------------------- To8Str --------------------------
 	To8Str::To8Str(c16Str c): c8Str(Text::UTFConvertTo8(c)) {}
 	To8Str::To8Str(c32Str c): c8Str(Text::UTFConvertTo8(c)) {}
 	To8Str::To8Str(c8Str& c) noexcept: c8Str(c) {}
 	To8Str::To8Str(c8Str&& c) noexcept: c8Str(c) {}
+	To8Str& To8Str::operator = (To8Str& c) noexcept {
+		this->~To8Str();
+		new(this) To8Str(c);
+		return *this;
+	}
+	To8Str& To8Str::operator = (To8Str&& c) noexcept { return this->operator =(c); }
 }
