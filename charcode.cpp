@@ -438,16 +438,16 @@ namespace spn {
 	// -------------------------- To32Str --------------------------
 	To32Str::To32Str(c8Str c): c32Str(Text::UTFConvertTo32(c)) {}
 	To32Str::To32Str(c16Str c): c32Str(Text::UTFConvertTo32(c)) {}
-	To32Str::To32Str(c32Str& c): c32Str(c) {}
-	To32Str::To32Str(c32Str&& c): c32Str(c) {}
+	To32Str::To32Str(c32Str& c) noexcept: c32Str(c) {}
+	To32Str::To32Str(c32Str&& c) noexcept: c32Str(c) {}
 	// -------------------------- To16Str --------------------------
 	To16Str::To16Str(c8Str c): c16Str(Text::UTFConvertTo16(c)) {}
 	To16Str::To16Str(c32Str c): c16Str(Text::UTFConvertTo16(c)) {}
-	To16Str::To16Str(c16Str& c): c16Str(c) {}
-	To16Str::To16Str(c16Str&& c): c16Str(c) {}
+	To16Str::To16Str(c16Str& c) noexcept: c16Str(c) {}
+	To16Str::To16Str(c16Str&& c) noexcept: c16Str(c) {}
 	// -------------------------- To8Str --------------------------
 	To8Str::To8Str(c16Str c): c8Str(Text::UTFConvertTo8(c)) {}
 	To8Str::To8Str(c32Str c): c8Str(Text::UTFConvertTo8(c)) {}
-	To8Str::To8Str(c8Str& c): c8Str(c) {}
-	To8Str::To8Str(c8Str&& c): c8Str(c) {}
+	To8Str::To8Str(c8Str& c) noexcept: c8Str(c) {}
+	To8Str::To8Str(c8Str&& c) noexcept: c8Str(c) {}
 }

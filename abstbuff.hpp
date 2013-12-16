@@ -23,7 +23,7 @@ namespace spn {
 		AbstBuffer* _parent = nullptr;
 
 		//! 内部メモリを解放せずに無効化
-		void _invalidate() {
+		void _invalidate() noexcept {
 			_pSrc = nullptr;
 			_type = Type::Invalid;
 			_size = 0;
@@ -31,8 +31,8 @@ namespace spn {
 
 	public:
 		AbstBuffer(const AbstBuffer&) = delete;
-		AbstBuffer(AbstBuffer&& ab): AbstBuffer(ab) {}
-		AbstBuffer(AbstBuffer& ab) {
+		AbstBuffer(AbstBuffer&& ab) noexcept: AbstBuffer(ab) {}
+		AbstBuffer(AbstBuffer& ab) noexcept {
 			_parent = &ab;
 			_type = ab._type;
 			_pSrc = ab._pSrc;
@@ -44,18 +44,18 @@ namespace spn {
 			if(_type == Type::Movable)
 				delete _buffM;
 		}
-		AbstBuffer(): AbstBuffer(nullptr) {}
-		AbstBuffer(std::nullptr_t): AbstBuffer(nullptr, 0) {}
+		AbstBuffer() noexcept: AbstBuffer(nullptr) {}
+		AbstBuffer(std::nullptr_t) noexcept: AbstBuffer(nullptr, 0) {}
 		//! initialize by const-pointer
-		AbstBuffer(const void* src, size_t sz): _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz) {}
+		AbstBuffer(const void* src, size_t sz) noexcept : _type(Type::ConstPtr), _pSrc(reinterpret_cast<const T*>(src)), _size(sz) {}
 		//! initialize by movable-vector
 		AbstBuffer(Buff&& buff): _type(Type::Movable), _buffM(new Buff(std::move(buff))), _size(_buffM->size()) {}
 		//! initialize by const-vector
-		AbstBuffer(const Buff& buff): _type(Type::Const), _buffC(&buff), _size(buff.size()) {}
+		AbstBuffer(const Buff& buff) noexcept: _type(Type::Const), _buffC(&buff), _size(buff.size()) {}
 
-		AbstBuffer& operator = (AbstBuffer&& a) {
+		AbstBuffer& operator = (AbstBuffer&& a) noexcept {
 			return this->operator = (a); }
-		AbstBuffer& operator = (AbstBuffer& a) {
+		AbstBuffer& operator = (AbstBuffer& a) noexcept {
 			_type = a._type;
 			_buffM = a._buffM;
 			_size = a._size;
@@ -97,16 +97,16 @@ namespace spn {
 		}
 
 		//! データのサイズ (not 文字列長)
-		size_t getLength() const {
+		size_t getLength() const noexcept {
 			return _size;
 		}
 		//! データの先頭ポインタを取得 (null-terminatedは保証されない)
-		const T* getPtr() const {
+		const T* getPtr() const noexcept {
 			if(_type == Type::ConstPtr)
 				return _pSrc;
 			return &(*_buffC)[0];
 		}
-		bool empty() const {
+		bool empty() const noexcept {
 			return getLength() == 0;
 		}
 	};
@@ -135,21 +135,21 @@ namespace spn {
 		mutable bool	_bStrLen;	//!< 文字列長を持っている場合はtrue
 		mutable bool	_bNonNull;	//!< non null-terminatedでない場合にtrue (バイト長は必ず持っている条件)
 		public:
-			AbstString(): AbstString(nullptr) {}
-			AbstString(std::nullptr_t): base_type(nullptr), _bStrLen(false), _bNonNull(true) {}
+			AbstString() noexcept: AbstString(nullptr) {}
+			AbstString(std::nullptr_t) noexcept: base_type(nullptr), _bStrLen(false), _bNonNull(true) {}
 			// 文字数カウント機能を追加
 			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true), _bNonNull(false) {}
 			// Not NullTerminatedかもしれないのでフラグを立てておく
 			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false), _bNonNull(true) {}
 			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false), _bNonNull(false) {}
 			AbstString(const Str& str): base_type(str), _bStrLen(false), _bNonNull(false) {}
-			AbstString(AbstString& str): base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
-			AbstString(AbstString&& str): AbstString(str) {}
+			AbstString(AbstString& str) noexcept: base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
+			AbstString(AbstString&& str) noexcept: AbstString(str) {}
 			AbstString(const AbstString&) = delete;
 
-			AbstString& operator = (AbstString&& a) {
+			AbstString& operator = (AbstString&& a) noexcept {
 				return this->operator = (a); }
-			AbstString& operator = (AbstString& a) {
+			AbstString& operator = (AbstString& a) noexcept {
 				reinterpret_cast<base_type&>(*this) = reinterpret_cast<base_type&>(a);
 				_strLenP = a._strLenP;
 				_bStrLen = a._bStrLen;
@@ -212,8 +212,8 @@ namespace spn {
 			To32Str() = default;
 			To32Str(c8Str c);
 			To32Str(c16Str c);
-			To32Str(c32Str& c);
-			To32Str(c32Str&& c);
+			To32Str(c32Str& c) noexcept;
+			To32Str(c32Str&& c) noexcept;
 			template <class... Ts>
 			To32Str(Ts&&... ts): To32Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
@@ -222,8 +222,8 @@ namespace spn {
 			To16Str() = default;
 			To16Str(c32Str c);
 			To16Str(c8Str c);
-			To16Str(c16Str& c);
-			To16Str(c16Str&& c);
+			To16Str(c16Str& c) noexcept;
+			To16Str(c16Str&& c) noexcept;
 			template <class... Ts>
 			To16Str(Ts&&... ts): To16Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
@@ -232,8 +232,8 @@ namespace spn {
 			To8Str() = default;
 			To8Str(c32Str c);
 			To8Str(c16Str c);
-			To8Str(c8Str& c);
-			To8Str(c8Str&& c);
+			To8Str(c8Str& c) noexcept;
+			To8Str(c8Str&& c) noexcept;
 			template <class... Ts>
 			To8Str(Ts&&... ts): To8Str(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
