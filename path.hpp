@@ -4,6 +4,11 @@
 #include <functional>
 #include <deque>
 #include "abstbuff.hpp"
+#include "serialization/chars.hpp"
+#define BOOST_PP_VARIADICS 1
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/deque.hpp>
+#include <boost/serialization/base_object.hpp>
 
 struct stat;
 namespace spn {
@@ -46,6 +51,12 @@ namespace spn {
 			/*! \return [NeedOperation, AbsoluteFlag] */
 			template <class Itr>
 			static std::pair<bool,bool> _StripSC(Itr& from, Itr& to);
+        private:
+            friend class boost::serialization::access;
+            template <class Archive>
+            void serialize(Archive& ar, const unsigned int) {
+                ar & _path & _segment & _bAbsolute;
+            }
 
 		public:
 			PathBlock();
@@ -85,6 +96,13 @@ namespace spn {
 		const static std::string SEP;
 		const static std::u32string SEP32;
 		std::string		_type;
+
+        friend class boost::serialization::access;
+        template <class Archive>
+        void serialize(Archive& ar, const unsigned int) {
+            ar & _type & boost::serialization::base_object<PathBlock>(*this);
+        }
+
 		public:
 			URI();
 			URI(To8Str p);
