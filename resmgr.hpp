@@ -420,7 +420,8 @@ namespace spn {
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
 			void load(Archive& ar, const unsigned int ver) {
-				_bSerializing = false;
+				AssertP(Trap, !_bSerializing)
+				_bSerializing = true;
 
 				// 最初にMergeフラグを読む
 				bool bMerge;
@@ -452,8 +453,8 @@ namespace spn {
 				// 全消しして上書き or IDのみ (フラグで判断)
 				ar & _dataVec;
 
-				// シリアライズフラグの解除はマニュアル
-				_bSerializing = true;
+				// シリアライズフラグの解除は自動
+				_bSerializing = false;
 			}
 			template <class Archive>
 			void save(Archive& ar, const unsigned int ver) const {
@@ -527,9 +528,6 @@ namespace spn {
 			static MergeType s_merge;
 
 		protected:
-			void _setSerializeFlag(bool b) {
-				_bSerializing = b;
-			}
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
 			Entry& _refSH(SHdl sh) {
 				const ThisType* ths = this;
@@ -820,13 +818,11 @@ namespace spn {
 			template <class Archive>
 			void load(Archive& ar, const unsigned int ver) {
 				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
-				base_type::_setSerializeFlag(false);
 				// ポインタの振りなおし
 				for(auto& p : _nameMap) {
 					auto& data = base_type::_refSH(p.second).data;
 					data.stp = &p.first;
 				}
-				base_type::_setSerializeFlag(true);
 			}
 			template <class Archive>
 			void save(Archive& ar, const unsigned int ver) const {
