@@ -52,3 +52,18 @@
 			>::value \
 		)); \
 	}; }}
+
+#define BOOST_SERIALIZATION_CTOR_FRIEND(name) \
+		template <class Archive> \
+		friend void boost::serialization::save_construct_data(Archive&, const name*, const unsigned int); \
+		template <class Archive> \
+		friend void boost::serialization::load_construct_data(Archive&, name*, const unsigned int);
+#define BOOST_SERIALIZATION_ABSTRACT_BASE(name) \
+		friend class boost::serialization::access; \
+		template <class Archive> \
+		void serialize(Archive& ar, const unsigned int) {}
+#define BOOST_SERIALIZATION_ABSTRACT_DERIVED(base) \
+		friend class boost::serialization::access; \
+		template <class Archive> \
+		void serialize(Archive& ar, const unsigned int) { \
+			ar & boost::serialization::base_object<base>(*this);}
