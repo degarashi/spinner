@@ -73,6 +73,13 @@
 	#include <cmath>
 	#include <algorithm>
 	#include <initializer_list>
+	template <class T>
+	struct _fullbit {
+		static T get() {
+			const int c_minus1 = -1;
+			return *reinterpret_cast<const T*>(&c_minus1);
+		}
+	};
 	template <class T, int N>
 	struct _rbase {
 		T v[N];
@@ -134,10 +141,14 @@
 		static T Minus(T t0, T t1) { return t0 - t1; }
 		static T Mul(T t0, T t1) { return t0 * t1; }
 		static T Div(T t0, T t1) { return t0 / t1; }
-		static T CmpLT(T t0, T t1) { return t0<t1 ? 1 : 0; }
-		static T CmpEQ(T t0, T t1) { return t0==t1 ? 1 : 0; }
-		static T CmpNEQ(T t0, T t1) { return t0!=t1 ? 1 : 0; }
-		static T CmpGR(T t0, T t1) { return t0>t1 ? 1 : 0; }
+
+		static T CmpLT(T t0, T t1) { return t0<t1 ? _fullbit<T>::get() : 0; }
+		static T CmpLE(T t0, T t1) { return t0<=t1 ? _fullbit<T>::get() : 0; }
+		static T CmpEQ(T t0, T t1) { return t0==t1 ? _fullbit<T>::get() : 0; }
+		static T CmpNEQ(T t0, T t1) { return t0!=t1 ? _fullbit<T>::get() : 0; }
+		static T CmpGR(T t0, T t1) { return t0>t1 ? _fullbit<T>::get() : 0; }
+		static T CmpGE(T t0, T t1) { return t0>=t1 ? _fullbit<T>::get() : 0; }
+
 		static T Min(T t0, T t1) { return t0<t1 ? t0 : t1; }
 		static T Max(T t0, T t1) { return t0>t1 ? t0 : t1; }
 
@@ -147,9 +158,11 @@
 		DEF_REG_OPERATOR(*, Mul)
 		DEF_REG_OPERATOR(/, Div)
 		DEF_REG_OPERATOR(<, CmpLT)
+		DEF_REG_OPERATOR(<=, CmpLE)
 		DEF_REG_OPERATOR(==, CmpEQ)
 		DEF_REG_OPERATOR(!=, CmpNEQ)
 		DEF_REG_OPERATOR(>, CmpGR)
+		DEF_REG_OPERATOR(>=, CmpGE)
 
 		_rbase get_min(const _rbase& r) const { return _operate<N>(r, Min); }
 		_rbase get_max(const _rbase& r) const { return _operate<N>(r, Max); }
@@ -206,14 +219,19 @@
 			return *this;
 		}
 	};
+
+	#define Operators_Seq (+)(-)(*)(/)(<)(<=)(==)(!=)(>)(>=)
+	#define DEF_REG128OP(z, mytype, op)	mytype operator op (const mytype& r) const { \
+		return static_cast<const base_t&>(*this) op static_cast<const base_t&>(r); }
 	struct reg64i : _rbase<int32_t, 2> {
 
 	};
 	struct reg128i : _rbase<int32_t, 4> {
+		using base_t = _rbase<int32_t, 4>;
 		constexpr static int N = 4;
 		using T = int32_t;
-		using _rbase<int32_t, 4>::_rbase;
-		using _rbase<int32_t,4>::operator =;
+		using base_t::base_t;
+		using base_t::operator =;
 
 		static T And(T t0, T t1) { return t0 & t1; }
 		static T AndNot(T t0, T t1) { return ~t0 & t1; }
@@ -223,6 +241,9 @@
 		DEF_REG_OPERATOR(&, And)
 		DEF_REG_OPERATOR(|, Or)
 		DEF_REG_OPERATOR(^, Xor)
+
+		BOOST_PP_SEQ_FOR_EACH(DEF_REG128OP, reg128i, Operators_Seq)
+
 		reg128i andnot(const reg128i& r) const { return reg128i(_operate<4>(r, AndNot)); }
 		reg128i packS16(const reg128i& r) const {
 			reg128i ret;
@@ -242,16 +263,30 @@
 		}
 	};
 	struct reg128 : _rbase<float, 4> {
-		using baseI = _rbase<int32_t,4>;
-		using _rbase<float,4>::_rbase;
-		using _rbase<float,4>::operator =;
+		using base_t = _rbase<float, 4>;
+		using base_t::base_t;
+		using base_t::operator =;
+
+		reg128() = default;
+		reg128(const reg128i& r) {
+			for(int i=0 ; i<4 ; i++)
+				v[i] = r.v[i];
+		}
+
 		#define DEF_REG128I_OP(op)  reg128 operator op (const reg128& r) const { \
-			return *reinterpret_cast<const reg128i*>(this) op *reinterpret_cast<const reg128i*>(&r); }
+			reg128i ret = *reinterpret_cast<const reg128i*>(this) op *reinterpret_cast<const reg128i*>(&r); \
+			return reinterpret_cast<reg128&>(ret); }
 		DEF_REG128I_OP(&)
 		DEF_REG128I_OP(|)
 		DEF_REG128I_OP(^)
+		#undef DEF_REG128I_OP
+
+		BOOST_PP_SEQ_FOR_EACH(DEF_REG128OP, reg128, Operators_Seq)
 	};
 	struct reg128d : _rbase<double, 2> {};
+	#undef DEF_REG128OP
+	#undef DEF_REG_OPERATOR
+	#undef Operators_Seq
 
 	#define reg_loadu_ps			reg_load_ps
 	#define reg_load_ps(p)			(reg128{(p)[0], (p)[1], (p)[2], (p)[3]})
