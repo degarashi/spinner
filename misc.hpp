@@ -473,95 +473,118 @@ namespace spn {
 	//! PlusMinus1(float)の引数がunsigned intバージョン
 	float inline PlusMinus1(unsigned int val) { return PlusMinus1(static_cast<int>(val)); }
 
-	template <class T>
-	T* AAllocBase(int nAlign, int n) {
-		#ifdef ANDROID
-			return reinterpret_cast<T*>(malloc(n*sizeof(T)));
-		#else
-			void* ptr;
-			AssertT(Trap, posix_memalign(&ptr, nAlign, sizeof(T)*n) == 0, (std::bad_alloc))
-			return reinterpret_cast<T*>(ptr);
-		#endif
-	}
-	/*! \param[in] nAlign	バイト境界 (2byte以上128byte以下)
-		\param[in] size		確保したいバイト数 */
-	inline void* AlignedAlloc(size_t nAlign, size_t size) {
-		assert(spn::Bit::Count(nAlign) == 1);
+	template <int N>
+	struct AlignedAux {
+		unsigned data : 8*N;
+		unsigned offset : 8;
+	};
+	template <>
+	struct AlignedAux<0> {
+		uint8_t offset;
+	};
+	//! アラインメントされたメモリ領域を確保
+	/*!	N: 追加情報サイズ(bytes)
+		\param[in] nAlign	バイト境界 (2byte以上128byte以下)
+		\param[in] size		確保したいバイト数
+		\return ユーザーに返すアライン済みメモリ, 追加情報構造体 */
+	template <int N>
+	inline std::pair<void*, AlignedAux<N>*>	AlignedAlloc(size_t nAlign, size_t size) {
+		assert(spn::Bit::Count(nAlign) == 1);		// nAlignは2の乗数倍
 		assert(nAlign >= 2 && nAlign <= 128);
-		// 1byte前にずらした距離を記載
-		size_t sz = size + nAlign;
+
+		using Aux = AlignedAux<N>;
+		size_t sz = size + nAlign + sizeof(Aux) -1;
 		uintptr_t ptr = (uintptr_t)std::malloc(sz);
-		// アラインメントチェック
-		uint32_t ofs = nAlign - (ptr & (nAlign-1)),
-				ret;
-		if(ofs == nAlign) {
-			ret = ptr+nAlign;
-			ofs = nAlign;
-		} else {
-			ret = ptr+ofs;
-		}
-		auto* ofsSz = reinterpret_cast<uint8_t*>(ret-1);
-		*ofsSz = static_cast<uint8_t>(ofs);
-		return reinterpret_cast<void*>(ret);
+		// アラインメントオフセット計算
+		uint32_t ofs = nAlign - ((ptr + sizeof(Aux)) & (nAlign-1));
+		// ユーザーに返すメモリ領域の前にずらした距離を記載
+		Aux* aux = reinterpret_cast<Aux*>(ptr + ofs);
+		aux->offset = static_cast<uint8_t>(ofs + sizeof(Aux));
+		return std::make_pair(reinterpret_cast<void*>(ptr + ofs + sizeof(Aux)), aux);
 	}
+
 	//! AlignedAllocで確保したメモリの解放
 	/*! \param[in] ptr	開放したいメモリのポインタ(nullは不可) */
+	template <int N>
 	inline void AlignedFree(void* ptr) {
 		assert(ptr);
+
 		auto iptr = reinterpret_cast<uintptr_t>(ptr);
-		auto* ofs = reinterpret_cast<uint8_t*>(iptr-1);
-		std::free(reinterpret_cast<void*>(iptr - *ofs));
+		using Aux = AlignedAux<N>;
+		Aux* aux = reinterpret_cast<Aux*>(iptr - sizeof(Aux));
+		std::free(reinterpret_cast<void*>(iptr - aux->offset));
 	}
 
 	//! バイトアラインメント付きのメモリ確保
-	/*! 解放はdeleteで行う
-		----------------------
-		これだと解放の時に死ぬ為
-		void* ptr = std::malloc(sizeof(T) + 15);
-		ptr = (void*)(((uintptr_t)ptr + 15) & ~0x0f); */
+	/*! 解放はAFreeで行う */
 	template <class T, class... Args>
-	T* AAlloc(int n, Args&&... args) {
-		return new(AlignedAlloc(n, sizeof(T))) T(std::forward<Args>(args)...);
-	}
-	//! デフォルトコンストラクタによる初期化
-	template <class T>
-	T* AAlloc(int n) {
-		return new(AlignedAlloc(n, sizeof(T))) T();
+	T* AAlloc(int nAlign, Args&&... args) {
+		return new(AlignedAlloc<0>(nAlign, sizeof(T)).first) T(std::forward<Args>(args)...);
 	}
 	//! initializer_listによる初期化
 	template <class T, class A>
-	T* AAlloc(int n, std::initializer_list<A>&& w) {
-		return new(AlignedAlloc(n, sizeof(T))) T(std::forward<std::initializer_list<A>>(w));
+	T* AAlloc(int nAlign, std::initializer_list<A>&& w) {
+		return new(AlignedAlloc<0>(nAlign, sizeof(T)).first) T(std::forward<std::initializer_list<A>>(w));
 	}
 	//! バイトアラインメント付きの配列メモリ確保
 	template <class T>
 	T* AArray(int nAlign, int n) {
-		T* ptr = AAllocBase<T>(nAlign, n);
-		for(int i=0 ; i<n ; i++)
-			new(ptr+i) T();
-		return ptr;
+		// 先頭に要素数カウンタを置く
+		const size_t size = (sizeof(T) + nAlign-1) & ~(nAlign-1);
+		AssertP(Trap, size == sizeof(T))
+
+		auto ret = AlignedAlloc<3>(nAlign, size*n);
+		ret.second->data = n;
+		uintptr_t ptr = reinterpret_cast<uintptr_t>(ret.first);
+		for(int i=0 ; i<n ; i++) {
+			new(reinterpret_cast<T*>(ptr)) T();
+			ptr += size;
+		}
+		return reinterpret_cast<T*>(ret.first);
+	}
+
+	template <class T>
+	void AFree(T* ptr) {
+		ptr->~T();
+		AlignedFree<0>(ptr);
 	}
 	template <class T>
-	void DefaultDelete(void* ptr) {
-		delete reinterpret_cast<T*>(ptr);
+	void AArrayFree(T* ptr) {
+		using Aux = AlignedAux<3>;
+		auto* aux = reinterpret_cast<Aux*>(reinterpret_cast<uintptr_t>(ptr) - sizeof(Aux));
+		auto* uptr =reinterpret_cast<T*>(ptr);
+		int n = aux->data;
+		while(n != 0) {
+			uptr->~T();
+			++uptr;
+			--n;
+		}
+		AlignedFree<3>(ptr);
 	}
-	// TODO: オブジェクト配列への対応
+
 	//! アラインメントチェッカ
 	template <int N, class T>
-	class CheckAlign {
+	class alignas(N) CheckAlign {
 		protected:
 			CheckAlign() {
-				// 16byteアラインメントチェック
+				// アラインメントチェック
 				AssertP(Trap, (((uintptr_t)this)&(N-1)) == 0)
 			}
 		private:
 			static void AlignedDelete(void* ptr) {
-				reinterpret_cast<T*>(ptr)->~T();
-				AlignedFree(ptr);
+				AFree(reinterpret_cast<T*>(ptr));
 			}
 			struct AlignedDeleter {
 				void operator()(void* ptr) const {
-					AlignedDelete(ptr);
+					AFree(reinterpret_cast<T*>(ptr));
+				}
+			};
+			static void ArrayDelete(void* ptr) {
+				AArrayFree(reinterpret_cast<T*>(ptr));
+			}
+			struct ArrayDeleter {
+				void operator()(void* ptr) const {
+					AArrayFree(reinterpret_cast<T*>(ptr));
 				}
 			};
 
@@ -581,6 +604,8 @@ namespace spn {
 			template <class A>
 			static std::unique_ptr<T, AlignedDeleter> NewU(std::initializer_list<A>&& w) {
 				return std::unique_ptr<T, AlignedDeleter>(_New(std::move(w))); }
+			static std::unique_ptr<T[], ArrayDeleter> ArrayU(size_t n) {
+				return std::unique_ptr<T[], ArrayDeleter>(AArray<T>(N, n)); }
 			//! アラインメント済みのメモリにオブジェクトを確保し、個別デリータ付きのunique_ptrとして返す
 			template <class... Args>
 			static std::unique_ptr<T, void (*)(void*)> NewUF(Args&&... args) {
@@ -588,6 +613,8 @@ namespace spn {
 			template <class A>
 			static std::unique_ptr<T, void (*)(void*)> NewUF(std::initializer_list<A>&& w) {
 				return std::unique_ptr<T, void(*)(void*)>(_New(std::move(w)), AlignedDelete); }
+			static std::unique_ptr<T[], void (*)(void*)> ArrayUF(size_t n) {
+				return std::unique_ptr<T[], void(*)(void*)>(AArray<T>(N,n), ArrayDelete); }
 			//! アラインメント済みのメモリにオブジェクトを確保し、shared_ptrとして返す
 			template <class... Args>
 			static std::shared_ptr<T> NewS(Args&&... args) {
