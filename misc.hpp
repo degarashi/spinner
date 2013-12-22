@@ -13,7 +13,6 @@
 #include <deque>
 #include <atomic>
 #include <thread>
-
 //! 32bitの4文字チャンクを生成
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
 //! 特定のメソッドを持っているかチェック
@@ -117,6 +116,7 @@ namespace spn {
 		return MInitializer<decltype(std::declval<Ts>()())...>(true, std::forward<Ts>(ts)...);
 	}
 
+	#ifdef UNIX
 	//! スピンロックによるmutex
 	class Synchro {
 		private:
@@ -153,6 +153,7 @@ namespace spn {
 					_abLock.store(false, std::memory_order_relaxed);
 			}
 	};
+	#endif
 
 	//! 何もしないダミーmutex
 	class PseudoSynch {
