@@ -59,48 +59,66 @@ namespace spn {
 		void GapTest() {
 			auto& rd = Random::getInstance();
 			auto gen = std::bind(&Random::randomF, std::ref(rd));
-			std::array<float,16> tmp;
+			using F16 = std::array<float,16>;
+			F16 tmp;
 			std::generate(tmp.begin(), tmp.end(), std::ref(gen));
 
 			#define SETAUX(z,n,data)	aux##n = *data++;
 			#define CHECKAUX(z,n,data) Assert(Trap, aux##n==*data++)
 			{
-				GAP_MATRIX(mat, 4,3,
-						(((float, aux0)))
-						(((float, aux1)))
-						(((float, aux2)))
-						(((float, aux3)))
-				)
-				auto* src = SetValue(mat, &tmp[0]);
-				BOOST_PP_REPEAT(4, SETAUX, src)
-				src = CheckValue(mat, &tmp[0]);
-				BOOST_PP_REPEAT(4, CHECKAUX, src)
+				struct Test {
+					GAP_MATRIX(mat, 4,3,
+							(((float, aux0)))
+							(((float, aux1)))
+							(((float, aux2)))
+							(((float, aux3)))
+					)
+
+					Test(const F16& tmp) {
+						auto* src = SetValue(mat, &tmp[0]);
+						BOOST_PP_REPEAT(4, SETAUX, src)
+						src = CheckValue(mat, &tmp[0]);
+						BOOST_PP_REPEAT(4, CHECKAUX, src)
+					}
+				} test(tmp);
 			}
 			{
-				GAP_MATRIX(mat, 4,2,
-						(((float, aux0), (float, aux4)))
-						(((float, aux1), (float, aux5)))
-						(((float, aux2), (float, aux6)))
-						(((float, aux3), (float, aux7)))
-				)
-				auto* src = SetValue(mat, &tmp[0]);
-				BOOST_PP_REPEAT(8, SETAUX, src)
-				src = CheckValue(mat, &tmp[0]);
-				BOOST_PP_REPEAT(8, CHECKAUX, src)
+				struct Test {
+					GAP_MATRIX(mat, 4,2,
+							(((float, aux0), (float, aux4)))
+							(((float, aux1), (float, aux5)))
+							(((float, aux2), (float, aux6)))
+							(((float, aux3), (float, aux7)))
+					)
+					Test(const F16& tmp) {
+						auto* src = SetValue(mat, &tmp[0]);
+						BOOST_PP_REPEAT(8, SETAUX, src)
+						src = CheckValue(mat, &tmp[0]);
+						BOOST_PP_REPEAT(8, CHECKAUX, src)
+					}
+				} test(tmp);
 			}
 			{
-				GAP_VECTOR(vec, 3, (float aux0))
-				auto* src = SetValue(vec, &tmp[0]);
-				BOOST_PP_REPEAT(1, SETAUX, src)
-				src = CheckValue(vec, &tmp[0]);
-				BOOST_PP_REPEAT(1, CHECKAUX, src)
+				struct Test {
+					GAP_VECTOR(vec, 3, (float aux0))
+					Test(const F16& tmp) {
+						auto* src = SetValue(vec, &tmp[0]);
+						BOOST_PP_REPEAT(1, SETAUX, src)
+						src = CheckValue(vec, &tmp[0]);
+						BOOST_PP_REPEAT(1, CHECKAUX, src)
+					}
+				} test(tmp);
 			}
 			{
-				GAP_VECTOR(vec, 2, (float aux0)(float aux1))
-				auto* src = SetValue(vec, &tmp[0]);
-				BOOST_PP_REPEAT(2, SETAUX, src)
-				src = CheckValue(vec, &tmp[0]);
-				BOOST_PP_REPEAT(2, CHECKAUX, src)
+				struct Test {
+					GAP_VECTOR(vec, 2, (float aux0)(float aux1))
+					Test(const F16& tmp) {
+						auto* src = SetValue(vec, &tmp[0]);
+						BOOST_PP_REPEAT(2, SETAUX, src)
+						src = CheckValue(vec, &tmp[0]);
+						BOOST_PP_REPEAT(2, CHECKAUX, src)
+					}
+				} test(tmp);
 			}
 			#undef SETAUX
 			#undef CHECKAUX

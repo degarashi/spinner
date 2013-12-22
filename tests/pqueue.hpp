@@ -23,8 +23,8 @@ namespace spn {
 			static const T2& _getValue(const T2& t, ...) {
 				return t;
 			}
-			template <class T2>
-			static auto _getValue(const T2& t, typename T2::move_type *a=nullptr) -> const typename T2::move_type& {
+			template <class T3>
+			static auto _getValue(const MoveOnly<T3>& t, ...) -> decltype(t.getValue()){
 				return t.getValue();
 			}
 			auto getValue() const -> decltype(_getValue(value, nullptr)) {
