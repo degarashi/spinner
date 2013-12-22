@@ -32,28 +32,28 @@ namespace spn {
 		::getcwd(tmp, sizeof(tmp));
 		return std::string(tmp);
 	}
-	void Dir_depLinux::chdir(To8Str path) const {
+	void Dir_depLinux::chdir(ToPathStr path) const {
 		AssertT(Throw, ::chdir(path.getPtr()) >= 0, (PError)(const char*), "chdir")
 	}
-	bool Dir_depLinux::chdir_nt(To8Str path) const {
+	bool Dir_depLinux::chdir_nt(ToPathStr path) const {
 		return ::chdir(path.getPtr()) >= 0;
 	}
-	void Dir_depLinux::mkdir(To8Str path, uint32_t mode) const {
+	void Dir_depLinux::mkdir(ToPathStr path, uint32_t mode) const {
 		AssertT(Throw, ::mkdir(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "mkdir")
 	}
-	void Dir_depLinux::chmod(To8Str path, uint32_t mode) const {
+	void Dir_depLinux::chmod(ToPathStr path, uint32_t mode) const {
 		AssertT(Throw, ::chmod(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "chmod")
 	}
-	void Dir_depLinux::rmdir(To8Str path) const {
+	void Dir_depLinux::rmdir(ToPathStr path) const {
 		AssertT(Throw, ::rmdir(path.getPtr()) >= 0, (PError)(const char*), "rmdir")
 	}
-	void Dir_depLinux::remove(To8Str path) const {
+	void Dir_depLinux::remove(ToPathStr path) const {
 		AssertT(Throw, ::unlink(path.getPtr()) >= 0, (PError)(const char*), "remove")
 	}
-	void Dir_depLinux::move(To8Str from, To8Str to) const {
+	void Dir_depLinux::move(ToPathStr from, ToPathStr to) const {
 		AssertT(Throw, ::rename(from.getPtr(), to.getPtr()) >= 0, (PError)(const char*), "move")
 	}
-	void Dir_depLinux::copy(To8Str from, To8Str to) const {
+	void Dir_depLinux::copy(ToPathStr from, ToPathStr to) const {
 		using Size = std::streamsize;
 		std::ifstream ifs(from.getPtr(), std::ios::binary);
 		std::ofstream ofs(to.getPtr(), std::ios::binary|std::ios::trunc);
@@ -71,7 +71,7 @@ namespace spn {
 		}
 	}
 
-	void Dir_depLinux::enumEntry(To8Str path, EnumCBD cb) const {
+	void Dir_depLinux::enumEntry(ToPathStr path, EnumCBD cb) const {
 		struct DIR_Rel {
 			void operator()(DIR* dir) const {
 				closedir(dir);
@@ -83,7 +83,7 @@ namespace spn {
 				cb(ent->d_name, S_ISDIR(ent->d_type));
 		}
 	}
-	FStatus Dir_depLinux::status(To8Str path) const {
+	FStatus Dir_depLinux::status(ToPathStr path) const {
 		struct stat st;
 		if(stat(path.getPtr(), &st) < 0)
 			return FStatus(FStatus::NotAvailable);
@@ -140,11 +140,11 @@ namespace spn {
 		}
 		return res;
 	}
-	bool Dir_depLinux::isFile(To8Str path) const {
+	bool Dir_depLinux::isFile(ToPathStr path) const {
 		struct stat st;
 		return stat(path.getPtr(), &st) >= 0 && S_ISREG(st.st_mode);
 	}
-	bool Dir_depLinux::isDirectory(To8Str path) const {
+	bool Dir_depLinux::isDirectory(ToPathStr path) const {
 		struct stat st;
 		return stat(path.getPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
 	}

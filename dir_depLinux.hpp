@@ -10,18 +10,18 @@ namespace spn {
 
 	struct Dir_depLinux {
 		std::string getcwd() const;
-		void chdir(To8Str path) const;
-		bool chdir_nt(To8Str path) const;
-		void mkdir(To8Str path, uint32_t mode) const;
-		void chmod(To8Str path, uint32_t mode) const;
-		void rmdir(To8Str path) const;
-		void remove(To8Str path) const;
-		void move(To8Str from, To8Str to) const;
-		void copy(To8Str from, To8Str to) const;
-		void enumEntry(To8Str path, EnumCBD cb) const;
-		FStatus status(To8Str path) const;
-		bool isFile(To8Str path) const;
-		bool isDirectory(To8Str path) const;
+		void chdir(ToPathStr path) const;
+		bool chdir_nt(ToPathStr path) const;
+		void mkdir(ToPathStr path, uint32_t mode) const;
+		void chmod(ToPathStr path, uint32_t mode) const;
+		void rmdir(ToPathStr path) const;
+		void remove(ToPathStr path) const;
+		void move(ToPathStr from, ToPathStr to) const;
+		void copy(ToPathStr from, ToPathStr to) const;
+		void enumEntry(ToPathStr path, EnumCBD cb) const;
+		FStatus status(ToPathStr path) const;
+		bool isFile(ToPathStr path) const;
+		bool isDirectory(ToPathStr path) const;
 
 		static FStatus CreateFStatus(const struct stat& st);
 		//! ファイルフラグ変換 (spinner -> linux)
