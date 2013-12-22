@@ -369,7 +369,7 @@ namespace spn {
 	}
 	void Dir::_enumEntry(const std::string& s, const std::string& path, EnumCB cb) const {
 		_dep.enumEntry(path, [&cb](const PathCh* name, bool bDir) {
-			std::string s(To8Str(name).moveTo());
+			PathStr s(ToPathStr(name).moveTo());
 			if(s == name)
 				cb(PathBlock(s), bDir);
 		});
@@ -449,7 +449,8 @@ namespace spn {
 	}
 	FILE* Dir::openAsFP(const char* mode) const {
 		ToPathStr path = plain_utf32();
-		return std::fopen(path.getPtr(), mode);
+		To8Str to8(path);
+		return std::fopen(to8.getPtr(), mode);
 	}
 	// -------------------------- URI --------------------------
 	const std::string URI::SEP(u8"://");
