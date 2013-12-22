@@ -8,6 +8,7 @@
 #endif
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace spn {
 	using UPVoid = std::unique_ptr<void*>;
