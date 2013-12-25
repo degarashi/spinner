@@ -4,6 +4,9 @@
 #include <memory>
 
 namespace spn {
+	FILETIME UnixTime2WinFT(time_t t);
+	time_t WinFT2UnixTime(const FILETIME& ft);
+
 	struct WinHandleDeleter {
 		void operator()(HANDLE hdl) const {
 			if(hdl != INVALID_HANDLE_VALUE)
@@ -18,9 +21,6 @@ namespace spn {
 	using PathCh = char16_t;
 	using PathStr = std::basic_string<PathCh>;
 	using EnumCBD = std::function<void (const PathCh*, bool)>;
-
-	FILETIME UnixTime2WinTime(time_t t);
-	time_t WinTime2UnixTime(FILETIME ft);
 
 	struct Dir_depWin {
 		PathStr getcwd() const;

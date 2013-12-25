@@ -42,7 +42,7 @@ namespace spn {
 		return SetCurrentDirectoryW(AS_LPCWSTR_PATH(path)) != FALSE;
 	}
 	void Dir_depWin::mkdir(ToPathStr path, uint32_t mode) const {
-		AssertT(Throw, CreateDirectoryW(AS_LPCWSTR_PATH(path), nullptr) == 0,
+		AssertT(Throw, CreateDirectoryW(AS_LPCWSTR_PATH(path), nullptr) != 0,
 				(WError)(const char*), "mkdir")
 	}
 	void Dir_depWin::chmod(ToPathStr path, uint32_t mode) const {
@@ -91,36 +91,24 @@ namespace spn {
 		FILETIME tmC, tmA, tmW;
 		GetFileTime(fh.get(), &tmC, &tmA, &tmW);
 
-		st.tmCreated = WinTime2UnixTime(tmC);
-		st.tmAccess = WinTime2UnixTime(tmA);
-		st.tmModify = WinTime2UnixTime(tmW);
+		st.tmCreated = WinFT2UnixTime(tmC);
+		st.tmAccess = WinFT2UnixTime(tmA);
+		st.tmModify = WinFT2UnixTime(tmW);
 		return st;
 	}
-	namespace {
-		constexpr int UnixEpocYear = 1970,
-					WinEpocYear = 1601;
-		constexpr uint64_t Second = uint64_t(100 * 1000000),
-							Minute = Second * 60,
-							Hour = Minute * 60,
-							Day = Hour * 24,
-							Year = Day * 365;
-	}
-	FILETIME UnixTime2WinTime(time_t t) {
-		uint64_t tmp = t * Second;
-		tmp -= (UnixEpocYear - WinEpocYear) * Year;
+	FILETIME UnixTime2WinFT(time_t t) {
+		uint64_t wt = UnixTime2WinTime(t);
 		FILETIME ft;
-		ft.dwLowDateTime = tmp & 0xffffffff;
-		tmp >>= 32;
-		ft.dwHighDateTime = tmp;
+		ft.dwLowDateTime = wt & 0xffffffff;
+		wt >>= 32;
+		ft.dwHighDateTime = wt;
 		return ft;
 	}
-	time_t WinTime2UnixTime(FILETIME ft) {
+	time_t WinFT2UnixTime(FILETIME ft) {
 		uint64_t tmp = ft.dwHighDateTime;
 		tmp <<= 32;
 		tmp |= ft.dwLowDateTime;
-		tmp += (UnixEpocYear - WinEpocYear) * Year;
-		tmp /= Second;
-		return static_cast<time_t>(tmp);
+		return WinTime2UnixTime(tmp);
 	}
 
 	uint32_t Dir_depWin::ConvertFlag_S2W(uint32_t flag) {
