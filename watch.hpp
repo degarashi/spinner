@@ -21,6 +21,12 @@ namespace spn {
 		FEv(const std::string& base, void* ud, const std::string& nm, bool bDir): basePath(base), udata(ud), name(nm), isDir(bDir) {}
 		virtual FileEvent getType() const = 0;
 	};
+	using UPFEv = std::unique_ptr<FEv>;
+
+	struct UserData {
+		virtual ~UserData() {}
+	};
+	using UData = std::unique_ptr<UserData>;
 
 	struct FRecvNotify;
 	class FNotify {
@@ -29,7 +35,7 @@ namespace spn {
 		struct Ent {
 			DSC			dsc;
 			std::string	basePath;
-			UPVoid		udata;
+			UData		udata;
 		};
 
 		using PathToEnt = std::map<std::string, Ent>;
@@ -39,13 +45,21 @@ namespace spn {
 
 		FNotifyDep	_dep;
 		public:
-			// ブロッキングしてイベント待ち
+			//! ブロッキングの変更イベント取得
 			void procEvent(FRecvNotify& ntf);
-			// スレッド作ってそこでprocEvent
+			//! スレッド作ってそこでprocEvent
+			/*! 非ブロッキング関数を使う時には最初に一度だけ呼び出す */
 			void beginASync();
+			//! 非ブロッキングバージョン
 			void procEventASync(FRecvNotify& ntf);
 
-			void addWatch(const std::string& path, uint32_t mask, UPVoid udata=nullptr);
+			//! 監視ポイントを追加
+			/*! 既に同じパスが登録されていたら上書き
+				\param[in] path 監視対象のパス
+				\param[in] mask 通知するイベントの種類フラグ
+				\param[in] udata エントリーに関連付けるユーザーデータ */
+			void addWatch(const std::string& path, uint32_t mask, UData udata=nullptr);
+			//! 監視ポイントを削除
 			void remWatch(const std::string& path);
 	};
 	struct FEv_Create : FEv {

@@ -1,20 +1,33 @@
 #include "watch_depLinux.hpp"
 #include <sys/inotify.h>
 #include <unistd.h>
+#include <mutex>
 #include "error.hpp"
+#include "common.hpp"
 
 namespace spn {
 	FNotify_depLinux::FNotify_depLinux() {
-		Assert(Trap, (fd = inotify_init()) >= 0, "failed to initialize inotify")
+		Assert(Trap, (_fd = inotify_init()) >= 0, "failed to initialize inotify")
+		_thread = std::thread(std::packaged_task<void (FNotify_depLinux*)>(ASyncLoop), this);
 	}
 	FNotify_depLinux::~FNotify_depLinux() {
-		close(fd);
+		if(_thread) {
+			int endflag = ~0;
+			write(_fd, &endflag, sizeof(int));
+			_thread->join();
+		}
+		close(_fd);
 	}
+	void FNotify_depLinux::_pushInfo(const inotify_event& e) {
+		std::lock_guard<decltype(_mutex)>	lk(_mutex);
+		_eventL.push_back(Event{e.wd, DetectEvent(e.mask), e.name, e.cookie, static_cast<bool>(e.mask & IN_ISDIR)});
+	}
+
 	FNotify_depLinux::DSC FNotify_depLinux::addWatch(const std::string& path, uint32_t mask) {
-		return inotify_add_watch(fd, path.c_str(), ConvertMask(mask));
+		return inotify_add_watch(_fd, path.c_str(), ConvertMask(mask));
 	}
 	void FNotify_depLinux::remWatch(const DSC& dsc) {
-		inotify_rm_watch(fd, dsc);
+		inotify_rm_watch(_fd, dsc);
 	}
 	namespace {
 		const static std::pair<FileEvent,int> c_flags[] = {
@@ -44,16 +57,28 @@ namespace spn {
 		return FE_Invalid;
 	}
 	void FNotify_depLinux::procEvent(CallbackD cb) {
-		char buff[1024];
-		auto nread = read(fd, buff, 1024);
-		if(nread < 0)
-			return;
+		std::lock_guard<decltype(_mutex)> lk(_mutex);
+		for(auto& e : _eventL)
+			cb(e);
+		_eventL.clear();
+	}
+	void FNotify_depLinux::ASyncLoop(FNotify_depLinux* ths) {
+		char buff[2048];
+		for(;;) {
+			auto nread = read(ths->_fd, buff, 2048);
+			if(nread < 0)
+				continue;
 
-		int ofs = 0;
-		while(ofs < nread) {
-			auto* e = reinterpret_cast<inotify_event*>(buff + ofs);
-			cb(e->wd, DetectEvent(e->mask), e->name, e->cookie, e->mask&IN_ISDIR);
-			ofs += EVENTSIZE + e->len;
+			int ofs = 0;
+			while(ofs < nread) {
+				auto* e = reinterpret_cast<inotify_event*>(buff + ofs);
+				if(e->wd == ~0) {
+					// 終了フラグ
+					return;
+				}
+				ths->_pushInfo(*e);
+				ofs += EVENTSIZE + e->len;
+			}
 		}
 	}
 }

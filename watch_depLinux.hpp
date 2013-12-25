@@ -1,20 +1,38 @@
 #pragma once
 #include "watch_common.hpp"
+#include <mutex>
+#include <thread>
+#include <future>
+#include "optional.hpp"
 
+struct inotify_event;
 namespace spn {
-	struct FNotify_depLinux {
-		int		fd;
-		using DSC = int;
-		//! Dependant-Desc, FileEvent, FileName, CookieID, IsDir
-		using CallbackD = std::function<void (const DSC&, FileEvent, const char*, uint32_t, bool)>;
+	class FNotify_depLinux {
+		public:
+			using Event = FNotifyEvent<int>;
+		private:
+			using OPThread = spn::Optional<std::thread>;
+			std::recursive_mutex	_mutex;
+			int						_fd;
+			OPThread				_thread;
+			using EventL = std::vector<Event>;
+			EventL		_eventL;
 
-		FNotify_depLinux();
-		~FNotify_depLinux();
-		DSC addWatch(const std::string& path, uint32_t mask);
-		void remWatch(const DSC& dsc);
-		void procEvent(CallbackD cb);
-		static uint32_t ConvertMask(uint32_t mask);
-		static FileEvent DetectEvent(uint32_t mask);
+			//! ファイル監視用スレッド
+			static void ASyncLoop(FNotify_depLinux* ths);
+			void _pushInfo(const inotify_event& e);
+
+		public:
+			using DSC = int;
+			using CallbackD = std::function<void (const Event&)>;
+
+			FNotify_depLinux();
+			~FNotify_depLinux();
+			DSC addWatch(const std::string& path, uint32_t mask);
+			void remWatch(const DSC& dsc);
+			void procEvent(CallbackD cb);
+			static uint32_t ConvertMask(uint32_t mask);
+			static FileEvent DetectEvent(uint32_t mask);
 	};
 	using FNotifyDep = FNotify_depLinux;
 }

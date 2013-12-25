@@ -1,7 +1,8 @@
 #include "watch.hpp"
+#include "dir.hpp"
 
 namespace spn {
-	void FNotify::addWatch(const std::string& path, uint32_t mask, UPVoid udata) {
+	void FNotify::addWatch(const std::string& path, uint32_t mask, UData udata) {
 		remWatch(path);
 		auto dsc = _dep.addWatch(path, mask);
 		_path2ent.emplace(path, Ent{dsc, path, std::move(udata)});
@@ -16,12 +17,12 @@ namespace spn {
 		}
 	}
 	void FNotify::procEvent(FRecvNotify& ntf) {
-		_dep.procEvent([&ntf, this](const DSC& dsc, FileEvent evtype, const char* name, uint32_t cookieID, bool isDir){
-			auto& ent = _dsc2ent.find(dsc)->second;
+		_dep.procEvent([&ntf, this](const FNotifyDep::Event& e){
+			auto& ent = _dsc2ent.find(e.dsc)->second;
 			auto* ud = ent->udata.get();
-			#define MAKE_EVENT(typ) ntf.event(typ(ent->basePath, ud, name, isDir));
-			#define MAKE_EVENTM(typ) ntf.event(typ(ent->basePath, ud, name, isDir, cookieID));
-			switch(evtype) {
+			#define MAKE_EVENT(typ) ntf.event(typ(ent->basePath, ud, e.path.c_str(), e.bDir));
+			#define MAKE_EVENTM(typ) ntf.event(typ(ent->basePath, ud, e.path.c_str(), e.bDir, e.cookie));
+			switch(e.event) {
 				case FE_Create:
 					MAKE_EVENT(FEv_Create) break;
 				case FE_Modify:

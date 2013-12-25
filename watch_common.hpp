@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include "macro.hpp"
 
 namespace spn {
 	// ファイル構造検知
@@ -16,4 +17,21 @@ namespace spn {
 	};
 	struct FEv;
 	using Callback = std::function<void (FEv&)>;
+
+	template <class T>
+	struct FNotifyEvent {
+		T			dsc;
+		FileEvent	event;
+		std::string	path;
+		uint32_t	cookie;
+		bool		bDir;
+		#define FNotifyEvent_Seq (dsc)(event)(path)(cookie)(bDir)
+
+		FNotifyEvent() = default;
+		FNotifyEvent(const FNotifyEvent&) = default;
+		FNotifyEvent(FNotifyEvent&& e): Move_Ctor(FNotifyEvent_Seq, e) {}
+		template <class T2, class T3>
+		FNotifyEvent(T2&& ds, const FileEvent& ev, T3&& p, uint32_t c, bool dir):
+			dsc(std::forward<T2>(ds)), event(ev), path(std::forward<T3>(p)), cookie(c), bDir(dir) {}
+	};
 }
