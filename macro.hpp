@@ -70,3 +70,9 @@
 #define MAKE_SEQ_B_30X0()
 #define MAKE_SEQ_A_40X0()
 #define MAKE_SEQ_B_40X0()
+
+// Move CtorでMoveするオブジェクトをSequenceによって指定
+#define Move_CtorInner(z, obj, elem)	(elem(std::move(obj.elem)))
+#define Move_Ctor(seq, obj)				BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(Move_CtorInner, obj, seq))
+#define Move_AssignInner(z, obj, elem)	elem = std::move(obj.elem);
+#define Move_Assign(seq, obj)			BOOST_PP_SEQ_FOR_EACH(Move_AssignInner, obj, seq)
