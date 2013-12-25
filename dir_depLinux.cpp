@@ -33,30 +33,30 @@ namespace spn {
 		return std::string(tmp);
 	}
 	void Dir_depLinux::chdir(ToPathStr path) const {
-		AssertT(Throw, ::chdir(path.getPtr()) >= 0, (PError)(const char*), "chdir")
+		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, (PError)(const char*), "chdir")
 	}
 	bool Dir_depLinux::chdir_nt(ToPathStr path) const {
-		return ::chdir(path.getPtr()) >= 0;
+		return ::chdir(path.getStringPtr()) >= 0;
 	}
 	void Dir_depLinux::mkdir(ToPathStr path, uint32_t mode) const {
-		AssertT(Throw, ::mkdir(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "mkdir")
+		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "mkdir")
 	}
 	void Dir_depLinux::chmod(ToPathStr path, uint32_t mode) const {
-		AssertT(Throw, ::chmod(path.getPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "chmod")
+		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "chmod")
 	}
 	void Dir_depLinux::rmdir(ToPathStr path) const {
-		AssertT(Throw, ::rmdir(path.getPtr()) >= 0, (PError)(const char*), "rmdir")
+		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, (PError)(const char*), "rmdir")
 	}
 	void Dir_depLinux::remove(ToPathStr path) const {
-		AssertT(Throw, ::unlink(path.getPtr()) >= 0, (PError)(const char*), "remove")
+		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, (PError)(const char*), "remove")
 	}
 	void Dir_depLinux::move(ToPathStr from, ToPathStr to) const {
-		AssertT(Throw, ::rename(from.getPtr(), to.getPtr()) >= 0, (PError)(const char*), "move")
+		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, (PError)(const char*), "move")
 	}
 	void Dir_depLinux::copy(ToPathStr from, ToPathStr to) const {
 		using Size = std::streamsize;
-		std::ifstream ifs(from.getPtr(), std::ios::binary);
-		std::ofstream ofs(to.getPtr(), std::ios::binary|std::ios::trunc);
+		std::ifstream ifs(from.getStringPtr(), std::ios::binary);
+		std::ofstream ofs(to.getStringPtr(), std::ios::binary|std::ios::trunc);
 		ifs.seekg(std::ios::end);
 		Size sz = ifs.tellg();
 		ifs.seekg(std::ios::beg);
@@ -77,7 +77,7 @@ namespace spn {
 				closedir(dir);
 			}
 		};
-		std::unique_ptr<DIR, DIR_Rel> dir(opendir(path.getPtr()));
+		std::unique_ptr<DIR, DIR_Rel> dir(opendir(path.getStringPtr()));
 		if(dir) {
 			while(dirent* ent = readdir(dir.get()))
 				cb(ent->d_name, S_ISDIR(ent->d_type));
@@ -85,9 +85,18 @@ namespace spn {
 	}
 	FStatus Dir_depLinux::status(ToPathStr path) const {
 		struct stat st;
-		if(stat(path.getPtr(), &st) < 0)
+		if(::stat(path.getStringPtr(), &st) < 0)
 			return FStatus(FStatus::NotAvailable);
 		return CreateFStatus(st);
+	}
+	FTime Dir_depLinux::filetime(ToPathStr path) const {
+		struct stat st;
+		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, (PError)(const char*), "filetime")
+		FTime ft;
+		ft.tmAccess = UnixTime2WinTime(st.st_atime);
+		ft.tmCreated = UnixTime2WinTime(st.st_ctime);
+		ft.tmModify = UnixTime2WinTime(st.st_mtime);
+		return ft;
 	}
 
 	namespace {
@@ -109,9 +118,9 @@ namespace spn {
 		fs.userId = st.st_uid;
 		fs.groupId = st.st_gid;
 		fs.size = st.st_size;
-		fs.tmAccess = st.st_atime;
-		fs.tmModify = st.st_mtime;
-		fs.tmCreated = st.st_ctime;
+		fs.ftime.tmAccess = UnixTime2WinTime(st.st_atime);
+		fs.ftime.tmModify = UnixTime2WinTime(st.st_mtime);
+		fs.ftime.tmCreated = UnixTime2WinTime(st.st_ctime);
 		return fs;
 	}
 	uint32_t Dir_depLinux::ConvertFlag_L2S(uint32_t flag) {
@@ -142,10 +151,10 @@ namespace spn {
 	}
 	bool Dir_depLinux::isFile(ToPathStr path) const {
 		struct stat st;
-		return stat(path.getPtr(), &st) >= 0 && S_ISREG(st.st_mode);
+		return stat(path.getStringPtr(), &st) >= 0 && S_ISREG(st.st_mode);
 	}
 	bool Dir_depLinux::isDirectory(ToPathStr path) const {
 		struct stat st;
-		return stat(path.getPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
+		return stat(path.getStringPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
 	}
 }

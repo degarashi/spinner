@@ -20,6 +20,7 @@ namespace spn {
 		void copy(ToPathStr from, ToPathStr to) const;
 		void enumEntry(ToPathStr path, EnumCBD cb) const;
 		FStatus status(ToPathStr path) const;
+		FTime filetime(ToPathStr path) const;
 		bool isFile(ToPathStr path) const;
 		bool isDirectory(ToPathStr path) const;
 
