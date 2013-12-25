@@ -336,7 +336,9 @@ namespace spn {
 	}
 	Dir::StrList Dir::enumEntryRegEx(const std::string& r) const {
 		StrList res;
-		enumEntryRegEx(r, [&res](const PathBlock& pb, bool){ res.push_back(pb.plain_utf8()); });
+		enumEntryRegEx(r, [&res](const Dir& dir){
+			res.push_back(dir.plain_utf8());
+		});
 		return std::move(res);
 	}
 	Dir::StrList Dir::enumEntryWildCard(const std::string& s) const {
@@ -393,9 +395,9 @@ namespace spn {
 					if(++itr != itrE)
 						_enumEntryRegEx(itr, itrE, lpath, baseLen, cb);
 					else
-						cb(PathBlock(lpath), true);
+						cb(Dir(lpath));
 				} else
-					cb(PathBlock(lpath), false);
+					cb(Dir(lpath));
 				lpath.resize(pl);
 			}
 		});
@@ -404,7 +406,7 @@ namespace spn {
 		_dep.enumEntry(path, [&cb](const PathCh* name, bool bDir) {
 			PathStr s(ToPathStr(name).moveTo());
 			if(s == name)
-				cb(PathBlock(s), bDir);
+				cb(Dir(s));
 		});
 	}
 	void Dir::enumEntryRegEx(const std::string& r, EnumCB cb) const {
@@ -481,10 +483,9 @@ namespace spn {
 		});
 	}
 	FILE* Dir::openAsFP(const char* mode) const {
-		ToPathStr path = plain_utf32();
-		To8Str to8(path);
-		return std::fopen(to8.getPtr(), mode);
+		return std::fopen(To8Str(plain_utf32()).getStringPtr(), mode);
 	}
+
 	// -------------------------- URI --------------------------
 	const std::string URI::SEP(u8"://");
 	const std::u32string URI::SEP32(U"://");

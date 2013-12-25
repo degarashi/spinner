@@ -24,7 +24,7 @@ namespace spn {
 			using RegexL = std::vector<boost::regex>;
 			using RegexItr = RegexL::const_iterator;
 			using StrList = std::vector<std::string>;
-			using EnumCB = std::function<void (const PathBlock&, bool)>;
+			using EnumCB = std::function<void (const Dir&)>;
 			using ModCB = std::function<bool (const PathBlock&, FStatus&)>;
 			static RegexL _ParseRegEx(const std::string& r);
 
@@ -38,6 +38,7 @@ namespace spn {
 			Dir(Dir&& d);
 
 			FStatus status() const;
+			FTime getTime() const;
 			//! パスまでのディレクトリ構造を作成
 			/*! \return true=成功(既に同じ構造ができているケース含)
 			*			false=失敗(ファイルが存在するなど) */
