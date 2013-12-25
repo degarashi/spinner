@@ -121,6 +121,18 @@ namespace spn {
 			PathBlock& path();
 	};
 
+	uint64_t UnixTime2WinTime(time_t t);
+	time_t WinTime2UnixTime(uint64_t ft);
+	uint64_t u32_u64(uint32_t valH, uint32_t valL);
+
+	//! ファイルアクセス時間比較用
+	struct FTime {
+		uint64_t	tmAccess,
+					tmModify,
+					tmCreated;
+
+		bool operator == (const FTime& ft) const;
+	};
 	struct FStatus {
 		enum Flag : uint32_t {
 			UserRead = 0x100,
@@ -152,9 +164,7 @@ namespace spn {
 		uint32_t	userId,
 					groupId;
 		uint64_t	size;
-		time_t		tmAccess,
-					tmModify,
-					tmCreated;
+		FTime		ftime;
 
 		FStatus() = default;
 		FStatus(uint32_t flag);

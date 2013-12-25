@@ -2,6 +2,32 @@
 #include "dir.hpp"
 
 namespace spn {
+	namespace {
+		constexpr int UnixEpocYear = 1970,
+					WinEpocYear = 1601;
+		constexpr uint64_t Second = uint64_t(100 * 1000000),
+							Minute = Second * 60,
+							Hour = Minute * 60,
+							Day = Hour * 24,
+							Year = Day * 365;
+	}
+	uint64_t UnixTime2WinTime(time_t t) {
+		uint64_t tmp = t * Second;
+		tmp -= (UnixEpocYear - WinEpocYear) * Year;
+		return tmp;
+	}
+	time_t WinTime2UnixTime(uint64_t t) {
+		t += (UnixEpocYear - WinEpocYear) * Year;
+		t /= Second;
+		return static_cast<time_t>(t);
+	}
+	uint64_t u32_u64(uint32_t valH, uint32_t valL) {
+		uint64_t ret = valH;
+		ret <<= 32;
+		ret |= valL;
+		return ret;
+	}
+
 	// -------------------------- PathBlock --------------------------
 	PathBlock::PathBlock(): _bAbsolute(true) {}
 	PathBlock::PathBlock(PathBlock&& p):
@@ -277,12 +303,19 @@ namespace spn {
 		return n;
 	}
 
-	// -------------------------- Dir --------------------------
+	// ------------------- FStatus -------------------
 	FStatus::FStatus(uint32_t f): flag(f) {}
 	FStatus Dir::status() const {
 		return _dep.status(plain_utf8());
 	}
+	// ------------------- FTime -------------------
+	bool FTime::operator == (const FTime& ft) const {
+		return X_OrArgs(tmCreated, ft.tmCreated,
+						tmAccess, ft.tmAccess,
+						tmModify, ft.tmModify) == 0;
+	}
 
+	// -------------------------- Dir --------------------------
 	const char Dir::SC('/'),
 				Dir::DOT('.'),
 				Dir::EOS('\0'),
