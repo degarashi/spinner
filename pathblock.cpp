@@ -29,7 +29,7 @@ namespace spn {
 	}
 
 	// -------------------------- PathBlock --------------------------
-	PathBlock::PathBlock(): _bAbsolute(true) {}
+	PathBlock::PathBlock(): _bAbsolute(false) {}
 	PathBlock::PathBlock(PathBlock&& p):
 		_path(std::move(p._path)),
 		_segment(std::move(p._segment)),
@@ -102,7 +102,7 @@ namespace spn {
 		if(!_path.empty())
 			_path.push_back(SC);
 		_path.insert(_path.end(), src, srcE);
-		_ReWriteSC(_path.begin()+(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+		_ReWriteSC(_path.end()-(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
 	}
 	void PathBlock::popBack() {
 		int sg = segments();
