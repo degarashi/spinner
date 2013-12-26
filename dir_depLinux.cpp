@@ -18,8 +18,8 @@ namespace {
 	class PError : public std::runtime_error {
 		public:
 			PError(const PError&) = default;
-			PError(const char* name): std::runtime_error("") {
-				perror(name);
+			PError(const std::string& name): std::runtime_error("") {
+				perror(name.c_str());
 				std::stringstream ss;
 				ss << "posix-error at " << name << ' ' << errno << std::endl;
 				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
@@ -33,25 +33,31 @@ namespace spn {
 		return std::string(tmp);
 	}
 	void Dir_depLinux::chdir(ToPathStr path) const {
-		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, (PError)(const char*), "chdir")
+		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
+				std::string("chdir: ") + path.getStringPtr())
 	}
 	bool Dir_depLinux::chdir_nt(ToPathStr path) const {
 		return ::chdir(path.getStringPtr()) >= 0;
 	}
 	void Dir_depLinux::mkdir(ToPathStr path, uint32_t mode) const {
-		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "mkdir")
+		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
+				std::string("mkdir: ") + path.getStringPtr())
 	}
 	void Dir_depLinux::chmod(ToPathStr path, uint32_t mode) const {
-		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const char*), "chmod")
+		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
+				std::string("chmod: ") + path.getStringPtr())
 	}
 	void Dir_depLinux::rmdir(ToPathStr path) const {
-		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, (PError)(const char*), "rmdir")
+		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
+				std::string("rmdir: ") + path.getStringPtr())
 	}
 	void Dir_depLinux::remove(ToPathStr path) const {
-		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, (PError)(const char*), "remove")
+		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, (PError)(const std::string&),
+				std::string("remove: ") + path.getStringPtr())
 	}
 	void Dir_depLinux::move(ToPathStr from, ToPathStr to) const {
-		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, (PError)(const char*), "move")
+		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, (PError)(const std::string&),
+				std::string("move: ") + from.getStringPtr() + " -> " + to.getStringPtr())
 	}
 	void Dir_depLinux::copy(ToPathStr from, ToPathStr to) const {
 		using Size = std::streamsize;
@@ -91,7 +97,8 @@ namespace spn {
 	}
 	FTime Dir_depLinux::filetime(ToPathStr path) const {
 		struct stat st;
-		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, (PError)(const char*), "filetime")
+		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, (PError)(const std::string&),
+				std::string("filetime: ") + path.getStringPtr())
 		FTime ft;
 		ft.tmAccess = UnixTime2WinTime(st.st_atime);
 		ft.tmCreated = UnixTime2WinTime(st.st_ctime);
