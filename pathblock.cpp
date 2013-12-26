@@ -406,7 +406,7 @@ namespace spn {
 			return;
 
 		size_t pl = lpath.size();
-		_dep.enumEntry(lpath, [&, pl, this, baseLen](const PathCh* name, bool) {
+		_dep.enumEntry(lpath, [=, &lpath, &cb](const PathCh* name, bool) {
 			if(name[0]==PathCh(DOT)) {
 				if(name[1]==PathCh(EOS) || name[1]==PathCh(DOT))
 					return;
@@ -418,8 +418,8 @@ namespace spn {
 					lpath += SC;
 				lpath += s;
 				if(_dep.isDirectory(ToPathStr(lpath))) {
-					if(++itr != itrE)
-						_enumEntryRegEx(itr, itrE, lpath, baseLen, cb);
+					if(itr+1 != itrE)
+						_enumEntryRegEx(itr+1, itrE, lpath, baseLen, cb);
 					else
 						cb(Dir(lpath));
 				} else
