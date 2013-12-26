@@ -40,6 +40,14 @@ namespace spn {
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
 	}
+	bool PathBlock::operator == (const PathBlock& p) const {
+		return _path == p._path &&
+				_segment == p._segment &&
+				_bAbsolute == p._bAbsolute;
+	}
+	bool PathBlock::operator != (const PathBlock& p) const {
+		return !(this->operator == (p));
+	}
 	PathBlock& PathBlock::operator = (PathBlock&& p) {
 		_path = std::move(p._path);
 		_segment = std::move(p._segment);
@@ -308,12 +316,24 @@ namespace spn {
 	FStatus Dir::status() const {
 		return _dep.status(plain_utf8());
 	}
+	bool FStatus::operator == (const FStatus& f) const {
+		return flag == f.flag &&
+			userId == f.userId &&
+			groupId == f.groupId &&
+			size == f.size &&
+			ftime == f.ftime;
+	}
+	bool FStatus::operator != (const FStatus& f) const {
+		return !(*this == f);
+	}
 	// ------------------- FTime -------------------
 	bool FTime::operator == (const FTime& ft) const {
 		return X_OrArgs(tmCreated, ft.tmCreated,
 						tmAccess, ft.tmAccess,
 						tmModify, ft.tmModify) == 0;
 	}
+	bool FTime::operator != (const FTime& ft) const {
+		return !(*this == ft); }
 
 	// -------------------------- Dir --------------------------
 	const char Dir::SC('/'),
@@ -323,6 +343,12 @@ namespace spn {
 				Dir::LBK('['),
 				Dir::RBK(']');
 	Dir::Dir(Dir&& d): PathBlock(std::move(d)), _dep(std::move(d._dep)) {}
+	Dir& Dir::operator = (Dir&& d) {
+		static_cast<PathBlock&>(*this) = std::move(static_cast<PathBlock&>(d));
+		_dep = std::move(d._dep);
+		return *this;
+	}
+
 	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
 		// * -> ([\/_ \-\w]+)
@@ -418,6 +444,21 @@ namespace spn {
 			// 正規表現に何かエラーがある時は単純に文字列比較とする
 			_enumEntry(r, path, cb);
 		}
+	}
+	bool Dir::isFile() const {
+		return _dep.isFile(plain_utf32());
+	}
+	bool Dir::isDirectory() const {
+		return _dep.isDirectory(plain_utf32());
+	}
+	void Dir::remove() const {
+		_dep.remove(plain_utf32());
+	}
+	void Dir::copy(const std::string& to) const {
+		_dep.copy(plain_utf32(), to);
+	}
+	void Dir::move(const std::string& to) const {
+		_dep.move(plain_utf32(), to);
 	}
 	void Dir::mkdir(uint32_t mode) const {
 		PathReset preset(_dep);

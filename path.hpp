@@ -64,6 +64,8 @@ namespace spn {
 			PathBlock(PathBlock&& p);
 			PathBlock(To32Str p);
 
+			bool operator == (const PathBlock& p) const;
+			bool operator != (const PathBlock& p) const;
 			PathBlock& operator = (const PathBlock&) = default;
 			PathBlock& operator = (PathBlock&& p);
 			PathBlock& operator <<= (To32Str elem);
@@ -132,6 +134,7 @@ namespace spn {
 					tmCreated;
 
 		bool operator == (const FTime& ft) const;
+		bool operator != (const FTime& ft) const;
 	};
 	struct FStatus {
 		enum Flag : uint32_t {
@@ -168,5 +171,7 @@ namespace spn {
 
 		FStatus() = default;
 		FStatus(uint32_t flag);
+		bool operator == (const FStatus& fs) const;
+		bool operator != (const FStatus& fs) const;
 	};
 }

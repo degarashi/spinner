@@ -35,8 +35,18 @@ namespace spn {
 		public:
 			using PathBlock::PathBlock;
 			Dir() = default;
+			Dir(const Dir&) = default;
 			Dir(Dir&& d);
 
+			Dir& operator = (Dir&& d);
+			Dir& operator = (const Dir&) = default;
+			using PathBlock::operator ==;
+
+			bool isFile() const;
+			bool isDirectory() const;
+			void remove() const;
+			void copy(const std::string& to) const;
+			void move(const std::string& to) const;
 			FStatus status() const;
 			FTime getTime() const;
 			//! パスまでのディレクトリ構造を作成
