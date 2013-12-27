@@ -176,6 +176,9 @@ namespace spn {
 	std::string PathBlock::getFirst_utf8(bool bAbs) const {
 		return Text::UTFConvertTo8(getFirst_utf32(bAbs));
 	}
+	std::string PathBlock::getSegment_utf8(int beg, int end) const {
+		return Text::UTFConvertTo8(getSegment_utf32(beg, end));
+	}
 	std::u32string PathBlock::getFirst_utf32(bool bAbs) const {
 		std::u32string s;
 		if(bAbs && _bAbsolute)
@@ -197,6 +200,28 @@ namespace spn {
 		}
 		return std::move(s);
 	}
+	std::u32string PathBlock::getSegment_utf32(int beg, int end) const {
+		std::u32string s;
+		if(!_path.empty()) {
+			beg = std::max(0, beg);
+			end = std::min(int(_segment.size()), end);
+			if(beg < end) {
+				int ofs_b = 0,
+					ofs_e = 0;
+				for(int i=0 ; i<beg ; i++)
+					ofs_b += _segment[i] + 1;
+				for(int i=0 ; i<end ; i++)
+					ofs_e += _segment[i] + 1;
+				ofs_e = spn::Saturate(ofs_e, 0, int(_path.size()));
+
+				s.append(_path.begin() + ofs_b,
+						 _path.begin() + ofs_e);
+				if(!s.empty() && s.back()==SC)
+					s.pop_back();
+			}
+		}
+		return std::move(s);
+	}
 	int PathBlock::size() const {
 		return _path.size() + (isAbsolute() ? 1 : 0);
 	}
@@ -206,7 +231,7 @@ namespace spn {
 	void PathBlock::clear() {
 		_path.clear();
 		_segment.clear();
-		_bAbsolute = true;
+		_bAbsolute = false;
 	}
 	bool PathBlock::empty() const {
 		return _path.empty();

@@ -13,6 +13,11 @@
 struct stat;
 namespace spn {
 	class PathBlock {
+		public:
+			enum {
+				Beg = 0,
+				End = 0xffff
+			};
 		protected:
 			using Path = std::deque<char32_t>;
 			using Segment = std::deque<int>;
@@ -78,9 +83,11 @@ namespace spn {
 			std::string plain_utf8(bool bAbs=true) const;
 			std::string getFirst_utf8(bool bAbs=true) const;
 			std::string getLast_utf8() const;
+			std::string getSegment_utf8(int beg, int end) const;
 			std::u32string plain_utf32(bool bAbs=true) const;
 			std::u32string getFirst_utf32(bool bAbs=true) const;
 			std::u32string getLast_utf32() const;
+			std::u32string getSegment_utf32(int beg, int end) const;
 
 			int size() const;
 			int segments() const;
