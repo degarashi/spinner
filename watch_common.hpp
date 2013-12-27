@@ -5,6 +5,12 @@
 #include "macro.hpp"
 
 namespace spn {
+	using SPString = std::shared_ptr<std::string>;
+	struct UserData {
+		virtual ~UserData() {}
+	};
+	using SPData = std::shared_ptr<UserData>;
+
 	// ファイル構造検知
 	enum FileEvent {
 		FE_Invalid = 0x00,

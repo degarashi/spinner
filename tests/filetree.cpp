@@ -10,7 +10,7 @@ namespace spn {
 	namespace test {
 		struct FEv_hash {
 			size_t operator()(const UPFEv& e) const {
-				return std::hash<void*>()(e->udata) -
+				return std::hash<std::string>()(*e->basePath) -
 					std::hash<std::string>()(e->name) *
 					std::hash<bool>()(e->isDir) +
 					std::hash<uint32_t>()(e->getType());
@@ -202,7 +202,7 @@ namespace spn {
 			FEvS hist;
 
 			auto fnAddModifyEvent = [&hist, &basePath](const Dir& d) {
-				hist.emplace(new FEv_Modify(basePath, nullptr, d.plain_utf8(), true));
+				hist.emplace(new FEv_Modify(basePath, d.plain_utf8(), true));
 			};
 			for(int j=0 ; j<100 ; j++) {
 				switch(rd.randomIPositive(Action::NumAction)) {
@@ -210,7 +210,7 @@ namespace spn {
 						std::string str = randomName();
 						placeRandomFile(dir, str);
 						dir <<= str;
-						hist.emplace(new FEv_Create(basePath, nullptr, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
+						hist.emplace(new FEv_Create(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
 						nameset.insert(std::move(str));
 						dir.popBack();
 						// 上位ディレクトリ(Modify)
@@ -240,8 +240,8 @@ namespace spn {
 							// 当該ファイル(Access / Write)
 							std::string relp = dir.getSegment_utf8(nseg_base, PathBlock::End);
 							if(st.ftime.tmAccess != st2.ftime.tmAccess)
-								hist.emplace(new FEv_Access(basePath, nullptr, relp, false));
-							hist.emplace(new FEv_Modify(basePath, nullptr, relp, false));
+								hist.emplace(new FEv_Access(basePath, relp, false));
+							hist.emplace(new FEv_Modify(basePath, relp, false));
 							dir.popBack();
 						}
 						break; }
@@ -260,7 +260,7 @@ namespace spn {
 							}
 
 							// 当該ファイル(Write)
-							hist.emplace(new FEv_Modify(basePath, nullptr, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
+							hist.emplace(new FEv_Modify(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
 							dir.popBack();
 						}
 						break; }
@@ -272,7 +272,7 @@ namespace spn {
 							dir.remove();
 
 							// 当該ファイル(Delete)
-							hist.emplace(new FEv_Remove(basePath, nullptr, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
+							hist.emplace(new FEv_Remove(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
 							dir.popBack();
 							// 上位ディレクトリ(Modify)
 							fnUpperCallback(Dir(dir.getSegment_utf32(nseg_base, PathBlock::End)), layer, fnAddModifyEvent);
@@ -289,8 +289,8 @@ namespace spn {
 								continue;
 							bool bDir =dir.isDirectory();
 							// 当該ファイル (Delete / Create)
-							hist.emplace(new FEv_Create(basePath, nullptr, pathTo, bDir));
-							hist.emplace(new FEv_Remove(basePath, nullptr, pathFrom, bDir));
+							hist.emplace(new FEv_Create(basePath, pathTo, bDir));
+							hist.emplace(new FEv_Remove(basePath, pathFrom, bDir));
 							// 上位ディレクトリ(From / To : Modify)
 							Dir tdir(pathFrom);
 							tdir.popBack();
@@ -301,13 +301,13 @@ namespace spn {
 							// 下層エントリ (Delete / Create)
 							LowerCallback(Dir(*basePath + '/' + pathFrom), [&nameset, nseg_base, &basePath, &hist](const Dir& d) {
 								nameset.emplace(d.getLast_utf8());
-								hist.emplace(new FEv_Remove(basePath, nullptr, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
+								hist.emplace(new FEv_Remove(basePath, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
 							});
 							dir.move(*basePath + '/' + pathTo);
 							dir.popBack();
 							LowerCallback(Dir(*basePath + '/' + pathTo), [&nameset, nseg_base, &basePath, &hist](const Dir& d) {
 								nameset.emplace(d.getLast_utf8());
-								hist.emplace(new FEv_Create(basePath, nullptr, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
+								hist.emplace(new FEv_Create(basePath, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
 							});
 						}
 						break; }
@@ -329,7 +329,7 @@ namespace spn {
 							// アクセス前後で時刻が変わっていたらイベントを書き込む
 							if(st.ftime.tmAccess != st2.ftime.tmAccess) {
 								// 当該ファイル (Access)
-								hist.emplace(new FEv_Access(basePath, nullptr, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
+								hist.emplace(new FEv_Access(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
 							}
 							dir.popBack();
 						}
@@ -362,14 +362,12 @@ namespace spn {
 				MyVisitor(std::unordered_set<UPFEv, FEv_hash, FEv_equal>& h): _hist(h) {}
 
 				void check(const UPFEv& e) {
-					auto asd = e->name;
-					auto tp = e->getType();
 					auto itr = _hist.find(e);
 					Assert(Trap, itr!=_hist.end())
 					_hist.erase(itr);
 				}
 
-				#define DEF_CHECK(typ)	void event(const typ& e) override { check(UPFEv(new typ(e))); }
+				#define DEF_CHECK(typ)	void event(const typ& e, const SPData& ud) override { check(UPFEv(new typ(e))); }
 				DEF_CHECK(FEv_Create)
 				DEF_CHECK(FEv_Access)
 				DEF_CHECK(FEv_Modify)

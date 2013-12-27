@@ -4,11 +4,10 @@
 
 namespace spn {
 	// ------------------------- FEv -------------------------
-	FEv::FEv(const SPString& base, void* ud, const std::string& nm, bool bDir):
-		basePath(base), udata(ud), name(nm), isDir(bDir) {}
+	FEv::FEv(const SPString& base, const std::string& nm, bool bDir):
+		basePath(base), name(nm), isDir(bDir) {}
 	bool FEv::operator == (const FEv& f) const {
 		return 	*basePath == *f.basePath &&
-				udata == f.udata &&
 				name == f.name &&
 				isDir == f.isDir &&
 				getType() == f.getType();
@@ -16,7 +15,6 @@ namespace spn {
 	void FEv::print(std::ostream& os) const {
 		os << "type: " << getName() << std::endl
 		   << "basePath: " << *basePath << std::endl
-			  << "udata: " << std::hex << (uintptr_t)udata << std::endl
 			  << "name: " << name << std::endl
 			  << "isDir: " << std::boolalpha << isDir << std::endl;
 	}
@@ -36,8 +34,8 @@ namespace spn {
 	FileEvent FEv_Attr::getType() const { return FE_Attribute; }
 	const char* FEv_Attr::getName() const { return "FEv_Attribute"; }
 	// ------------------------- FEv_MoveFrom -------------------------
-	FEv_MoveFrom::FEv_MoveFrom(const SPString& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID):
-		FEv(base, ud, name, bDir), cookie(cookieID) {}
+	FEv_MoveFrom::FEv_MoveFrom(const SPString& base, const std::string& name, bool bDir, uint32_t cookieID):
+		FEv(base, name, bDir), cookie(cookieID) {}
 	bool FEv_MoveFrom::operator == (const FEv& e) const {
 		if(static_cast<const FEv&>(*this) == static_cast<const FEv&>(e))
 			return cookie == reinterpret_cast<const FEv_MoveFrom&>(e).cookie;
@@ -50,8 +48,8 @@ namespace spn {
 		os << "cookie: " << cookie << std::endl;
 	}
 	// ------------------------- FEv_MoveTo -------------------------
-	FEv_MoveTo::FEv_MoveTo(const SPString& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID):
-		FEv(base, ud, name, bDir), cookie(cookieID) {}
+	FEv_MoveTo::FEv_MoveTo(const SPString& base, const std::string& name, bool bDir, uint32_t cookieID):
+		FEv(base, name, bDir), cookie(cookieID) {}
 
 	bool FEv_MoveTo::operator == (const FEv& e) const {
 		if(static_cast<const FEv&>(*this) == static_cast<const FEv&>(e))
@@ -66,10 +64,10 @@ namespace spn {
 	}
 
 	// ------------------------- FNotify -------------------------
-	void FNotify::addWatch(const std::string& path, uint32_t mask, UData udata) {
+	void FNotify::addWatch(const std::string& path, uint32_t mask, const SPData& udata) {
 		remWatch(path);
 		auto dsc = _dep.addWatch(path, mask);
-		_path2ent.emplace(path, Ent{dsc, SPString(new std::string(path)), std::move(udata)});
+		_path2ent.emplace(path, Ent{dsc, SPString(new std::string(path)), udata});
 		_dsc2ent.emplace(dsc, &_path2ent.at(path));
 	}
 	void FNotify::remWatch(const std::string& path) {
@@ -83,12 +81,14 @@ namespace spn {
 	void FNotify::procEvent(FRecvNotify& ntf) {
 		_dep.procEvent([&ntf, this](const FNotifyDep::Event& e){
 			auto& ent = _dsc2ent.find(e.dsc)->second;
-			auto* ud = ent->udata.get();
-			#define MAKE_EVENT(typ) ntf.event(typ(ent->basePath, ud, e.path.c_str(), e.bDir));
-			#define MAKE_EVENTM(typ) ntf.event(typ(ent->basePath, ud, e.path.c_str(), e.bDir, e.cookie));
+			auto& ud = ent->udata;
+			#define MAKE_EVENT(typ) ntf.event(typ(ent->basePath, e.path.c_str(), e.bDir), ud);
+			#define MAKE_EVENTM(typ) ntf.event(typ(ent->basePath, e.path.c_str(), e.bDir, e.cookie), ud);
 			switch(e.event) {
 				case FE_Create:
 					MAKE_EVENT(FEv_Create) break;
+				case FE_Access:
+					MAKE_EVENT(FEv_Access) break;
 				case FE_Modify:
 					MAKE_EVENT(FEv_Modify) break;
 				case FE_Remove:

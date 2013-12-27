@@ -86,12 +86,12 @@ namespace spn {
 	}
 	void FileTree::ThrowCreateEvent(FRecvNotify& visitor, const SPString& base, const IFTFile* ft, PathBlock& pblock) {
 		For_Each(ft, [&](const std::string& str, const IFTFile* ft) {
-			visitor.event(FEv_Create(base, nullptr, str, ft->isDirectory()));
+			visitor.event(FEv_Create(base, str, ft->isDirectory()), SPData());
 		}, pblock);
 	}
 	void FileTree::ThrowRemoveEvent(FRecvNotify& visitor, const SPString& base, const IFTFile* ft, PathBlock& pblock) {
 		For_Each(ft, [&](const std::string& str, const IFTFile* ft) {
-			visitor.event(FEv_Remove(base, nullptr, str, ft->isDirectory()));
+			visitor.event(FEv_Remove(base, str, ft->isDirectory()), SPData());
 		}, pblock);
 	}
 	void FileTree::VisitDifference(FRecvNotify& visitor, const SPString& base, const IFTFile* f0, const IFTFile* f1, PathBlock& pblock) {
@@ -105,7 +105,7 @@ namespace spn {
 			bool bDir = ent.second->isDirectory();
 			if(itr == fd1->fmap.end()) {
 				// エントリが削除された
-				visitor.event(FEv_Remove(base, nullptr, pblock.plain_utf8(), bDir));
+				visitor.event(FEv_Remove(base, pblock.plain_utf8(), bDir), SPData());
 				// Directoryならば下層のエントリが全部イベント呼び出し対象 -> FEv_Remove
 				if(bDir)
 					ThrowRemoveEvent(visitor, base, ent.second.get(), pblock);
@@ -116,17 +116,17 @@ namespace spn {
 				// アクセス時刻チェック => FEv_Access
 				// ディレクトリのアクセスチェックはしない
 				if(!bDir && fs0.ftime.tmAccess != fs1.ftime.tmAccess)
-					visitor.event(FEv_Access(base, nullptr, path8, bDir));
+					visitor.event(FEv_Access(base, path8, bDir), SPData());
 				// ファイル編集時刻チェック => FEv_Modify
 				if(fs0.ftime.tmModify != fs1.ftime.tmModify ||
 					fs0.ftime.tmCreated != fs1.ftime.tmCreated ||
 					fs0.size != fs1.size)
-					visitor.event(FEv_Modify(base, nullptr, path8, bDir));
+					visitor.event(FEv_Modify(base, path8, bDir), SPData());
 				// アトリビュート変更チェック => FEv_Attr
 				fs0.ftime = fs1.ftime;
 				fs0.size = fs1.size;
 				if(fs0 != fs1)
-					visitor.event(FEv_Attr(base, nullptr, path8, bDir));
+					visitor.event(FEv_Attr(base, path8, bDir), SPData());
 
 				if(bDir)
 					VisitDifference(visitor, base, ent.second.get(), itr->second.get(), pblock);
@@ -139,7 +139,7 @@ namespace spn {
 				pblock <<= ent.first;
 				// エントリが作成された -> FEv_Create
 				bool bDir = ent.second->isDirectory();
-				visitor.event(FEv_Create(base, nullptr, pblock.plain_utf8(), bDir));
+				visitor.event(FEv_Create(base, pblock.plain_utf8(), bDir), SPData());
 				if(bDir)
 					ThrowCreateEvent(visitor, base, ent.second.get(), pblock);
 				pblock.popBack();
