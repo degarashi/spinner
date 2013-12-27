@@ -43,6 +43,7 @@ namespace spn {
 		public:
 			//! ポーリングで変更イベント取得
 			void procEvent(FRecvNotify& ntf);
+			void procEvent(std::function<void (const FEv&, const SPData&)> cb);
 			//! 監視ポイントを追加
 			/*! 既に同じパスが登録されていたら上書き
 				\param[in] path 監視対象のパス

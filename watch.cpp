@@ -78,6 +78,21 @@ namespace spn {
 			_path2ent.erase(itr);
 		}
 	}
+	void FNotify::procEvent(std::function<void (const FEv&, const SPData&)> cb) {
+		struct Tmp : FRecvNotify {
+			std::function<void (const FEv&, const SPData&)>& _cb;
+			Tmp(std::function<void (const FEv&, const SPData&)>& cb): _cb(cb) {}
+
+			void event(const FEv_Create& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_Access& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_Modify& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_Remove& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_MoveFrom& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_MoveTo& e, const SPData& ud) { _cb(e, ud); }
+			void event(const FEv_Attr& e, const SPData& ud) { _cb(e, ud); }
+		} tmp(cb);
+		procEvent(tmp);
+	}
 	void FNotify::procEvent(FRecvNotify& ntf) {
 		_dep.procEvent([&ntf, this](const FNotifyDep::Event& e){
 			auto& ent = _dsc2ent.find(e.dsc)->second;
