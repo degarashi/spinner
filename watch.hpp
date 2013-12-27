@@ -11,15 +11,19 @@
 #include <memory>
 
 namespace spn {
+	using SPString = std::shared_ptr<std::string>;
 	using UPVoid = std::unique_ptr<void*>;
 	struct FEv {
-		const std::string&	basePath;
-		void*				udata;
-		std::string			name;
-		bool				isDir;
+		SPString		basePath;
+		void*			udata;
+		std::string		name;
+		bool			isDir;
 
-		FEv(const std::string& base, void* ud, const std::string& nm, bool bDir): basePath(base), udata(ud), name(nm), isDir(bDir) {}
+		bool operator == (const FEv& f) const;
+		FEv(const SPString& base, void* ud, const std::string& nm, bool bDir);
 		virtual FileEvent getType() const = 0;
+		virtual const char* getName() const = 0;
+		virtual void print(std::ostream& os) const;
 	};
 	using UPFEv = std::unique_ptr<FEv>;
 
@@ -34,7 +38,7 @@ namespace spn {
 		using DSC = typename FNotifyDep::DSC;
 		struct Ent {
 			DSC			dsc;
-			std::string	basePath;
+			SPString	basePath;
 			UData		udata;
 		};
 
@@ -64,33 +68,60 @@ namespace spn {
 	};
 	struct FEv_Create : FEv {
 		using FEv::FEv;
-		FileEvent getType() const override { return FE_Create; }
+		using FEv::operator==;
+		FileEvent getType() const override;
+		const char* getName() const override;
+	};
+	struct FEv_Access : FEv {
+		using FEv::FEv;
+		using FEv::operator==;
+		FileEvent getType() const override;
+		const char* getName() const override;
 	};
 	struct FEv_Modify : FEv {
 		using FEv::FEv;
-		FileEvent getType() const override { return FE_Modify; }
+		using FEv::operator==;
+		FileEvent getType() const override;
+		const char* getName() const override;
 	};
 	struct FEv_Remove : FEv {
 		using FEv::FEv;
-		FileEvent getType() const override { return FE_Remove; }
+		using FEv::operator==;
+		FileEvent getType() const override;
+		const char* getName() const override;
 	};
+	// MoveFromとMoveToはFileTreeの比較で検出出来ない = CreateとRemoveに別れる
 	struct FEv_MoveFrom : FEv {
 		uint32_t	cookie;
-		FEv_MoveFrom(const std::string& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID):
-			FEv(base, ud, name, bDir), cookie(cookieID) {}
-		FileEvent getType() const override { return FE_MoveFrom; }
+
+		bool operator == (const FEv& e) const;
+		FEv_MoveFrom(const SPString& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID);
+		FileEvent getType() const override;
+		const char* getName() const override;
+		void print(std::ostream& os) const override;
 	};
 	struct FEv_MoveTo : FEv {
 		uint32_t	cookie;
-		FEv_MoveTo(const std::string& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID):
-			FEv(base, ud, name, bDir), cookie(cookieID) {}
-		FileEvent getType() const override { return FE_MoveTo; }
+
+		bool operator == (const FEv& e) const;
+		FEv_MoveTo(const SPString& base, void* ud, const std::string& name, bool bDir, uint32_t cookieID);
+		FileEvent getType() const override;
+		const char* getName() const override;
+		void print(std::ostream& os) const override;
+	};
+	struct FEv_Attr : FEv {
+		using FEv::FEv;
+		using FEv::operator==;
+		const char* getName() const override;
+		FileEvent getType() const override;
 	};
 	struct FRecvNotify {
 		virtual void event(const FEv_Create& e) {}
+		virtual void event(const FEv_Access& e) {}
 		virtual void event(const FEv_Modify& e) {}
 		virtual void event(const FEv_Remove& e) {}
 		virtual void event(const FEv_MoveFrom& e) {}
 		virtual void event(const FEv_MoveTo& e) {}
+		virtual void event(const FEv_Attr& e) {}
 	};
 }
