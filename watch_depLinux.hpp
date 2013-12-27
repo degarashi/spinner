@@ -13,7 +13,8 @@ namespace spn {
 		private:
 			using OPThread = spn::Optional<std::thread>;
 			std::recursive_mutex	_mutex;
-			int						_fd;
+			int						_fd,
+									_cancelFd[2];
 			OPThread				_thread;
 			using EventL = std::vector<Event>;
 			EventL		_eventL;
