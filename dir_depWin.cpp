@@ -89,9 +89,9 @@ namespace spn {
 		FILETIME tmC, tmA, tmW;
 		GetFileTime(fh.get(), &tmC, &tmA, &tmW);
 
-		st.tmCreated = WinFT2UnixTime(tmC);
-		st.tmAccess = WinFT2UnixTime(tmA);
-		st.tmModify = WinFT2UnixTime(tmW);
+		st.ftime.tmCreated = WinFT2UnixTime(tmC);
+		st.ftime.tmAccess = WinFT2UnixTime(tmA);
+		st.ftime.tmModify = WinFT2UnixTime(tmW);
 		return st;
 	}
 	FILETIME UnixTime2WinFT(time_t t) {
@@ -102,7 +102,7 @@ namespace spn {
 		ft.dwHighDateTime = wt;
 		return ft;
 	}
-	time_t WinFT2UnixTime(FILETIME ft) {
+	time_t WinFT2UnixTime(const FILETIME& ft) {
 		uint64_t tmp = ft.dwHighDateTime;
 		tmp <<= 32;
 		tmp |= ft.dwLowDateTime;
@@ -148,4 +148,3 @@ namespace spn {
 		return res && *res;
 	}
 }
-
