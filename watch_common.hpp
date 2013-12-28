@@ -6,6 +6,8 @@
 
 namespace spn {
 	using SPString = std::shared_ptr<std::string>;
+	class Dir;
+	using SPDir = std::shared_ptr<Dir>;
 	struct UserData {
 		virtual ~UserData() {}
 	};

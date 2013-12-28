@@ -66,7 +66,7 @@ namespace spn {
 	// ------------------------- FNotify -------------------------
 	void FNotify::addWatch(const std::string& path, uint32_t mask, const SPData& udata) {
 		remWatch(path);
-		auto dsc = _dep.addWatch(path, mask);
+		FNotifyDep::DSC dsc = _dep.addWatch(path, mask);
 		_path2ent.emplace(path, Ent{dsc, SPString(new std::string(path)), udata});
 		_dsc2ent.emplace(dsc, &_path2ent.at(path));
 	}
@@ -95,7 +95,9 @@ namespace spn {
 	}
 	void FNotify::procEvent(FRecvNotify& ntf) {
 		_dep.procEvent([&ntf, this](const FNotifyDep::Event& e){
-			auto& ent = _dsc2ent.find(e.dsc)->second;
+			auto itr = _dsc2ent.find(e.dsc);
+			AssertP(Trap, itr!=_dsc2ent.end())
+			auto& ent = itr->second;
 			auto& ud = ent->udata;
 			#define MAKE_EVENT(typ) ntf.event(typ(ent->basePath, e.path.c_str(), e.bDir), ud);
 			#define MAKE_EVENTM(typ) ntf.event(typ(ent->basePath, e.path.c_str(), e.bDir, e.cookie), ud);
