@@ -122,7 +122,7 @@ namespace spn {
 				}
 			}
 
-			SPString basePath(new std::string(std::string(initialPath.getStringPtr()) + "/test_dir"));
+			SPString basePath(new std::string(To8Str(initialPath.getStringPtr()).moveTo() + "/test_dir"));
 			// ファイルツリーを作成
 			UPIFile ft0 = FileTree::ConstructFTree(*basePath);
 
