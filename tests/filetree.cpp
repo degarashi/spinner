@@ -231,7 +231,9 @@ namespace spn {
 								++ch;
 								::fseek(fp, 0, SEEK_SET);
 								::fwrite(&ch, 1, 1, fp);
-								::fsync(::fileno(fp));
+								#ifdef UNIX
+									::fsync(::fileno(fp));
+								#endif
 								::fclose(fp);
 							}
 							auto st2 = dir.status();
@@ -255,7 +257,9 @@ namespace spn {
 								char ch = 0xfe;
 								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "a");
 								::fwrite(&ch, 1, 1, fp);
-								::fsync(::fileno(fp));
+								#ifdef UNIX
+									::fsync(::fileno(fp));
+								#endif
 								::fclose(fp);
 							}
 
@@ -322,7 +326,9 @@ namespace spn {
 								char c;
 								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "r");
 								::fread(&c, 1, 1, fp);
-								::fsync(::fileno(fp));
+								#ifdef UNIX
+									::fsync(::fileno(fp));
+								#endif
 								::fclose(fp);
 							}
 							auto st2 = dir.status();
