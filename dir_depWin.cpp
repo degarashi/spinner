@@ -2,33 +2,31 @@
 #include "error.hpp"
 #include "optional.hpp"
 
-namespace {
-	class WError : public std::runtime_error {
-		public:
-			WError(const WError&) = default;
-			WError(const char* name): std::runtime_error("") {
-				LPVOID lpMsg;
-				FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-							nullptr,
-							GetLastError(),
-							MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-							reinterpret_cast<LPWSTR>(&lpMsg),
-							0, nullptr);
-				spn::PathStr pstr(reinterpret_cast<const char16_t*>(lpMsg));
-				LocalFree(lpMsg);
-
-				std::stringstream ss;
-				ss << "winapi-error at " << name << std::endl;
-				std::string msg = spn::Text::UTFConvertTo8(pstr);
-				ss.write(msg.c_str(), msg.length());
-				static_cast<std::runtime_error&>(*this) = std::runtime_error(ss.str());
-			}
-	};
-}
 #define AS_LPCWSTR_PATH(path)	reinterpret_cast<const wchar_t*>(path.getStringPtr())
 #define AS_LPWSTR(path)			reinterpret_cast<wchar_t*>(path)
 //MEMO: ファイルのユーザーアクセス権限関係はとりあえず無視
 namespace spn {
+	WError::WError(const char* name): std::runtime_error("") {
+		LPVOID lpMsg;
+		DWORD errID = GetLastError();
+		FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+					nullptr,
+					errID,
+					LANG_USER_DEFAULT,
+					reinterpret_cast<LPWSTR>(&lpMsg),
+					128, nullptr);
+		spn::PathStr pstr(reinterpret_cast<const char16_t*>(lpMsg));
+		std::cout << Text::UTFConvertTo8(pstr) << std::endl;
+		LocalFree(lpMsg);
+
+		std::stringstream ss;
+		ss << "winapi-error at " << name << std::endl;
+		ss << "ErrorID: " << errID << std::endl;
+		std::string msg = spn::Text::UTFConvertTo8(pstr);
+		ss.write(msg.c_str(), msg.length());
+		static_cast<std::runtime_error&>(*this) = std::runtime_error(ss.str());
+	}
+
 	PathStr Dir_depWin::getcwd() const {
 		PathCh tmp[512];
 		GetCurrentDirectoryW(sizeof(tmp)/sizeof(tmp[0]), AS_LPWSTR(tmp));

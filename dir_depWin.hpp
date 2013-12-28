@@ -4,6 +4,12 @@
 #include <memory>
 
 namespace spn {
+	class WError : public std::runtime_error {
+		public:
+			WError(const WError&) = default;
+			WError(const char* name);
+	};
+
 	FILETIME UnixTime2WinFT(time_t t);
 	time_t WinFT2UnixTime(const FILETIME& ft);
 
