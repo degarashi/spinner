@@ -84,7 +84,7 @@ namespace spn {
 		_SetWaitNotify(ent);
 
 		_csection.enter();
-		_eventID = EventID::AddRem;
+		_eventID = EventID::Add;
 		SetEvent(_hEvent.get());
 		_csection.leave();
 		return ent.hDir.get();
@@ -93,16 +93,17 @@ namespace spn {
 		_csection.enter();
 		auto itr = _dscToEntP.find(dsc);
 		if(itr != _dscToEntP.end()) {
+			_eventID = EventID::Rem;
+			_eventArg = (*itr->second).hEvent.get();
+			SetEvent(_hEvent.get());
+
 			auto itr2 = _pathToEnt.find(*(*itr->second).basePath);
 			_dscToEntP.erase(itr);
 			_pathToEnt.erase(itr2);
 		}
-		_eventID = EventID::AddRem;
-		SetEvent(_hEvent.get());
 		_csection.leave();
 	}
 	void FNotify_depWin::_pushInfo(Entry& ent, FILE_NOTIFY_INFORMATION& pData, uint32_t cookie) {
-		_csection.enter();
 		FileEvent id;
 	    switch(pData.Action) {
 		    case FILE_ACTION_ADDED:
@@ -129,7 +130,6 @@ namespace spn {
 		c16Str name(reinterpret_cast<const char16_t*>(pData.FileName), lenBytes/sizeof(char16_t));
 		dir <<= name;
 		_eventL.push_back(Event{ent.hDir.get(), id, Text::UTFConvertTo8(name), cookie, dir.isDirectory()});
-		_csection.leave();
 	}
 
 	unsigned int __stdcall FNotify_depWin::ASyncLoop(void* ths_p) {
@@ -151,6 +151,7 @@ namespace spn {
 			handles[count++] = ths->_hEvent.get();
 
 			DWORD res = WaitForMultipleObjects(count, handles, FALSE, INFINITE);
+			ths->_csection.enter();
 			Assert(Warn, res!=WAIT_FAILED, "failed to wait objects (in watch thread)")
 			if(res >= WAIT_OBJECT_0 &&
 			   res < WAIT_OBJECT_0+count-1)
@@ -176,10 +177,40 @@ namespace spn {
 				_SetWaitNotify(ent);
 			} else {
 				Assert(Trap, res == WAIT_OBJECT_0+count-1)
-				if(ths->_eventID == EventID::Exit)
+				if(ths->_eventID == EventID::Exit) {
+					// 全てのIOをキャンセル
+					for(auto& p : ths->_pathToEnt) {
+						auto& ent = p.second;
+						CancelIo(ent.hDir.get());
+						WaitForSingleObject(ent.hEvent.get(), INFINITE);
+					}
 					break;
+				}
+				if(ths->_eventID == EventID::Rem) {
+					// 動作中の非同期IOをキャンセル
+					bool bFound = false;
+					for(int i=0 ; i<count ; i++) {
+						if(handles[i] == ths->_eventArg) {
+							auto& ent = *entries[i];
+							CancelIo(ent.hDir.get());
+							WaitForSingleObject(ent.hEvent.get(), INFINITE);
+
+							auto itr = ths->_dscToEntP.find(ent.hDir.get());
+							ths->_dscToEntP.erase(itr);
+							auto itr2 = std::find_if(ths->_pathToEnt.begin(), ths->_pathToEnt.end(), [&ent](PathToEnt::value_type& val) {
+								return &val.second == &ent;
+							});
+							ths->_pathToEnt.erase(itr2);
+
+							bFound = true;
+							break;
+						}
+					}
+					AssertP(Trap, bFound, "event handle not found in list")
+				}
 				ResetEvent(handles[res-WAIT_OBJECT_0]);
 			}
+			ths->_csection.leave();
 		}
 		_endthreadex(0);
 		return 0;

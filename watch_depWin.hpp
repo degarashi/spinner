@@ -25,9 +25,11 @@ namespace spn {
 			UPWinH			_hEvent,		//!< 本スレ -> イベントスレ通知用
 							_hThread;		//!< イベント処理用スレッドハンドル
 			enum class EventID {
-				AddRem,
+				Add,
+				Rem,
 				Exit
 			} _eventID;
+			DSC	_eventArg;
 
 			struct Entry {
 				constexpr static int BUFFSIZE = 1024*8;
