@@ -47,6 +47,7 @@ namespace spn {
 		static uint32_t ConvertFlag_S2W(uint32_t flag);
 		//! ファイルフラグ変換 (WinAPI -> spinner)
 		static uint32_t ConvertFlag_W2S(uint32_t flag);
+		static std::string GetCurrentDir();
 	};
 	using DirDep = Dir_depWin;
 }

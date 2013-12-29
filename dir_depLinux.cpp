@@ -164,4 +164,9 @@ namespace spn {
 		struct stat st;
 		return stat(path.getStringPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
 	}
+	std::string Dir_depLinux::GetCurrentDir() {
+		char buff[512];
+		AssertT(Throw, ::getcwd(buff, sizeof(buff)), (PError)(const char*), "GetCurrentDir");
+		return std::string(buff);
+	}
 }

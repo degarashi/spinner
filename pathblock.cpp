@@ -373,7 +373,9 @@ namespace spn {
 		_dep = std::move(d._dep);
 		return *this;
 	}
-
+	std::string Dir::GetCurrentDir() {
+		return DirDep::GetCurrentDir();
+	}
 	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
 		// * -> ([\/_ \-\w]+)
@@ -461,7 +463,14 @@ namespace spn {
 		});
 	}
 	void Dir::enumEntryRegEx(const std::string& r, EnumCB cb) const {
-		auto path = plain_utf8();
+		if(r.empty())
+			return;
+		std::string path;
+		// 絶対パスの時は内部パスを無視する
+		if(_IsSC(Text::UTF8To32(r[0]).code))
+			path = '/';
+		else
+			path = plain_utf8();
 		try {
 			RegexL rl = _ParseRegEx(r);
 			_enumEntryRegEx(rl.begin(), rl.end(), path, path.size()+1, cb);

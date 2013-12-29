@@ -147,4 +147,9 @@ namespace spn {
 		auto res = SingleCheck(path, FILE_ATTRIBUTE_DIRECTORY);
 		return res && *res;
 	}
+	std::string Dir_depWin::GetCurrentDir() {
+		wchar_t buff[512];
+		GetCurrentDirectoryW(sizeof(buff)/sizeof(buff[0]), buff);
+		return Text::UTFConvertTo8(buff);
+	}
 }
