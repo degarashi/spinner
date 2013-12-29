@@ -177,7 +177,8 @@
 						MatT ret; \
 						reg128 r0 = reg_load1_ps(&s); \
 						BOOST_PP_REPEAT(DIM_M, FUNC2, func) \
-						return ret; }
+						return ret; } \
+					friend MatT operator op (float s, const MatT& m);
 
 				DEF_OP(+, reg_add_ps)
 				DEF_OP(-, reg_sub_ps)
@@ -344,6 +345,18 @@
 		}
 	#elif BOOST_PP_FRAME_FLAGS(1) == 1
 		namespace spn {
+			#define FUNC_OP(z,n,func)	STORETHISPS(ret.ma[n], func(r, LOADTHISPS(m.ma[n])));
+			#define DEF_OPERATOR_FUNC(op, func) MT operator op (float s, const MT& m) { \
+				MT ret; \
+				reg128 r = reg_load1_ps(&s); \
+				BOOST_PP_REPEAT(DIM_M, FUNC_OP, func) \
+				return ret; \
+			}
+			DEF_OPERATOR_FUNC(+, reg_add_ps)
+			DEF_OPERATOR_FUNC(-, reg_sub_ps)
+			DEF_OPERATOR_FUNC(*, reg_mul_ps)
+			DEF_OPERATOR_FUNC(/, _mmDivPs)
+
 			MT::MatT(const AMat& m) {
 				for(int i=0 ; i<DIM_M ; i++)
 					STORETHIS(i, LOADPS(m.ma[i]));
