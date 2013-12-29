@@ -74,7 +74,8 @@
 					AVec operator op (const AVec& v) const; \
 					UVec operator op (const UVec& v) const; \
 					AVec&& operator op (AVec&& v) const; \
-					UVec&& operator op (UVec&& v) const;
+					UVec&& operator op (UVec&& v) const; \
+					friend VecT operator op (float fv, const VecT& v);
 				DEF_PRE(+, reg_add_ps)
 				DEF_PRE(-, reg_sub_ps)
 				DEF_PRE(*, reg_mul_ps)
@@ -279,7 +280,9 @@
 						return std::forward<AVec>(v); } \
 					VT::UVec&& VT::operator op (UVec&& v) const { \
 						STOREPSU(v.m, func(LOADTHIS(), LOADPSU(v.m))); \
-						return std::forward<UVec>(v); }
+						return std::forward<UVec>(v); } \
+					VT operator op (float fv, const VT& v) { \
+						return VT(func(LOADTHISPS(v.m), reg_load1_ps(&fv))); }
 			DEF_OP(+, reg_add_ps)
 			DEF_OP(-, reg_sub_ps)
 			DEF_OP(*, reg_mul_ps)
