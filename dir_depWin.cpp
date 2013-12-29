@@ -150,6 +150,6 @@ namespace spn {
 	std::string Dir_depWin::GetCurrentDir() {
 		wchar_t buff[512];
 		GetCurrentDirectoryW(sizeof(buff)/sizeof(buff[0]), buff);
-		return Text::UTFConvertTo8(buff);
+		return Text::UTFConvertTo8(reinterpret_cast<const char16_t*>(buff));
 	}
 }
