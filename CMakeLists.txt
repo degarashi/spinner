@@ -19,7 +19,9 @@ add_library(spinner STATIC ${CXX_SRC})
 
 install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 file(GLOB HEADERS "./*.hpp")
+file(GLOB HEADERS2 "./serialization/*.hpp")
 install(FILES ${HEADERS} DESTINATION include/spinner)
+install(FILES ${HEADERS2} DESTINATION include/spinner/serialization)
 
 if(NOT DEFINED ARCHITECTURE)
 	if(${WIN32})
