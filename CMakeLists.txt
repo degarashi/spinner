@@ -24,11 +24,6 @@ install(FILES ${HEADERS} DESTINATION include/spinner)
 install(FILES ${HEADERS2} DESTINATION include/spinner/serialization)
 
 if(NOT DEFINED ARCHITECTURE)
-	if(${WIN32})
-		set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
-		set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
-	endif()
-
 	aux_source_directory(tests TEST_SRC)
 	add_executable(spn_test main.cpp ${TEST_SRC})
 	set(LINK_LIBS spinner boost_regex boost_serialization)
