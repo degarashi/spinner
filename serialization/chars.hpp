@@ -1,5 +1,7 @@
+#pragma once
 #define BOOST_PP_VARIADICS 1
 #include <boost/serialization/level.hpp>
+#include <cstdint>
 
 BOOST_CLASS_IMPLEMENTATION(char16_t, object_serializable)
 BOOST_CLASS_IMPLEMENTATION(char32_t, object_serializable)
