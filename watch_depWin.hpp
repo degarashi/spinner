@@ -1,8 +1,7 @@
 #pragma once
-#include "watch_common.hpp"
 #include "dir_depWin.hpp"
+#include "watch_common.hpp"
 #include "filetree.hpp"
-#include <windows.h>
 
 namespace spn {
 	class CriticalSection {

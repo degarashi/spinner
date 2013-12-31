@@ -1,6 +1,7 @@
 #pragma once
-#include "path.hpp"
+#include <intrin.h>
 #include <windows.h>
+#include "path.hpp"
 #include <memory>
 
 namespace spn {
