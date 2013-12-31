@@ -600,28 +600,28 @@ namespace spn {
 		public:
 			//! アラインメント済みのメモリにオブジェクトを確保し、カスタムデリータ付きのunique_ptrとして返す
 			template <class... Args>
-			static std::unique_ptr<T, AlignedDeleter> NewU(Args&&... args) {
+			static std::unique_ptr<T, AlignedDeleter> NewU_Args(Args&&... args) {
 				return std::unique_ptr<T, AlignedDeleter>(_New(std::forward<Args>(args)...)); }
 			template <class A>
-			static std::unique_ptr<T, AlignedDeleter> NewU(std::initializer_list<A>&& w) {
+			static std::unique_ptr<T, AlignedDeleter> NewU_IL(std::initializer_list<A>&& w) {
 				return std::unique_ptr<T, AlignedDeleter>(_New(std::move(w))); }
 			static std::unique_ptr<T[], ArrayDeleter> ArrayU(size_t n) {
 				return std::unique_ptr<T[], ArrayDeleter>(AArray<T>(N, n)); }
 			//! アラインメント済みのメモリにオブジェクトを確保し、個別デリータ付きのunique_ptrとして返す
 			template <class... Args>
-			static std::unique_ptr<T, void (*)(void*)> NewUF(Args&&... args) {
+			static std::unique_ptr<T, void (*)(void*)> NewUF_Args(Args&&... args) {
 				return std::unique_ptr<T, void(*)(void*)>(_New(std::forward<Args>(args)...), AlignedDelete); }
 			template <class A>
-			static std::unique_ptr<T, void (*)(void*)> NewUF(std::initializer_list<A>&& w) {
+			static std::unique_ptr<T, void (*)(void*)> NewUF_IL(std::initializer_list<A>&& w) {
 				return std::unique_ptr<T, void(*)(void*)>(_New(std::move(w)), AlignedDelete); }
 			static std::unique_ptr<T[], void (*)(void*)> ArrayUF(size_t n) {
 				return std::unique_ptr<T[], void(*)(void*)>(AArray<T>(N,n), ArrayDelete); }
 			//! アラインメント済みのメモリにオブジェクトを確保し、shared_ptrとして返す
 			template <class... Args>
-			static std::shared_ptr<T> NewS(Args&&... args) {
+			static std::shared_ptr<T> NewS_Args(Args&&... args) {
 				return std::shared_ptr<T>(_New(std::forward<Args>(args)...), AlignedDeleter()); }
 			template <class A>
-			static std::shared_ptr<T> NewS(std::initializer_list<A>&& w) {
+			static std::shared_ptr<T> NewS_IL(std::initializer_list<A>&& w) {
 				return std::shared_ptr<T>(_New(std::move(w)), AlignedDeleter()); }
 	};
 
