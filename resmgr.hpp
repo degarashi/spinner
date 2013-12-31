@@ -369,11 +369,13 @@ namespace spn {
 										accessCount;	//!< refアクセス回数カウンタ
 				typename WHdl::VWord	w_magic;
 
-				Entry(DAT&& dat, typename WHdl::VWord wmagic): data(std::forward<DAT>(dat)), count(0), accessCount(0), w_magic(wmagic) {}
+				template <class DAT2>
+				Entry(DAT2&& dat, typename WHdl::VWord wmagic): data(std::forward<DAT2>(dat)), count(0), accessCount(0), w_magic(wmagic) {}
 				#ifdef DEBUG
 					typename SHdl::VWord	magic;
 					// デバッグ版では簡易マジックナンバーチェックが入る
-					Entry(DAT&& dat, typename WHdl::VWord wmagic, typename SHdl::VWord smagic): Entry(std::forward<DAT>(dat), wmagic) {
+					template <class DAT2>
+					Entry(DAT2&& dat, typename WHdl::VWord wmagic, typename SHdl::VWord smagic): Entry(std::forward<DAT2>(dat), wmagic) {
 						magic = smagic;
 					}
 				#endif
@@ -560,17 +562,18 @@ namespace spn {
 				return spn::none;
 			}
 
-			LHdl _acquire(DAT&& d) {
+			template <class DAT2>
+			LHdl _acquire(DAT2&& d) {
 				AssertP(Trap, _checkValidAccess(), "creating resource is invalid operation while serialize")
 				++_wMagicIndex;
 				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
 				#ifdef DEBUG
 					++_sMagicIndex;
 					_sMagicIndex &= SHandle::Value::length_mask<SHandle::Value::MAGIC>();
-					auto id = _dataVec.add(Entry(std::move(d), _wMagicIndex, _sMagicIndex));
+					auto id = _dataVec.add(Entry(std::forward<DAT2>(d), _wMagicIndex, _sMagicIndex));
 					SHdl sh(id, _resID, _sMagicIndex);
 				#else
-					auto id = _dataVec.add(Entry(std::move(d), _wMagicIndex));
+					auto id = _dataVec.add(Entry(std::forward<DAT2>(d), _wMagicIndex));
 					SHdl sh(id, _resID);
 				#endif
 				return LHdl(sh);
