@@ -262,10 +262,6 @@ namespace spn {
 		std::string UTFConvertTo8(c32Str src);
 		void WriteData(void* pDst, char32_t val, int n);
 
-		struct Code {
-			char32_t	code;
-			int			nread, nwrite;
-		};
 		// nread, nwriteはバイト数ではなく文字数を表す
 		// UTF変換(主に内部用)
 		Code UTF16To32(char32_t src);

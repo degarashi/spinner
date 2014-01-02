@@ -214,6 +214,17 @@ namespace spn {
 		std::u32string UTFConvertTo32(c8Str src);
 		std::string UTFConvertTo8(c16Str src);
 		std::string UTFConvertTo8(c32Str src);
+
+		struct Code {
+			char32_t	code;
+			int			nread, nwrite;
+		};
+		Code UTF16To32(char32_t src);
+		Code UTF32To16(char32_t src);
+		Code UTF8To32(char32_t src);
+		Code UTF32To8(char32_t src);
+		Code UTF8To16(char32_t src);
+		Code UTF16To8(char32_t src);
 	}
 	template <class TO, class FROM> inline AbstString<TO> UTFConvertToN(FROM);
 	template <class TO> inline AbstString<TO> UTFConvertToN(AbstString<TO> src) { return src; }
@@ -223,6 +234,18 @@ namespace spn {
 	template <> inline c32Str UTFConvertToN<char32_t>(c16Str src) { return Text::UTFConvertTo32(src); }
 	template <> inline c8Str UTFConvertToN<char>(c32Str src) { return Text::UTFConvertTo8(src); }
 	template <> inline c16Str UTFConvertToN<char16_t>(c32Str src) { return Text::UTFConvertTo16(src); }
+
+	template <class TO, class FROM> inline Text::Code UTFToN(FROM);
+	template <class TO> inline Text::Code UTFToN(const TO* c) {
+		return Text::Code{static_cast<char32_t>(*c),
+							sizeof(TO), sizeof(TO)};
+	}
+	template <> inline Text::Code UTFToN<char16_t>(const char* c) { return Text::UTF8To16(*reinterpret_cast<const char32_t*>(c)); }
+	template <> inline Text::Code UTFToN<char32_t>(const char* c) { return Text::UTF8To32(*reinterpret_cast<const char32_t*>(c)); }
+	template <> inline Text::Code UTFToN<char>(const char16_t* c) { return Text::UTF16To8(*reinterpret_cast<const char32_t*>(c)); }
+	template <> inline Text::Code UTFToN<char32_t>(const char16_t* c) { return Text::UTF16To32(*reinterpret_cast<const char32_t*>(c)); }
+	template <> inline Text::Code UTFToN<char>(const char32_t* c) { return Text::UTF32To8(*reinterpret_cast<const char32_t*>(c)); }
+	template <> inline Text::Code UTFToN<char16_t>(const char32_t* c) { return Text::UTF32To16(*reinterpret_cast<const char32_t*>(c)); }
 	template <class T>
 	class ToNStrT : public AbstString<T> {
 		using base = AbstString<T>;
