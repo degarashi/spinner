@@ -75,7 +75,8 @@ namespace spn {
 	}
 	const char32_t PathBlock::SC(U'/'),
 					PathBlock::DOT(U'.'),
-					PathBlock::EOS(U'\0');
+					PathBlock::EOS(U'\0'),
+					PathBlock::CLN(U':');
 	bool PathBlock::_IsSC(char32_t c) {
 		return c==U'\\' || c==SC;
 	}
@@ -85,17 +86,17 @@ namespace spn {
 					*ptrE = ptr + len;
 		// 分割文字を探し、それに統一しながらsegment数を数える
 		// 絶対パスの先頭SCは除く
-		auto res = _StripSC(ptr, ptrE);
-		if(!res.bNeedOperation) {
-			clear();
-			return;
-		}
-		_bAbsolute = res.bAbsolute;
-		_driveLetter = res.driveLetter;
 
-		_path.assign(ptr, ptrE);
-		_segment.clear();
-		_ReWriteSC(_path.begin(), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+		if(auto res = _StripSC(ptr, ptrE)) {
+			_bAbsolute = res->bAbsolute;
+			_driveLetter = res->driveLetter;
+			ptr += res->nread;
+
+			_path.assign(ptr, ptrE);
+			_segment.clear();
+			_ReWriteSC(_path.begin(), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+		} else
+			clear();
 	}
 	bool PathBlock::isAbsolute() const {
 		return _bAbsolute;
@@ -107,15 +108,15 @@ namespace spn {
 	void PathBlock::pushBack(To32Str elem) {
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
-		auto res = _StripSC(src, srcE);
-		if(!res.bNeedOperation)
-			return;
-		Assert(Throw, !res.bAbsolute)
+		if(auto res = _StripSC(src, srcE)){
+			Assert(Throw, !res->bAbsolute)
+			src += res->nread;
 
-		if(!_path.empty())
-			_path.push_back(SC);
-		_path.insert(_path.end(), src, srcE);
-		_ReWriteSC(_path.end()-(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+			if(!_path.empty())
+				_path.push_back(SC);
+			_path.insert(_path.end(), src, srcE);
+			_ReWriteSC(_path.end()-(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+		}
 	}
 	void PathBlock::popBack() {
 		int sg = segments();
@@ -127,58 +128,73 @@ namespace spn {
 				clear();
 		}
 	}
-	char32_t PathBlock::_GetDriveLetter(const char32_t* from, const char32_t* to) {
+	template <class Itr>
+	auto PathBlock::_GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type> {
+		using CH = typename std::decay<decltype(*from)>::type;
+		auto cnvToCh = [](char c) {
+			char32_t c2 = static_cast<char32_t>(c);
+			return UTFToN<CH>(reinterpret_cast<const char*>(&c2)).code;
+		};
+		Itr tmp_from = from;
 		if(to - from >= 3) {
-			auto c = from[0];
-			if((c >= U'A' && c <= U'Z') ||
-					(c >= U'a' && c <= U'z'))
+			auto c = *from;
+			CH cA = cnvToCh('A'),
+				cZ = cnvToCh('Z'),
+				ca = cnvToCh('a'),
+				cz = cnvToCh('z'),
+				col = cnvToCh(':');
+			if((c >= cA && c <= cZ) ||
+					(c >= ca && c <= cz))
 			{
-				if(from[1] == U':' &&
-					_IsSC(from[2]))
-					return *from;
+				if(*(++from) == col &&
+					_IsSC(UTFToN<char32_t>(&*(++from)).code))
+					return *tmp_from;
 			}
 		}
-		return U'\0';
+		return cnvToCh('\0');
 	}
-	PathBlock::StripResult PathBlock::_StripSC(const char32_t*& from, const char32_t* to) {
-		StripResult res = {};
+	PathBlock::OPStripResult PathBlock::_StripSC(const char32_t* from, const char32_t* to) {
+		auto* tmp_from = from;
 		if(from == to)
-			return res;
+			return spn::none;
 
-		res.bNeedOperation = true;
+		StripResult res;
 		if((res.bAbsolute = _IsSC(*from)))
 			++from;
-		else if((res.driveLetter = _GetDriveLetter(from, to)) != U'\0') {
-			// "C:\"のようになるので3文字分飛ばす
-			from += 3;
-			res.bAbsolute = true;
-			Assert(Throw, from <= to, "invalid path")
+		else {
+			if(auto dr = _GetDriveLetter(from, to)) {
+				res.driveLetter = Text::UTF32To8(*dr).code;
+				// "C:\"のようになるので3文字分飛ばす
+				from += 3;
+				res.bAbsolute = true;
+				Assert(Throw, from <= to, "invalid path")
+			}
 		}
 		if(from != to) {
 			if(_IsSC(*to))
 				--to;
-			res.bNeedOperation = from!=to;
-			return res;
+			if(from == to)
+				return spn::none;
 		}
-		res.bNeedOperation = true;
+		res.nread = from - tmp_from;
 		return res;
 	}
 	void PathBlock::pushFront(To32Str elem) {
 		Assert(Trap, !_bAbsolute || empty())
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
-		auto res = _StripSC(src, srcE);
-		if(!res.bNeedOperation)
-			return;
-		_bAbsolute = res.bAbsolute;
-		_driveLetter = res.driveLetter;
+		if(auto res = _StripSC(src, srcE)) {
+			_bAbsolute = res->bAbsolute;
+			_driveLetter = res->driveLetter;
+			src += res->nread;
 
-		if(src != srcE) {
-			_path.push_front(SC);
-			_path.insert(_path.begin(), src, srcE);
-			int ofs = 0;
-			_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
-				_segment.insert(_segment.begin()+(ofs++), n); });
+			if(src != srcE) {
+				_path.push_front(SC);
+				_path.insert(_path.begin(), src, srcE);
+				int ofs = 0;
+				_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
+					_segment.insert(_segment.begin()+(ofs++), n); });
+			}
 		}
 	}
 	void PathBlock::popFront() {
@@ -211,9 +227,9 @@ namespace spn {
 	}
 	void PathBlock::_outputHeader(std::u32string& dst, bool bAbs) const {
 		if(bAbs && _bAbsolute) {
-			if(_driveLetter != '\0') {
-				dst += _driveLetter;
-				dst += ':';
+			if(_driveLetter) {
+				dst += *_driveLetter;
+				dst += CLN;
 			}
 			dst += SC;
 		}

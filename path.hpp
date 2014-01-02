@@ -3,6 +3,7 @@
 #include <chrono>
 #include <functional>
 #include <deque>
+#include "optional.hpp"
 #include "abstbuff.hpp"
 #include "serialization/chars.hpp"
 #define BOOST_PP_VARIADICS 1
@@ -21,18 +22,19 @@ namespace spn {
 		protected:
 			using Path = std::deque<char32_t>;
 			using Segment = std::deque<int>;
+			using OPChar = spn::Optional<char>;
 			//! 絶対パスにおける先頭スラッシュを除いたパス
 			Path		_path;
 			//! 区切り文字の前からのオフセット
 			Segment		_segment;
 			const static char32_t SC,		//!< セパレート文字
 								DOT,		//!< 拡張子の前の記号
-								EOS;		//!< 終端記号
+								EOS,		//!< 終端記号
+								CLN;		//!< コロン :
 			bool		_bAbsolute;
-			char		_driveLetter;		//!< ドライブ文字(Windows用。Linuxでは無視)　\0=無効
+			OPChar		_driveLetter;		//!< ドライブ文字(Windows用。Linuxでは無視)　\0=無効
 
 			static bool _IsSC(char32_t c);
-			static char32_t _GetDriveLetter(const char32_t* from, const char32_t* to);
 			//! パスを分解しながらセグメント長をカウントし、コールバック関数を呼ぶ
 			/*! fromからtoまで1文字ずつ見ながら区切り文字を直す */
 			template <class CB>
@@ -54,14 +56,18 @@ namespace spn {
 					++c;
 				}
 			}
+			template <class Itr>
+			static auto _GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type>;
+
 			struct StripResult {
-				bool 		bNeedOperation,
-							bAbsolute;
-				char32_t	driveLetter;
+				bool 	bAbsolute;
+				OPChar	driveLetter;
+				int		nread;
 			};
+			using OPStripResult = spn::Optional<StripResult>;
 			//! 前後の余分な区切り文字を省く
 			/*! \return [NeedOperation, AbsoluteFlag] */
-			static StripResult _StripSC(const char32_t*& from, const char32_t* to);
+			static OPStripResult _StripSC(const char32_t* from, const char32_t* to);
 			void _outputHeader(std::u32string& dst, bool bAbs) const;
         private:
             friend class boost::serialization::access;
