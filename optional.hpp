@@ -104,6 +104,13 @@ namespace spn {
 	template <class T>
 	class Optional {
 		private:
+			template <class T2>
+			friend class Optional;
+			template <class A>
+			struct IsOpt : std::false_type {};
+			template <class A>
+			struct IsOpt<Optional<A>> : std::true_type {};
+
 			using Buffer = _OptionalBuff<T>;
 			Buffer	_buffer;
 			bool	_bInit;
@@ -176,7 +183,45 @@ namespace spn {
 			typename std::add_pointer<decltype(_buffer.castCT())>::type operator -> () const {
 				return &_buffer.castCT();
 			}
-			template <class T2>
+			template <class T2,
+						class = typename std::enable_if<
+								IsOpt<
+									typename std::decay<T2>::type
+								>::value
+							>::type
+						>
+			Optional& operator = (const T2& t) {
+				_release();
+				if(t) {
+					_buffer = t._buffer.castCT();
+					_bInit = true;
+				}
+				return *this;
+			}
+			template <class T2,
+						class = typename std::enable_if<
+								IsOpt<
+									typename std::decay<T2>::type
+								>::value
+							>::type
+						>
+			Optional& operator = (T2&& t) {
+				_release();
+				if(t) {
+					_buffer = std::move(t._buffer.castT());
+					t.t__release();
+					_bInit = true;
+				}
+				return *this;
+			}
+			template <class T2,
+						class = T2,
+						class = typename std::enable_if<
+								!IsOpt<
+									typename std::decay<T2>::type
+								>::value
+							>::type
+						>
 			Optional& operator = (T2&& t) {
 				_release();
 				_buffer = std::forward<T2>(t);
@@ -185,23 +230,6 @@ namespace spn {
 			}
 			Optional& operator = (none_t) noexcept {
 				_release();
-				return *this;
-			}
-			Optional& operator = (const Optional<T>& t) {
-				_release();
-				if(t) {
-					_buffer = t._buffer.castT();
-					_bInit = true;
-				}
-				return *this;
-			}
-			Optional& operator = (Optional<T>&& t) {
-				_release();
-				if(t) {
-					_buffer = std::move(t._buffer.castT());
-					t.t__release();
-					_bInit = true;
-				}
 				return *this;
 			}
 			Optional& operator = (_AsInitialized) noexcept {
@@ -214,3 +242,4 @@ namespace spn {
 	const typename Optional<T>::_AsInitialized Optional<T>::AsInitialized{};
 }
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::Optional, object_serializable)
+
