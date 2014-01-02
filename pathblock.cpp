@@ -29,7 +29,7 @@ namespace spn {
 	}
 
 	// -------------------------- PathBlock --------------------------
-	PathBlock::PathBlock(): _bAbsolute(false) {}
+	PathBlock::PathBlock(): _bAbsolute(false), _driveLetter('\0') {}
 	PathBlock::PathBlock(PathBlock&& p):
 		_path(std::move(p._path)),
 		_segment(std::move(p._segment)),
@@ -39,6 +39,9 @@ namespace spn {
 	}
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
+	}
+	char PathBlock::getDriveLetter() const {
+		return _driveLetter;
 	}
 	bool PathBlock::operator == (const PathBlock& p) const {
 		return _path == p._path &&
@@ -55,8 +58,8 @@ namespace spn {
 		p.clear();
 		return *this;
 	}
-	template <class Itr, class CB>
-	void PathBlock::_ReWriteSC(Itr from, Itr to, char32_t sc, CB cb) {
+	template <class CB>
+	void PathBlock::_ReWriteSC(Path::iterator from, Path::iterator to, char32_t sc, CB cb) {
 		int count = 0;
 		while(from != to) {
 			if(_IsSC(*from)) {
@@ -83,11 +86,12 @@ namespace spn {
 		// 分割文字を探し、それに統一しながらsegment数を数える
 		// 絶対パスの先頭SCは除く
 		auto res = _StripSC(ptr, ptrE);
-		if(!res.first) {
+		if(!res.bNeedOperation) {
 			clear();
 			return;
 		}
-		_bAbsolute = res.second;
+		_bAbsolute = res.bAbsolute;
+		_driveLetter = res.driveLetter;
 
 		_path.assign(ptr, ptrE);
 		_segment.clear();
@@ -104,8 +108,9 @@ namespace spn {
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
 		auto res = _StripSC(src, srcE);
-		if(!res.first)
+		if(!res.bNeedOperation)
 			return;
+		Assert(Throw, !res.bAbsolute)
 
 		if(!_path.empty())
 			_path.push_back(SC);
@@ -122,34 +127,59 @@ namespace spn {
 				clear();
 		}
 	}
-	template <class Itr>
-	std::pair<bool, bool> PathBlock::_StripSC(Itr& from, Itr& to) {
+	char32_t PathBlock::_GetDriveLetter(const char32_t* from, const char32_t* to) {
+		if(to - from >= 3) {
+			auto c = from[0];
+			if((c >= U'A' && c <= U'Z') ||
+					(c >= U'a' && c <= U'z'))
+			{
+				if(from[1] == U':' &&
+					_IsSC(from[2]))
+					return *from;
+			}
+		}
+		return U'\0';
+	}
+	PathBlock::StripResult PathBlock::_StripSC(const char32_t*& from, const char32_t* to) {
+		StripResult res = {};
 		if(from == to)
-			return std::make_pair(false, false);
-		bool ret;
-		if((ret = _IsSC(*from)))
+			return res;
+
+		res.bNeedOperation = true;
+		if((res.bAbsolute = _IsSC(*from)))
 			++from;
+		else if((res.driveLetter = _GetDriveLetter(from, to)) != U'\0') {
+			// "C:\"のようになるので3文字分飛ばす
+			from += 3;
+			res.bAbsolute = true;
+			Assert(Throw, from <= to, "invalid path")
+		}
 		if(from != to) {
 			if(_IsSC(*to))
 				--to;
-			return std::make_pair(from!=to, ret);
+			res.bNeedOperation = from!=to;
+			return res;
 		}
-		return std::make_pair(true, ret);
+		res.bNeedOperation = true;
+		return res;
 	}
 	void PathBlock::pushFront(To32Str elem) {
-		assert(!_bAbsolute || empty());
+		Assert(Trap, !_bAbsolute || empty())
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
 		auto res = _StripSC(src, srcE);
-		if(!res.first)
+		if(!res.bNeedOperation)
 			return;
-		_bAbsolute = res.second;
+		_bAbsolute = res.bAbsolute;
+		_driveLetter = res.driveLetter;
 
-		_path.push_front(SC);
-		_path.insert(_path.begin(), src, srcE);
-		int ofs = 0;
-		_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
-			_segment.insert(_segment.begin()+(ofs++), n); });
+		if(src != srcE) {
+			_path.push_front(SC);
+			_path.insert(_path.begin(), src, srcE);
+			int ofs = 0;
+			_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
+				_segment.insert(_segment.begin()+(ofs++), n); });
+		}
 	}
 	void PathBlock::popFront() {
 		int sg = segments();
@@ -158,6 +188,7 @@ namespace spn {
 				_path.erase(_path.begin(), _path.begin()+_segment.front()+1);
 				_segment.pop_front();
 				_bAbsolute = false;
+				_driveLetter = '\0';
 			} else
 				clear();
 		}
@@ -167,8 +198,7 @@ namespace spn {
 	}
 	std::u32string PathBlock::plain_utf32(bool bAbs) const {
 		std::u32string s;
-		if(bAbs && _bAbsolute)
-			s.assign(1,SC);
+		_outputHeader(s, bAbs);
 		if(!_path.empty())
 			s.append(_path.begin(), _path.end());
 		return std::move(s);
@@ -179,10 +209,18 @@ namespace spn {
 	std::string PathBlock::getSegment_utf8(int beg, int end) const {
 		return Text::UTFConvertTo8(getSegment_utf32(beg, end));
 	}
+	void PathBlock::_outputHeader(std::u32string& dst, bool bAbs) const {
+		if(bAbs && _bAbsolute) {
+			if(_driveLetter != '\0') {
+				dst += _driveLetter;
+				dst += ':';
+			}
+			dst += SC;
+		}
+	}
 	std::u32string PathBlock::getFirst_utf32(bool bAbs) const {
 		std::u32string s;
-		if(bAbs && _bAbsolute)
-			s.assign(1,SC);
+		_outputHeader(s, bAbs);
 		if(!_path.empty()) {
 			s.append(_path.begin(),
 					_path.begin() + _segment.front());

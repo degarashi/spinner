@@ -29,12 +29,14 @@ namespace spn {
 								DOT,		//!< 拡張子の前の記号
 								EOS;		//!< 終端記号
 			bool		_bAbsolute;
+			char		_driveLetter;		//!< ドライブ文字(Windows用。Linuxでは無視)　\0=無効
 
 			static bool _IsSC(char32_t c);
+			static char32_t _GetDriveLetter(const char32_t* from, const char32_t* to);
 			//! パスを分解しながらセグメント長をカウントし、コールバック関数を呼ぶ
 			/*! fromからtoまで1文字ずつ見ながら区切り文字を直す */
-			template <class Itr, class CB>
-			static void _ReWriteSC(Itr from, Itr to, char32_t sc, CB cb);
+			template <class CB>
+			static void _ReWriteSC(Path::iterator from, Path::iterator to, char32_t sc, CB cb);
 
 			static int _ExtGetNum(const std::string& ext);
 			static int _ExtIncNum(std::string& ext, int n=1);
@@ -52,10 +54,15 @@ namespace spn {
 					++c;
 				}
 			}
+			struct StripResult {
+				bool 		bNeedOperation,
+							bAbsolute;
+				char32_t	driveLetter;
+			};
 			//! 前後の余分な区切り文字を省く
 			/*! \return [NeedOperation, AbsoluteFlag] */
-			template <class Itr>
-			static std::pair<bool,bool> _StripSC(Itr& from, Itr& to);
+			static StripResult _StripSC(const char32_t*& from, const char32_t* to);
+			void _outputHeader(std::u32string& dst, bool bAbs) const;
         private:
             friend class boost::serialization::access;
             template <class Archive>
@@ -88,6 +95,7 @@ namespace spn {
 			std::u32string getFirst_utf32(bool bAbs=true) const;
 			std::u32string getLast_utf32() const;
 			std::u32string getSegment_utf32(int beg, int end) const;
+			char getDriveLetter() const;
 
 			int size() const;
 			int segments() const;
