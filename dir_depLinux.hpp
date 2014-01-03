@@ -1,6 +1,10 @@
 #pragma once
 #include "path.hpp"
 
+#ifdef Status
+	#undef Status
+#endif
+
 struct stat;
 namespace spn {
 	using ToPathStr = To8Str;
