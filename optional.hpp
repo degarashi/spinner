@@ -183,14 +183,7 @@ namespace spn {
 			typename std::add_pointer<decltype(_buffer.castCT())>::type operator -> () const {
 				return &_buffer.castCT();
 			}
-			template <class T2,
-						class = typename std::enable_if<
-								IsOpt<
-									typename std::decay<T2>::type
-								>::value
-							>::type
-						>
-			Optional& operator = (const T2& t) {
+			Optional& operator = (const Optional<T>& t) {
 				_release();
 				if(t) {
 					_buffer = t._buffer.castCT();
@@ -198,14 +191,7 @@ namespace spn {
 				}
 				return *this;
 			}
-			template <class T2,
-						class = typename std::enable_if<
-								IsOpt<
-									typename std::decay<T2>::type
-								>::value
-							>::type
-						>
-			Optional& operator = (T2&& t) {
+			Optional& operator = (Optional<T>&& t) {
 				_release();
 				if(t) {
 					_buffer = std::move(t._buffer.castT());
