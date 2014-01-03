@@ -11,14 +11,14 @@
 namespace spn {
 	//! ディレクトリ管理
 	class Dir : public PathBlock {
-		private:
+		public:
 			struct PathReset {
-				const DirDep& 	dep;
 				PathStr 		cwd;
 
-				PathReset(const DirDep& d): dep(d), cwd(dep.getcwd()) {}
-				~PathReset() { dep.chdir(cwd); }
+				PathReset(): cwd(DirDep::Getcwd()) {}
+				~PathReset() { DirDep::Chdir(cwd); }
 			};
+		private:
 			const static char SC, DOT, EOS, *SC_P, LBK, RBK;
 
 			using RegexL = std::vector<boost::regex>;
@@ -26,11 +26,11 @@ namespace spn {
 			using StrList = std::vector<std::string>;
 			using EnumCB = std::function<void (const Dir&)>;
 			using ModCB = std::function<bool (const PathBlock&, FStatus&)>;
+			//! '/'で区切ったRegExの文法をリスト形式に直す
 			static RegexL _ParseRegEx(const std::string& r);
 
-			DirDep	_dep;
-			void _enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const;
-			void _enumEntry(const std::string& s, const std::string& path, EnumCB cb) const;
+			static void _EnumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb);
+			static void _EnumEntry(const std::string& s, const std::string& path, EnumCB cb);
 			void _chmod(PathBlock& lpath, ModCB cb);
 		public:
 			using PathBlock::PathBlock;
@@ -56,18 +56,21 @@ namespace spn {
 			//! ファイル/ディレクトリ列挙
 			/*! \param[in] path 検索パス(正規表現) 区切り文字を跨いでのマッチは不可<br>
 								相対パスならDirが指しているディレクトリ以下の階層を探索 */
-			StrList enumEntryRegEx(const std::string& r) const;
+			static StrList EnumEntryRegEx(const std::string& r);
 			/*! \param[in] path 検索パス(ワイルドカード) 区切り文字を跨いでのマッチは不可 */
-			StrList enumEntryWildCard(const std::string& s) const;
-			void enumEntryRegEx(const std::string& r, EnumCB cb) const;
-			void enumEntryWildCard(const std::string& s, EnumCB cb) const;
+			static StrList EnumEntryWildCard(const std::string& s);
+			static void EnumEntryRegEx(const std::string& r, EnumCB cb);
+			static void EnumEntryWildCard(const std::string& s, EnumCB cb);
 			void chmod(ModCB cb);
 			void chmod(uint32_t mode);
 			bool ChMod(const PathBlock& pb, ModCB cb);
 			FILE* openAsFP(const char* mode) const;
+			/*! \return 前のカレントパス */
+			std::string setCurrentDir() const;
 
 			//! ワイルドカードから正規表現への書き換え
 			static std::string ToRegEx(const std::string& s);
 			static std::string GetCurrentDir();
+			static void SetCurrentDir(const std::string& path);
 	};
 }

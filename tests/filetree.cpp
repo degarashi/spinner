@@ -33,7 +33,8 @@ namespace spn {
 
 		void LowerCallback(const Dir& dir, std::function<void (const Dir&)> cb) {
 			cb(dir);
-			dir.enumEntryWildCard("*", [&cb](const Dir& d) {
+			Dir::PathReset pr;
+			Dir::EnumEntryWildCard("*", [&cb](const Dir& d) {
 				if(d.isDirectory()) {
 					LowerCallback(d, cb);
 				} else
@@ -149,7 +150,8 @@ namespace spn {
 			// ランダムにファイルやディレクトリを選択(一度選んだファイルは二度と選ばない)
 			auto fnSelect = [&nameset, &rd](const Dir& dir, uint32_t flag) {
 				Path_SizeL ps;
-				dir.enumEntryWildCard("*", [&nameset, &ps, flag](const Dir& dir) {
+				Dir::PathReset pr;
+				Dir::EnumEntryWildCard("*", [&nameset, &ps, flag](const Dir& dir) {
 					FStatus fs = dir.status();
 					if(fs.flag & flag) {
 						std::string name = dir.getLast_utf8();

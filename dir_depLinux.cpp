@@ -27,39 +27,39 @@ namespace {
 	};
 }
 namespace spn {
-	std::string Dir_depLinux::getcwd() const {
+	std::string Dir_depLinux::Getcwd() {
 		char tmp[512];
 		::getcwd(tmp, sizeof(tmp));
 		return std::string(tmp);
 	}
-	void Dir_depLinux::chdir(ToPathStr path) const {
+	void Dir_depLinux::Chdir(ToPathStr path) {
 		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
 				std::string("chdir: ") + path.getStringPtr())
 	}
-	bool Dir_depLinux::chdir_nt(ToPathStr path) const {
+	bool Dir_depLinux::Chdir_nt(ToPathStr path) {
 		return ::chdir(path.getStringPtr()) >= 0;
 	}
-	void Dir_depLinux::mkdir(ToPathStr path, uint32_t mode) const {
+	void Dir_depLinux::Mkdir(ToPathStr path, uint32_t mode) {
 		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
 				std::string("mkdir: ") + path.getStringPtr())
 	}
-	void Dir_depLinux::chmod(ToPathStr path, uint32_t mode) const {
+	void Dir_depLinux::Chmod(ToPathStr path, uint32_t mode) {
 		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
 				std::string("chmod: ") + path.getStringPtr())
 	}
-	void Dir_depLinux::rmdir(ToPathStr path) const {
+	void Dir_depLinux::Rmdir(ToPathStr path) {
 		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
 				std::string("rmdir: ") + path.getStringPtr())
 	}
-	void Dir_depLinux::remove(ToPathStr path) const {
+	void Dir_depLinux::Remove(ToPathStr path) {
 		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, (PError)(const std::string&),
 				std::string("remove: ") + path.getStringPtr())
 	}
-	void Dir_depLinux::move(ToPathStr from, ToPathStr to) const {
+	void Dir_depLinux::Move(ToPathStr from, ToPathStr to) {
 		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, (PError)(const std::string&),
 				std::string("move: ") + from.getStringPtr() + " -> " + to.getStringPtr())
 	}
-	void Dir_depLinux::copy(ToPathStr from, ToPathStr to) const {
+	void Dir_depLinux::Copy(ToPathStr from, ToPathStr to) {
 		using Size = std::streamsize;
 		std::ifstream ifs(from.getStringPtr(), std::ios::binary);
 		std::ofstream ofs(to.getStringPtr(), std::ios::binary|std::ios::trunc);
@@ -77,7 +77,7 @@ namespace spn {
 		}
 	}
 
-	void Dir_depLinux::enumEntry(ToPathStr path, EnumCBD cb) const {
+	void Dir_depLinux::EnumEntry(ToPathStr path, EnumCBD cb) {
 		struct DIR_Rel {
 			void operator()(DIR* dir) const {
 				closedir(dir);
@@ -89,13 +89,13 @@ namespace spn {
 				cb(ent->d_name, S_ISDIR(ent->d_type));
 		}
 	}
-	FStatus Dir_depLinux::status(ToPathStr path) const {
+	FStatus Dir_depLinux::Status(ToPathStr path) {
 		struct stat st;
 		if(::stat(path.getStringPtr(), &st) < 0)
 			return FStatus(FStatus::NotAvailable);
 		return CreateFStatus(st);
 	}
-	FTime Dir_depLinux::filetime(ToPathStr path) const {
+	FTime Dir_depLinux::Filetime(ToPathStr path) {
 		struct stat st;
 		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, (PError)(const std::string&),
 				std::string("filetime: ") + path.getStringPtr())
@@ -156,17 +156,20 @@ namespace spn {
 		}
 		return res;
 	}
-	bool Dir_depLinux::isFile(ToPathStr path) const {
+	bool Dir_depLinux::IsFile(ToPathStr path) {
 		struct stat st;
 		return stat(path.getStringPtr(), &st) >= 0 && S_ISREG(st.st_mode);
 	}
-	bool Dir_depLinux::isDirectory(ToPathStr path) const {
+	bool Dir_depLinux::IsDirectory(ToPathStr path) {
 		struct stat st;
 		return stat(path.getStringPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
 	}
-	std::string Dir_depLinux::GetCurrentDir() {
+	PathStr Dir_depLinux::GetCurrentDir() {
 		char buff[512];
 		AssertT(Throw, ::getcwd(buff, sizeof(buff)), (PError)(const char*), "GetCurrentDir");
-		return std::string(buff);
+		return PathStr(buff);
+	}
+	void Dir_depLinux::SetCurrentDir(const PathStr& path) {
+		Chdir(path.c_str());
 	}
 }

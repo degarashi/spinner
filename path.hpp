@@ -57,7 +57,30 @@ namespace spn {
 				}
 			}
 			template <class Itr>
-			static auto _GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type>;
+			static auto _GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type> {
+				using CH = typename std::decay<decltype(*from)>::type;
+				auto cnvToCh = [](char c) {
+					char32_t c2 = static_cast<char32_t>(c);
+					return UTFToN<CH>(reinterpret_cast<const char*>(&c2)).code;
+				};
+				Itr tmp_from = from;
+				if(to - from >= 3) {
+					auto c = *from;
+					CH cA = cnvToCh('A'),
+						cZ = cnvToCh('Z'),
+						ca = cnvToCh('a'),
+						cz = cnvToCh('z'),
+						col = cnvToCh(':');
+					if((c >= cA && c <= cZ) ||
+							(c >= ca && c <= cz))
+					{
+						if(*(++from) == col &&
+							_IsSC(UTFToN<char32_t>(&*(++from)).code))
+							return *tmp_from;
+					}
+				}
+				return spn::none;
+			}
 
 			template <class C>
 			struct StripResult {
@@ -108,7 +131,7 @@ namespace spn {
 			std::u32string getSegment_utf32(int beg, int end) const;
 			std::u32string getHeader_utf32() const;
 
-			char getDriveLetter() const;
+			OPChar getDriveLetter() const;
 
 			int size() const;
 			int segments() const;

@@ -29,7 +29,7 @@ namespace spn {
 	}
 
 	// -------------------------- PathBlock --------------------------
-	PathBlock::PathBlock(): _bAbsolute(false), _driveLetter('\0') {}
+	PathBlock::PathBlock(): _bAbsolute(false) {}
 	PathBlock::PathBlock(PathBlock&& p):
 		_path(std::move(p._path)),
 		_segment(std::move(p._segment)),
@@ -40,7 +40,7 @@ namespace spn {
 	PathBlock::PathBlock(To32Str p): PathBlock() {
 		setPath(p);
 	}
-	char PathBlock::getDriveLetter() const {
+	PathBlock::OPChar PathBlock::getDriveLetter() const {
 		return _driveLetter;
 	}
 	bool PathBlock::operator == (const PathBlock& p) const {
@@ -129,31 +129,6 @@ namespace spn {
 		}
 	}
 	template <class Itr>
-	auto PathBlock::_GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type> {
-		using CH = typename std::decay<decltype(*from)>::type;
-		auto cnvToCh = [](char c) {
-			char32_t c2 = static_cast<char32_t>(c);
-			return UTFToN<CH>(reinterpret_cast<const char*>(&c2)).code;
-		};
-		Itr tmp_from = from;
-		if(to - from >= 3) {
-			auto c = *from;
-			CH cA = cnvToCh('A'),
-				cZ = cnvToCh('Z'),
-				ca = cnvToCh('a'),
-				cz = cnvToCh('z'),
-				col = cnvToCh(':');
-			if((c >= cA && c <= cZ) ||
-					(c >= ca && c <= cz))
-			{
-				if(*(++from) == col &&
-					_IsSC(UTFToN<char32_t>(&*(++from)).code))
-					return *tmp_from;
-			}
-		}
-		return cnvToCh('\0');
-	}
-	template <class Itr>
 	auto PathBlock::_StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>{
 		auto* tmp_from = from;
 		if(from == to)
@@ -205,7 +180,7 @@ namespace spn {
 				_path.erase(_path.begin(), _path.begin()+_segment.front()+1);
 				_segment.pop_front();
 				_bAbsolute = false;
-				_driveLetter = '\0';
+				_driveLetter = spn::none;
 			} else
 				clear();
 		}
@@ -408,7 +383,7 @@ namespace spn {
 	// ------------------- FStatus -------------------
 	FStatus::FStatus(uint32_t f): flag(f) {}
 	FStatus Dir::status() const {
-		return _dep.status(plain_utf8());
+		return DirDep::Status(plain_utf8());
 	}
 	bool FStatus::operator == (const FStatus& f) const {
 		return flag == f.flag &&
@@ -428,266 +403,4 @@ namespace spn {
 	}
 	bool FTime::operator != (const FTime& ft) const {
 		return !(*this == ft); }
-
-	// -------------------------- Dir --------------------------
-	const char Dir::SC('/'),
-				Dir::DOT('.'),
-				Dir::EOS('\0'),
-				*Dir::SC_P(u8"/"),
-				Dir::LBK('['),
-				Dir::RBK(']');
-	Dir::Dir(Dir&& d): PathBlock(std::move(d)), _dep(std::move(d._dep)) {}
-	Dir& Dir::operator = (Dir&& d) {
-		static_cast<PathBlock&>(*this) = std::move(static_cast<PathBlock&>(d));
-		_dep = std::move(d._dep);
-		return *this;
-	}
-	std::string Dir::GetCurrentDir() {
-		return DirDep::GetCurrentDir();
-	}
-	std::string Dir::ToRegEx(const std::string& s) {
-		// ワイルドカード記述の置き換え
-		// * -> ([_ \-\w]+)
-		// ? -> ([_ \-\w])
-		// . -> (\.)
-		boost::regex re[3] = {boost::regex(R"(\*)"), boost::regex(R"(\?)"), boost::regex(R"(\.)")};
-		std::string s2 = boost::regex_replace(s, re[0], R"([_ \\-\\w]+)");
-		s2 = boost::regex_replace(s2, re[1], R"([_ \\-\\w])");
-		s2 = boost::regex_replace(s2, re[2], R"(\\.)");
-		return std::move(s2);
-	}
-	Dir::StrList Dir::enumEntryRegEx(const std::string& r) const {
-		StrList res;
-		enumEntryRegEx(r, [&res](const Dir& dir){
-			res.push_back(dir.plain_utf8());
-		});
-		return std::move(res);
-	}
-	Dir::StrList Dir::enumEntryWildCard(const std::string& s) const {
-		assert(_path.empty() || !PathBlock(s).isAbsolute());
-		return enumEntryRegEx(ToRegEx(s));
-	}
-	void Dir::enumEntryWildCard(const std::string& s, EnumCB cb) const {
-		enumEntryRegEx(ToRegEx(s), cb);
-	}
-	Dir::RegexL Dir::_ParseRegEx(const std::string& r) {
-		RegexL rl;
-		auto itr = r.begin(),
-			itrE = r.end(),
-			itr0 = itr;
-		bool bSkip = false;
-		while(itr != itrE) {
-			auto c = *itr;
-			if(bSkip) {
-				if(c == RBK)
-					bSkip = false;
-			} else {
-				if(c == LBK)
-					bSkip = true;
-				else if(c == SC) {
-					if(itr0 != itr)
-						rl.emplace_back(itr0, itr);
-					itr0 = ++itr;
-					continue;
-				}
-			}
-			++itr;
-		}
-		if(itr0 != itr)
-			rl.emplace_back(itr0, itr);
-		return std::move(rl);
-	}
-	void Dir::_enumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) const {
-		if(itr == itrE)
-			return;
-
-		size_t pl = lpath.size();
-		_dep.enumEntry(lpath, [=, &lpath, &cb](const PathCh* name, bool) {
-			if(name[0]==PathCh(DOT)) {
-				if(name[1]==PathCh(EOS) || name[1]==PathCh(DOT))
-					return;
-			}
-			std::string s(To8Str(name).moveTo());
-			boost::smatch m;
-			if(boost::regex_match(s, m, *itr)) {
-				if(lpath.back() != SC)
-					lpath += SC;
-				lpath += s;
-				if(_dep.isDirectory(ToPathStr(lpath))) {
-					if(itr+1 != itrE)
-						_enumEntryRegEx(itr+1, itrE, lpath, baseLen, cb);
-					else
-						cb(Dir(lpath));
-				} else
-					cb(Dir(lpath));
-				lpath.resize(pl);
-			}
-		});
-	}
-	void Dir::_enumEntry(const std::string& s, const std::string& path, EnumCB cb) const {
-		_dep.enumEntry(path, [&cb](const PathCh* name, bool bDir) {
-			PathStr s(ToPathStr(name).moveTo());
-			if(s == name)
-				cb(Dir(s));
-		});
-	}
-	void Dir::enumEntryRegEx(const std::string& r, EnumCB cb) const {
-		if(r.empty())
-			return;
-		std::string path;
-		// 絶対パスの時は内部パスを無視する
-		auto res = _StripSC(&r[0], &r[r.length()-1]);
-		if(res) {
-			int ofs = 0;
-			if(res->bAbsolute) {
-				if(res->driveLetter) {
-					// windowsの場合のみドライブ文字を出力
-					#ifdef WIN32
-						path += *res->driveLetter;
-						path += ':';
-					#endif
-					ofs += 2;
-				}
-				ofs += 1;
-			} else
-				path += '.';
-			path += '/';
-			try {
-				RegexL rl = _ParseRegEx(r.substr(ofs));
-				_enumEntryRegEx(rl.begin(), rl.end(), path, path.size()+1, cb);
-			} catch(const boost::regex_error& e) {
-				// 正規表現に何かエラーがある時は単純に文字列比較とする
-				_enumEntry(r, path, cb);
-			}
-		}
-	}
-	bool Dir::isFile() const {
-		return _dep.isFile(plain_utf32());
-	}
-	bool Dir::isDirectory() const {
-		return _dep.isDirectory(plain_utf32());
-	}
-	void Dir::remove() const {
-		_dep.remove(plain_utf32());
-	}
-	void Dir::copy(const std::string& to) const {
-		_dep.copy(plain_utf32(), to);
-	}
-	void Dir::move(const std::string& to) const {
-		_dep.move(plain_utf32(), to);
-	}
-	void Dir::mkdir(uint32_t mode) const {
-		PathReset preset(_dep);
-		if(isAbsolute())
-			_dep.chdir(SC_P);
-		mode |= FStatus::UserRWX;
-
-		auto path32 = plain_utf32(false);
-		const char32_t* ptr = &path32[0];
-		int nsg = segments();
-		std::string ns;
-		int i;
-		// 最初のパスから1つずつ存在確認
-		for(i=0 ; i<nsg ; i++) {
-			int seg = _segment[i];
-			ns = Text::UTFConvertTo8(c32Str(ptr, seg));
-			ptr += seg+1;
-			if(!_dep.chdir_nt(ns))
-				break;
-		}
-		if(i == nsg)
-			return;
-
-		// パスがファイルだったら失敗とする
-		Assert(Throw, !_dep.isFile(ns), "there is file at the path")
-		for(;;) {
-			_dep.mkdir(ns, mode);
-			_dep.chdir(ns);
-			if(++i == nsg)
-				break;
-			int seg = _segment[i] + 1;
-			ns = Text::UTFConvertTo8(c32Str(ptr, seg));
-			ptr += seg;
-		}
-	}
-	void Dir::_chmod(PathBlock& lpath, ModCB cb) {
-		_dep.enumEntry(lpath.plain_utf32(), [&lpath, this, cb](const PathCh* name, bool) {
-			lpath <<= name;
-			if(ChMod(lpath, cb))
-				_chmod(lpath, cb);
-			lpath.popBack();
-		});
-	}
-	bool Dir::ChMod(const PathBlock& pb, ModCB cb) {
-		ToPathStr path = pb.plain_utf32();
-		FStatus fstat = _dep.status(path);
-		bool bDir = fstat.flag & FStatus::DirectoryType;
-		if(bDir)
-			fstat.flag |= FStatus::UserExec;
-		bool bRecr = cb(pb, fstat);
-		_dep.chmod(path, fstat.flag);
-		return bDir && bRecr;
-	}
-	void Dir::chmod(ModCB cb) {
-		PathBlock pb(*this);
-		if(ChMod(pb, cb))
-			_chmod(pb, cb);
-	}
-	void Dir::chmod(uint32_t mode) {
-		chmod([mode](const PathBlock&, FStatus& fs) {
-			fs.flag = mode;
-			return false;
-		});
-	}
-	FILE* Dir::openAsFP(const char* mode) const {
-		return std::fopen(To8Str(plain_utf32()).getStringPtr(), mode);
-	}
-
-	// -------------------------- URI --------------------------
-	const std::string URI::SEP(u8"://");
-	const std::u32string URI::SEP32(U"://");
-	URI::URI() {}
-	URI::URI(URI&& u): PathBlock(std::move(u)), _type(std::move(u._type)) {}
-	URI::URI(To8Str p) {
-		setPath(p);
-	}
-	URI& URI::operator = (URI&& u) {
-		static_cast<PathBlock&>(*this) = std::move(u);
-		_type = std::move(u._type);
-		return *this;
-	}
-	void URI::setPath(To8Str p) {
-		std::string path(p.moveTo());
-		boost::regex re("^([\\w\\d_]+)://");
-		boost::smatch m;
-		if(boost::regex_search(path, m, re)) {
-			_type = m.str(1);
-			PathBlock::setPath(path.substr(m[0].length()));
-		} else
-			PathBlock::setPath(p);
-	}
-	const std::string& URI::getType_utf8() const {
-		return _type;
-	}
-	void URI::setType(const std::string& typ) {
-		_type = typ;
-	}
-	const PathBlock& URI::path() const {
-		return *this;
-	}
-	PathBlock& URI::path() {
-		return *this;
-	}
-	std::string URI::plainUri_utf8() const {
-		auto ret = _type;
-		ret.append(SEP);
-		ret.append(plain_utf8());
-		return std::move(ret);
-	}
-	std::u32string URI::plainUri_utf32() const {
-		auto ret = To32Str(_type).moveTo();
-		ret.append(SEP32);
-		ret.append(plain_utf32());
-		return std::move(ret);
-	}
 }

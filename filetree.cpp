@@ -51,7 +51,8 @@ namespace spn {
 		UPIFile upd(pd = new DirInfo(dir.getLast_utf8(), dir.status()));
 
 		// 下の階層を読む
-		dir.enumEntryWildCard("*", [pd, &dir](const Dir& d) {
+		std::string prev = dir.setCurrentDir();
+		Dir::EnumEntryWildCard("*", [pd, &dir](const Dir& d) {
 			auto fs = d.status();
 			auto last = d.getLast_utf32();
 			dir <<= last;
@@ -62,6 +63,7 @@ namespace spn {
 							 UPIFile(new FileInfo(last8, fs)));
 			dir.popBack();
 		});
+		Dir::SetCurrentDir(prev);
 		return std::move(upd);
 	}
 

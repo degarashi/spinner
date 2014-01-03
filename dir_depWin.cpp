@@ -27,51 +27,53 @@ namespace spn {
 		static_cast<std::runtime_error&>(*this) = std::runtime_error(ss.str());
 	}
 
-	PathStr Dir_depWin::getcwd() const {
+	PathStr Dir_depWin::Getcwd() {
 		PathCh tmp[512];
 		GetCurrentDirectoryW(sizeof(tmp)/sizeof(tmp[0]), AS_LPWSTR(tmp));
 		return PathStr(tmp);
 	}
-	void Dir_depWin::chdir(ToPathStr path) const {
+	void Dir_depWin::Chdir(ToPathStr path) {
 		AssertT(Throw, SetCurrentDirectoryW(AS_LPCWSTR_PATH(path)),
 				(WError)(const char*), "chdir")
 	}
-	bool Dir_depWin::chdir_nt(ToPathStr path) const {
+	bool Dir_depWin::Chdir_nt(ToPathStr path) {
 		return SetCurrentDirectoryW(AS_LPCWSTR_PATH(path)) != FALSE;
 	}
-	void Dir_depWin::mkdir(ToPathStr path, uint32_t mode) const {
+	void Dir_depWin::Mkdir(ToPathStr path, uint32_t mode) {
 		AssertT(Throw, CreateDirectoryW(AS_LPCWSTR_PATH(path), nullptr) != 0,
 				(WError)(const char*), "mkdir")
 	}
-	void Dir_depWin::chmod(ToPathStr path, uint32_t mode) const {
+	void Dir_depWin::Chmod(ToPathStr path, uint32_t mode) {
 		// Windowsだとファイルにデフォルトで実行権限がついてるので何もしない
 	}
-	void Dir_depWin::rmdir(ToPathStr path) const {
+	void Dir_depWin::Rmdir(ToPathStr path) {
 		AssertT(Throw, RemoveDirectoryW(AS_LPCWSTR_PATH(path)) != 0,
 				(WError)(const char*), "rmdir")
 	}
-	void Dir_depWin::remove(ToPathStr path) const {
+	void Dir_depWin::Remove(ToPathStr path) {
 		AssertT(Throw, DeleteFileW(AS_LPCWSTR_PATH(path)) != 0,
 				(WError)(const char*), "remove")
 	}
-	void Dir_depWin::move(ToPathStr from, ToPathStr to) const {
+	void Dir_depWin::Move(ToPathStr from, ToPathStr to) {
 		AssertT(Throw, MoveFileW(AS_LPCWSTR_PATH(from), AS_LPCWSTR_PATH(to)) != 0,
 				(WError)(const char*), "move")
 	}
-	void Dir_depWin::copy(ToPathStr from, ToPathStr to) const {
+	void Dir_depWin::Copy(ToPathStr from, ToPathStr to) {
 		AssertT(Throw, CopyFileW(AS_LPCWSTR_PATH(from), AS_LPCWSTR_PATH(to), TRUE) != 0,
 				(WError)(const char*), "copy")
 	}
-	void Dir_depWin::enumEntry(ToPathStr path, EnumCBD cb) const {
+	void Dir_depWin::EnumEntry(ToPathStr path, EnumCBD cb) {
 		WIN32_FIND_DATAW tfd;
-		UPWinH fh(FindFirstFileW(AS_LPCWSTR_PATH(path), &tfd));
+		PathStr ps = path.moveTo();
+		ps.append(u"/*");
+		UPWinH fh(FindFirstFileW(reinterpret_cast<const wchar_t*>(ps.c_str()), &tfd));
 		if(fh.get() == INVALID_HANDLE_VALUE)
 			return;
 		do {
 			cb(reinterpret_cast<const char16_t*>(tfd.cFileName), tfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY);
 		} while(FindNextFileW(fh.get(), &tfd));
 	}
-	FStatus Dir_depWin::status(ToPathStr path) const {
+	FStatus Dir_depWin::Status(ToPathStr path) {
 		uint32_t attr = GetFileAttributesW(AS_LPCWSTR_PATH(path));
 		if(attr == INVALID_FILE_ATTRIBUTES)
 			return FStatus(FStatus::NotAvailable);
@@ -137,19 +139,22 @@ namespace spn {
 			return attr & flag;
 		}
 	}
-	bool Dir_depWin::isFile(ToPathStr path) const {
+	bool Dir_depWin::IsFile(ToPathStr path) {
 		auto res = SingleCheck(path, FILE_ATTRIBUTE_DIRECTORY);
 		if(!res)
 			return false;
 		return !(*res);
 	}
-	bool Dir_depWin::isDirectory(ToPathStr path) const {
+	bool Dir_depWin::IsDirectory(ToPathStr path) {
 		auto res = SingleCheck(path, FILE_ATTRIBUTE_DIRECTORY);
 		return res && *res;
 	}
-	std::string Dir_depWin::GetCurrentDir() {
+	PathStr Dir_depWin::GetCurrentDir() {
 		wchar_t buff[512];
 		GetCurrentDirectoryW(sizeof(buff)/sizeof(buff[0]), buff);
-		return Text::UTFConvertTo8(reinterpret_cast<const char16_t*>(buff));
+		return PathStr(reinterpret_cast<const char16_t*>(buff));
+	}
+	void Dir_depWin::SetCurrentDir(const PathStr& path) {
+		SetCurrentDirectoryW(reinterpret_cast<const wchar_t*>(path.c_str()));
 	}
 }
