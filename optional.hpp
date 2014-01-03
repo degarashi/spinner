@@ -155,7 +155,12 @@ namespace spn {
 				}
 			}
 			template <class T2>
-			Optional(T2&& t, typename std::enable_if<!std::is_same<typename std::decay<T2>::type, Optional<T>>::value>::type* = nullptr): _buffer(std::forward<T2>(t)), _bInit(true) {}
+			Optional(T2&& t, typename std::enable_if<
+								!IsOpt<
+									typename std::decay<T2>::type
+								>::value
+							>::type* = nullptr):
+				_buffer(std::forward<T2>(t)), _bInit(true) {}
 			~Optional() {
 				_release();
 			}
