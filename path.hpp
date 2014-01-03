@@ -59,15 +59,19 @@ namespace spn {
 			template <class Itr>
 			static auto _GetDriveLetter(Itr from, Itr to) -> spn::Optional<typename std::decay<decltype(*from)>::type>;
 
+			template <class C>
 			struct StripResult {
+				using OpC = spn::Optional<C>;
 				bool 	bAbsolute;
-				OPChar	driveLetter;
+				OpC		driveLetter;
 				int		nread;
 			};
-			using OPStripResult = spn::Optional<StripResult>;
+			template <class C>
+			using OPStripResult = spn::Optional<StripResult<C>>;
 			//! 前後の余分な区切り文字を省く
 			/*! \return [NeedOperation, AbsoluteFlag] */
-			static OPStripResult _StripSC(const char32_t* from, const char32_t* to);
+			template <class Itr>
+			static auto _StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>;
 			void _outputHeader(std::u32string& dst, bool bAbs) const;
         private:
             friend class boost::serialization::access;
@@ -97,10 +101,13 @@ namespace spn {
 			std::string getFirst_utf8(bool bAbs=true) const;
 			std::string getLast_utf8() const;
 			std::string getSegment_utf8(int beg, int end) const;
+			std::string getHeader_utf8() const;
 			std::u32string plain_utf32(bool bAbs=true) const;
 			std::u32string getFirst_utf32(bool bAbs=true) const;
 			std::u32string getLast_utf32() const;
 			std::u32string getSegment_utf32(int beg, int end) const;
+			std::u32string getHeader_utf32() const;
+
 			char getDriveLetter() const;
 
 			int size() const;

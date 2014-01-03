@@ -153,17 +153,18 @@ namespace spn {
 		}
 		return cnvToCh('\0');
 	}
-	PathBlock::OPStripResult PathBlock::_StripSC(const char32_t* from, const char32_t* to) {
+	template <class Itr>
+	auto PathBlock::_StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>{
 		auto* tmp_from = from;
 		if(from == to)
 			return spn::none;
 
-		StripResult res;
-		if((res.bAbsolute = _IsSC(*from)))
+		StripResult<typename std::decay<decltype(*from)>::type> res;
+		if((res.bAbsolute = _IsSC(UTFToN<char32_t>(&*from).code)))
 			++from;
 		else {
 			if(auto dr = _GetDriveLetter(from, to)) {
-				res.driveLetter = Text::UTF32To8(*dr).code;
+				res.driveLetter = dr;
 				// "C:\"のようになるので3文字分飛ばす
 				from += 3;
 				res.bAbsolute = true;
@@ -171,7 +172,7 @@ namespace spn {
 			}
 		}
 		if(from != to) {
-			if(_IsSC(*to))
+			if(_IsSC(UTFToN<char32_t>(&*to).code))
 				--to;
 			if(from == to)
 				return spn::none;
@@ -227,13 +228,27 @@ namespace spn {
 	}
 	void PathBlock::_outputHeader(std::u32string& dst, bool bAbs) const {
 		if(bAbs && _bAbsolute) {
-			if(_driveLetter) {
-				dst += *_driveLetter;
-				dst += CLN;
-			}
+			// windowsの場合のみドライブ文字を出力
+			#ifdef WIN32
+				if(_driveLetter) {
+					dst += *_driveLetter;
+					dst += CLN;
+				}
+			#endif
 			dst += SC;
 		}
 	}
+	std::u32string PathBlock::getHeader_utf32() const {
+		std::u32string tmp;
+		_outputHeader(tmp, true);
+		return std::move(tmp);
+	}
+	std::string PathBlock::getHeader_utf8() const {
+		std::u32string tmp;
+		_outputHeader(tmp, true);
+		return Text::UTFConvertTo8(tmp);
+	}
+
 	std::u32string PathBlock::getFirst_utf32(bool bAbs) const {
 		std::u32string s;
 		_outputHeader(s, bAbs);
@@ -432,12 +447,12 @@ namespace spn {
 	}
 	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
-		// * -> ([\/_ \-\w]+)
-		// ? -> ([\/_ \-\w])
+		// * -> ([_ \-\w]+)
+		// ? -> ([_ \-\w])
 		// . -> (\.)
 		boost::regex re[3] = {boost::regex(R"(\*)"), boost::regex(R"(\?)"), boost::regex(R"(\.)")};
-		std::string s2 = boost::regex_replace(s, re[0], R"([\/_ \\-\\w]+)");
-		s2 = boost::regex_replace(s2, re[1], R"([\/_ \\-\\w])");
+		std::string s2 = boost::regex_replace(s, re[0], R"([_ \\-\\w]+)");
+		s2 = boost::regex_replace(s2, re[1], R"([_ \\-\\w])");
 		s2 = boost::regex_replace(s2, re[2], R"(\\.)");
 		return std::move(s2);
 	}
@@ -521,16 +536,29 @@ namespace spn {
 			return;
 		std::string path;
 		// 絶対パスの時は内部パスを無視する
-		if(_IsSC(Text::UTF8To32(r[0]).code))
-			path = '/';
-		else
-			path = plain_utf8();
-		try {
-			RegexL rl = _ParseRegEx(r);
-			_enumEntryRegEx(rl.begin(), rl.end(), path, path.size()+1, cb);
-		} catch(const boost::regex_error& e) {
-			// 正規表現に何かエラーがある時は単純に文字列比較とする
-			_enumEntry(r, path, cb);
+		auto res = _StripSC(&r[0], &r[r.length()-1]);
+		if(res) {
+			int ofs = 0;
+			if(res->bAbsolute) {
+				if(res->driveLetter) {
+					// windowsの場合のみドライブ文字を出力
+					#ifdef WIN32
+						path += *res->driveLetter;
+						path += ':';
+					#endif
+					ofs += 2;
+				}
+				ofs += 1;
+			} else
+				path += '.';
+			path += '/';
+			try {
+				RegexL rl = _ParseRegEx(r.substr(ofs));
+				_enumEntryRegEx(rl.begin(), rl.end(), path, path.size()+1, cb);
+			} catch(const boost::regex_error& e) {
+				// 正規表現に何かエラーがある時は単純に文字列比較とする
+				_enumEntry(r, path, cb);
+			}
 		}
 	}
 	bool Dir::isFile() const {
