@@ -89,7 +89,8 @@ namespace spn {
 
 		if(auto res = _StripSC(ptr, ptrE)) {
 			_bAbsolute = res->bAbsolute;
-			_driveLetter = res->driveLetter;
+			if(res->driveLetter)
+				_driveLetter = Text::UTF32To8(*res->driveLetter).code;
 			ptr += res->nread;
 
 			_path.assign(ptr, ptrE);
@@ -161,7 +162,8 @@ namespace spn {
 			*srcE = src + elem.getLength();
 		if(auto res = _StripSC(src, srcE)) {
 			_bAbsolute = res->bAbsolute;
-			_driveLetter = res->driveLetter;
+			if(res->driveLetter)
+				_driveLetter = Text::UTF32To8(*res->driveLetter).code;
 			src += res->nread;
 
 			if(src != srcE) {
@@ -205,10 +207,9 @@ namespace spn {
 		if(bAbs && _bAbsolute) {
 			// windowsの場合のみドライブ文字を出力
 			#ifdef WIN32
-				if(_driveLetter) {
-					dst += *_driveLetter;
-					dst += CLN;
-				}
+				Assert(Throw, static_cast<bool>(_driveLetter))
+				dst += *_driveLetter;
+				dst += CLN;
 			#endif
 			dst += SC;
 		}
