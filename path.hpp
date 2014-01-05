@@ -104,6 +104,10 @@ namespace spn {
             }
 
 		public:
+			/*! Windowsの場合は何もせずfromを返す
+				Linuxの場合は先頭のドライブ文字を削った後のポインタを返す */
+			static const char* RemoveDriveLetter(const char* from, const char* to);
+
 			PathBlock();
 			PathBlock(const PathBlock&) = default;
 			PathBlock(PathBlock&& p);

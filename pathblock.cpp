@@ -156,6 +156,16 @@ namespace spn {
 		res.nread = from - tmp_from;
 		return res;
 	}
+	const char* PathBlock::RemoveDriveLetter(const char* from, const char* to) {
+		#ifndef WIN32
+			auto dr = _GetDriveLetter(from, to);
+			if(dr) {
+				// "C:\" の、C:の部分を飛ばす
+				return from + 2;
+			}
+		#endif
+		return from;
+	}
 	void PathBlock::pushFront(To32Str elem) {
 		Assert(Trap, !_bAbsolute || empty())
 		auto *src = elem.getPtr(),
