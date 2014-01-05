@@ -324,7 +324,6 @@ namespace spn {
 							auto st = dir.status();
 							{
 								// fsyncを使いたいのでfopenでファイルを開く
-								auto len = st.size;
 								char c;
 								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "r");
 								::fread(&c, 1, 1, fp);

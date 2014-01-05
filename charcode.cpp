@@ -85,8 +85,7 @@ namespace spn {
 		return result;
 	}
 	std::pair<Text::CODETYPE, int> Text::GetEncodeType(const void* ptr) {
-		auto* str = reinterpret_cast<const uint8_t*>(ptr);
-		auto bom = *((const uint32_t*)ptr);
+		auto bom = *(reinterpret_cast<const uint32_t*>(ptr));
 		if(bom == 0xfffe0000)
 			return std::make_pair(CODETYPE::UTF_32BE, 4);
 		if(bom == 0x0000feff)

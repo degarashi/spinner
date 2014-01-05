@@ -53,7 +53,6 @@ namespace spn {
 		return res | IN_DELETE_SELF | IN_MOVE_SELF;
 	}
 	FileEvent FNotify_depLinux::DetectEvent(uint32_t mask) {
-		uint32_t res = 0;
 		for(auto& p : c_flags) {
 			if(p.second & mask)
 				return p.first;

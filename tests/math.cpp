@@ -31,14 +31,20 @@ namespace spn {
 			Pose2D p2(AVec2(100,200), 128, AVec2(1,1)),
 			p3(AVec2(1,2), 64, AVec2(3,3));
 			auto p4 = p2.lerp(p3, 0.5f);
+			p4 = p4;
 
 			auto pc = AVec3::FromPacked(MakeChunk(64,128,192,255));
 			auto pc2 = pc.toPacked();
+			pc2 = pc2;
 
 			noseq_list<float> ls;
 			auto id0 = ls.add(256);
 			auto id1 = ls.add(512);
 			auto id2 = ls.add(1024);
+			std::cout << std::hex
+					<< id0 << std::endl
+					<< id1 << std::endl
+					<< id2 << std::endl;
 			ls.rem(id1);
 			auto re = ls.alloc();
 			re.second = 1.234f;
@@ -54,7 +60,8 @@ namespace spn {
 			value.at<Value::VAL2>() = ~0;
 			auto mask = value.mask<Value::VAL1>();
 			auto raw = value.value();
-			std::cout << std::endl;
+			std::cout << std::hex << "raw" << raw
+									<< "mask" << mask << std::endl;
 		}
 		void GapTest() {
 			auto& rd = Random::getInstance();

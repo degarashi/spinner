@@ -94,6 +94,7 @@ namespace spn {
 				default:
 					assert(false);
 			}
+			return Buff();
 		}
 
 		//! データのサイズ (not 文字列長)

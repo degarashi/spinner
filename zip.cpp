@@ -105,7 +105,8 @@ namespace spn {
 					z.avail_out = ob.availOut();
 					size_t nRead = z.avail_in,
 							nWrite = z.avail_out;
-					int res = inflate(&z, Z_NO_FLUSH);
+					// TODO: エラー値チェック
+					inflate(&z, Z_NO_FLUSH);
 					nRead -= z.avail_in;
 					nWrite -= z.avail_out;
 

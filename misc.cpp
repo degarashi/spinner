@@ -38,7 +38,6 @@ namespace spn {
 		for(int i=0 ; i<3 ; i++)
 			colm[i] = tm.getColumn(i);
 
-		auto tmp = colm[0] % colm[1];
 		ap.rotation = Quat::FromAxis(colm[0], colm[1], colm[2]);
 		return ap;
 	}
@@ -65,7 +64,6 @@ namespace spn {
 	}
 	bool IsInTriangle(const Vec3& vtx0, const Vec3& vtx1, const Vec3& vtx2, const Vec3& pos) {
 		Vec3 normal = *NormalFromPoints(vtx0, vtx1, vtx2);
-		Vec3 tv0, tv1, tv2, tv3;
 
 		// 1st Triangle
 		Vec3 tv = Vec3(vtx1-vtx0) % (pos-vtx0);

@@ -329,7 +329,6 @@ namespace spn {
 		return -1;
 	}
 	int PathBlock::_ExtGetNum(const std::string& ext) {
-		int wcur = 0;
 		const auto* str = ext.c_str();
 		for(;;) {
 			auto c = *str++;
@@ -369,8 +368,7 @@ namespace spn {
 		}
 	}
 	int PathBlock::_ExtIncNum(std::string& ext, int n) {
-		int wcur = 0,
-		rcur = 0;
+		int rcur = 0;
 		char tc[32] = {};
 		const auto* str = ext.c_str();
 		for(;;) {

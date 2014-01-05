@@ -16,13 +16,17 @@ namespace spn {
 					auto ldhl = ResMgrN<MyClass, MyMgr>::acquire(MyClass{123,321});
 					return ldhl;
 				}
+				Hdl doit2() {
+					LHdl lh = ResMgrN<MyClass, MyMgr>::acquire(MyClass{123,321});
+					return Cast<MyDerived>(std::move(lh));
+				}
 			};
 			MyMgr mm;
 			auto hdl = mm.doit();
 
 			int tekito = 100;
 			noseq_list<int&> asd;
-			auto id = asd.add(&tekito);
+			asd.add(&tekito);
 			int& dd = *asd.begin();
 			std::cout << *asd.begin() << std::endl;
 			dd = 200;
