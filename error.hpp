@@ -124,7 +124,7 @@ namespace spn {
 		Chk			_chk;
 		int			_line;
 		const char	*_filename, *_fname;
-		ErrorChecker(Act&& act, Chk&& chk, const char* filename, const char* fname, int line): _act(std::move(act)), _chk(std::move(chk)), _filename(filename), _fname(fname), _line(line) {
+		ErrorChecker(Act&& act, Chk&& chk, const char* filename, const char* fname, int line): _act(std::move(act)), _chk(std::move(chk)), _line(line), _filename(filename), _fname(fname) {
 			chk.reset();
 		}
 		~ErrorChecker() {

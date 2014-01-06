@@ -336,7 +336,7 @@ namespace spn {
 				return reinterpret_cast<const T*>(&_buff[0]) + idx; }
 
 		public:
-			FreeObj(int n): _buff(n*sizeof(T)), _nCur(0) {
+			FreeObj(int n): _nCur(0), _buff(n*sizeof(T)) {
 				Assert(Trap, n > 0, "invalid object count") }
 			FreeObj(const FreeObj&) = delete;
 			FreeObj(FreeObj&& fo): _nCur(fo._nCur), _buff(std::move(fo._buff)), _freeIdx(std::move(fo._freeIdx)) {}
