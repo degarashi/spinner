@@ -170,6 +170,8 @@ namespace spn {
 			URI(To8Str p);
 			URI(const URI& u) = default;
 			URI(URI&& u);
+			URI(To8Str typ, To8Str path);
+			URI(To8Str typ, const PathBlock& pb);
 
 			URI& operator = (const URI&) = default;
 			URI& operator = (URI&& u);
@@ -178,7 +180,7 @@ namespace spn {
 			const std::string& getType_utf8() const;
 			std::string plainUri_utf8() const;
 			std::u32string plainUri_utf32() const;
-			void setType(const std::string& typ);
+			void setType(To8Str typ);
 			const PathBlock& path() const;
 			PathBlock& path();
 	};

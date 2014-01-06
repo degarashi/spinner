@@ -245,9 +245,10 @@ namespace spn {
 	const std::u32string URI::SEP32(U"://");
 	URI::URI() {}
 	URI::URI(URI&& u): PathBlock(std::move(u)), _type(std::move(u._type)) {}
-	URI::URI(To8Str p) {
-		setPath(p);
-	}
+	URI::URI(To8Str p): PathBlock(p) {}
+	URI::URI(To8Str typ, To8Str path): PathBlock(path), _type(typ.moveTo()) {}
+	URI::URI(To8Str typ, const PathBlock& pb): PathBlock(pb), _type(typ.moveTo()) {}
+
 	URI& URI::operator = (URI&& u) {
 		static_cast<PathBlock&>(*this) = std::move(u);
 		_type = std::move(u._type);
@@ -266,8 +267,8 @@ namespace spn {
 	const std::string& URI::getType_utf8() const {
 		return _type;
 	}
-	void URI::setType(const std::string& typ) {
-		_type = typ;
+	void URI::setType(To8Str typ) {
+		_type = typ.moveTo();
 	}
 	const PathBlock& URI::path() const {
 		return *this;
