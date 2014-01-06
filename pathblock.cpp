@@ -1,5 +1,5 @@
 #include "misc.hpp"
-#include "dir.hpp"
+#include "path.hpp"
 
 namespace spn {
 	namespace {
@@ -87,7 +87,7 @@ namespace spn {
 		// 分割文字を探し、それに統一しながらsegment数を数える
 		// 絶対パスの先頭SCは除く
 
-		if(auto res = _StripSC(ptr, ptrE)) {
+		if(auto res = StripSC(ptr, ptrE)) {
 			_bAbsolute = res->bAbsolute;
 			if(res->driveLetter)
 				_driveLetter = Text::UTF32To8(*res->driveLetter).code;
@@ -106,17 +106,33 @@ namespace spn {
 		pushBack(elem);
 		return *this;
 	}
+	PathBlock& PathBlock::operator <<= (const PathBlock& p) {
+		pushBack(p);
+		return *this;
+	}
 	void PathBlock::pushBack(To32Str elem) {
 		auto *src = elem.getPtr(),
 			*srcE = src + elem.getLength();
-		if(auto res = _StripSC(src, srcE)){
-			Assert(Throw, !res->bAbsolute)
-			src += res->nread;
+		if(auto res = StripSC(src, srcE)){
+			if(res->bAbsolute)
+				this->operator = (elem);
+			else {
+				src += res->nread;
 
-			if(!_path.empty())
-				_path.push_back(SC);
-			_path.insert(_path.end(), src, srcE);
-			_ReWriteSC(_path.end()-(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+				if(!_path.empty())
+					_path.push_back(SC);
+				_path.insert(_path.end(), src, srcE);
+				_ReWriteSC(_path.end()-(srcE-src), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+			}
+		}
+	}
+	void PathBlock::pushBack(const PathBlock& p) {
+		if(p.isAbsolute())
+			this->operator = (p);
+		else {
+			_path.push_back(SC);
+			_path.insert(_path.end(), p._path.begin(), p._path.end());
+			_segment.insert(_segment.end(), p._segment.begin(), p._segment.end());
 		}
 	}
 	void PathBlock::popBack() {
@@ -130,7 +146,7 @@ namespace spn {
 		}
 	}
 	template <class Itr>
-	auto PathBlock::_StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>{
+	auto PathBlock::StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>{
 		auto* tmp_from = from;
 		if(from == to)
 			return spn::none;
@@ -167,22 +183,36 @@ namespace spn {
 		return from;
 	}
 	void PathBlock::pushFront(To32Str elem) {
-		Assert(Trap, !_bAbsolute || empty())
-		auto *src = elem.getPtr(),
-			*srcE = src + elem.getLength();
-		if(auto res = _StripSC(src, srcE)) {
-			_bAbsolute = res->bAbsolute;
-			if(res->driveLetter)
-				_driveLetter = Text::UTF32To8(*res->driveLetter).code;
-			src += res->nread;
+		if(isAbsolute() || empty())
+			this->operator = (elem);
+		else {
+			auto *src = elem.getPtr(),
+				*srcE = src + elem.getLength();
+			if(auto res = StripSC(src, srcE)) {
+				_bAbsolute = res->bAbsolute;
+				if(res->driveLetter)
+					_driveLetter = Text::UTF32To8(*res->driveLetter).code;
+				src += res->nread;
 
-			if(src != srcE) {
-				_path.push_front(SC);
-				_path.insert(_path.begin(), src, srcE);
-				int ofs = 0;
-				_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
-					_segment.insert(_segment.begin()+(ofs++), n); });
+				if(src != srcE) {
+					_path.push_front(SC);
+					_path.insert(_path.begin(), src, srcE);
+					int ofs = 0;
+					_ReWriteSC(_path.begin(), _path.begin()+(srcE-src), SC, [&ofs, this](int n){
+						_segment.insert(_segment.begin()+(ofs++), n); });
+				}
 			}
+		}
+	}
+	void PathBlock::pushFront(const PathBlock& p) {
+		if(isAbsolute())
+			this->operator = (p);
+		else {
+			_path.push_front(SC);
+			_path.insert(_path.begin(), p._path.begin(), p._path.end());
+			_segment.insert(_segment.begin(), p._segment.begin(), p._segment.end());
+			_bAbsolute = p.isAbsolute();
+			_driveLetter = p._driveLetter;
 		}
 	}
 	void PathBlock::popFront() {
@@ -391,9 +421,6 @@ namespace spn {
 
 	// ------------------- FStatus -------------------
 	FStatus::FStatus(uint32_t f): flag(f) {}
-	FStatus Dir::status() const {
-		return DirDep::Status(plain_utf8());
-	}
 	bool FStatus::operator == (const FStatus& f) const {
 		return flag == f.flag &&
 			userId == f.userId &&

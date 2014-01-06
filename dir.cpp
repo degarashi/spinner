@@ -236,6 +236,9 @@ namespace spn {
 	FILE* Dir::openAsFP(const char* mode) const {
 		return std::fopen(To8Str(plain_utf32()).getStringPtr(), mode);
 	}
+	FStatus Dir::status() const {
+		return DirDep::Status(plain_utf8());
+	}
 
 	// -------------------------- URI --------------------------
 	const std::string URI::SEP(u8"://");

@@ -82,6 +82,15 @@ namespace spn {
 				return spn::none;
 			}
 
+			void _outputHeader(std::u32string& dst, bool bAbs) const;
+        private:
+            friend class boost::serialization::access;
+            template <class Archive>
+            void serialize(Archive& ar, const unsigned int) {
+                ar & _path & _segment & _bAbsolute;
+            }
+
+		public:
 			template <class C>
 			struct StripResult {
 				using OpC = spn::Optional<C>;
@@ -94,16 +103,7 @@ namespace spn {
 			//! 前後の余分な区切り文字を省く
 			/*! \return [NeedOperation, AbsoluteFlag] */
 			template <class Itr>
-			static auto _StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>;
-			void _outputHeader(std::u32string& dst, bool bAbs) const;
-        private:
-            friend class boost::serialization::access;
-            template <class Archive>
-            void serialize(Archive& ar, const unsigned int) {
-                ar & _path & _segment & _bAbsolute;
-            }
-
-		public:
+			static auto StripSC(Itr from, Itr to) -> OPStripResult<typename std::decay<decltype(*from)>::type>;
 			/*! Windowsの場合は何もせずfromを返す
 				Linuxの場合は先頭のドライブ文字を削った後のポインタを返す */
 			static const char* RemoveDriveLetter(const char* from, const char* to);
@@ -118,10 +118,15 @@ namespace spn {
 			PathBlock& operator = (const PathBlock&) = default;
 			PathBlock& operator = (PathBlock&& p);
 			PathBlock& operator <<= (To32Str elem);
+			PathBlock& operator <<= (const PathBlock& p);
 
+			//! パスを後ろに追加。引数が絶対パスの時は置き換える
 			void pushBack(To32Str elem);
+			void pushBack(const PathBlock& p);
 			void popBack();
+			//! パスを前に追加。thisが絶対パスの時は置き換える
 			void pushFront(To32Str elem);
+			void pushFront(const PathBlock& p);
 			void popFront();
 
 			std::string plain_utf8(bool bAbs=true) const;
