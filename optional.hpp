@@ -183,10 +183,10 @@ namespace spn {
 			}
 
 			typename std::add_pointer<decltype(_buffer.castT())>::type operator -> () {
-				return &_buffer.castT();
+				return &get();
 			}
 			typename std::add_pointer<decltype(_buffer.castCT())>::type operator -> () const {
-				return &_buffer.castCT();
+				return &get();
 			}
 			Optional& operator = (const Optional<T>& t) {
 				_release();
