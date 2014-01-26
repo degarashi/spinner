@@ -100,6 +100,21 @@ namespace spn {
 	template <class MGR, class DATA>
 	class WHandleT;
 
+	template <class HL, class Ret, class Dummy=void>
+	Ret HdlLock_OP(const HL&, Ret) {
+		// this must be failed
+		Dummy dummy;
+		return Ret();
+	}
+	template <class HL>
+	bool HdlLock_OP(const HL& hdl, bool) {
+		return hdl.valid();
+	}
+	template <template <class> class HL, class H>
+	H HdlLock_OP(const HL<H>& hdl, H) {
+		return hdl.get();
+	}
+
 	//! 強参照スマートハンドル
 	template <class HDL>
 	class HdlLock {
@@ -188,8 +203,10 @@ namespace spn {
 				return *this;
 			}
 
-			operator bool () const { return valid(); }
-			operator HDL () const { return _hdl; }
+			template <class T>
+			operator T() const {
+				return HdlLock_OP(*this, T());
+			}
 
 			// ---- SHandleのメソッドを仲立ち ----
 			data_type& ref() { return _hdl.ref(); }
