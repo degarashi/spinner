@@ -39,7 +39,7 @@ namespace spn {
 		public:
 			//! デフォルト値は無効なハンドルID
 			SHandle();
-			SHandle(const SHandle& sh) = default;
+			SHandle(const SHandle&) = default;
 			#ifdef DEBUG
 				SHandle(int idx, int resID, int mag);
 				Value::Word getMagic() const;
@@ -100,19 +100,15 @@ namespace spn {
 	template <class MGR, class DATA>
 	class WHandleT;
 
-	template <class HL, class Ret, class Dummy=void>
-	Ret HdlLock_OP(const HL&, Ret) {
+	template <template <class> class HL, class H, class Ret, class Dummy=void>
+	Ret HdlLock_OP(const HL<H>&, Ret) {
 		// this must be failed
 		Dummy dummy;
 		return Ret();
 	}
-	template <class HL>
-	bool HdlLock_OP(const HL& hdl, bool) {
-		return hdl.valid();
-	}
 	template <template <class> class HL, class H>
-	H HdlLock_OP(const HL<H>& hdl, H) {
-		return hdl.get();
+	bool HdlLock_OP(const HL<H>& hdl, bool) {
+		return hdl.valid();
 	}
 
 	//! 強参照スマートハンドル
@@ -203,6 +199,9 @@ namespace spn {
 				return *this;
 			}
 
+			operator const HDL& () const {
+				return _hdl;
+			}
 			template <class T>
 			operator T() const {
 				return HdlLock_OP(*this, T());
