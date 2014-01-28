@@ -100,17 +100,6 @@ namespace spn {
 	template <class MGR, class DATA>
 	class WHandleT;
 
-	template <template <class> class HL, class H, class Ret, class Dummy=void>
-	Ret HdlLock_OP(const HL<H>&, Ret) {
-		// this must be failed
-		Dummy dummy;
-		return Ret();
-	}
-	template <template <class> class HL, class H>
-	bool HdlLock_OP(const HL<H>& hdl, bool) {
-		return hdl.valid();
-	}
-
 	//! 強参照スマートハンドル
 	template <class HDL>
 	class HdlLock {
@@ -199,12 +188,19 @@ namespace spn {
 				return *this;
 			}
 
-			operator const HDL& () const {
-				return _hdl;
-			}
-			template <class T>
+			template <class T, class Dummy=void>
 			operator T() const {
-				return HdlLock_OP(*this, T());
+				// this must be failed
+				Dummy do_fail;
+				throw 0;
+			}
+			template <class Pass0=void, class Pass1=void>
+			operator bool () const {
+				return valid();
+			}
+			template <class Pass0=void, class Pass1=void>
+			operator HDL () const {
+				return get();
 			}
 
 			// ---- SHandleのメソッドを仲立ち ----
@@ -244,7 +240,8 @@ namespace spn {
 			using data_type = DATA;
 			using SHandle::SHandle;
 			SHandleT() = default;
-			SHandleT(const SHandle& hdl): SHandle(hdl) {}
+			SHandleT(const SHandleT&) = default;
+			SHandleT(SHandle sh): SHandle(sh) {}
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
@@ -291,7 +288,8 @@ namespace spn {
 			using data_type = DATA;
 			using WHandle::WHandle;
 			WHandleT() = default;
-			WHandleT(const WHandle& wh): WHandle(wh) {}
+			WHandleT(const WHandleT&) = default;
+			WHandleT(WHandle wh): WHandle(wh) {}
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
