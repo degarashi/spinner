@@ -233,6 +233,7 @@ namespace spn {
 						class = typename std::enable_if<std::is_convertible<DATA, DAT>::value>::type,
 						class = typename std::enable_if<!std::is_same<DAT, DATA>::value>::type>
 			SHandleT(const SHandleT<MGR,DAT>& sh): SHandle(sh) {}
+			SHandleT(SHandle sh): SHandle(sh) {}
 
 		public:
 			using WHdl = WHandleT<MGR, DATA>;
@@ -241,7 +242,6 @@ namespace spn {
 			using SHandle::SHandle;
 			SHandleT() = default;
 			SHandleT(const SHandleT&) = default;
-			SHandleT(SHandle sh): SHandle(sh) {}
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
@@ -257,8 +257,12 @@ namespace spn {
 				// ref()と同じ理由でキャスト
 				return reinterpret_cast<const data_type&>(MGR::_ref().cref(*this));
 			}
+			static SHandleT FromHandle(SHandle sh) {
+				return SHandleT(sh);
+			}
+
 			//! 弱参照ハンドルを得る
-			WHdl weak() const { return MGR::_ref().weak(*this); }
+			WHdl weak() const { return WHdl::FromHandle(MGR::_ref().weak(*this)); }
 			uint32_t count() const { return MGR::_ref().count(*this); }
 
 			operator bool () const { return valid(); }
@@ -282,18 +286,22 @@ namespace spn {
 						class = typename std::enable_if<std::is_convertible<DATA, DAT>::value>::type,
 						class = typename std::enable_if<!std::is_same<DAT, DATA>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
+			WHandleT(WHandle wh): WHandle(wh) {}
 		public:
 			using SHdl = SHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
 			using WHandle::WHandle;
+
 			WHandleT() = default;
 			WHandleT(const WHandleT&) = default;
-			WHandleT(WHandle wh): WHandle(wh) {}
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
+			static WHandleT FromHandle(WHandle wh) {
+				return WHandleT(wh);
+			}
 
 			//! リソース参照
 			/*!	参照が無効なら例外を投げる
@@ -891,7 +899,7 @@ namespace spn {
 			}
 
 			bool release(SHandle sh) override {
-				auto& ent = base_type::_refSH(sh);
+				auto& ent = base_type::_refSH(SHdl::FromHandle(sh));
 				const KEY* stp = ent.data.stp;
 				if(stp) {
 					return base_type::releaseWithCallback(sh, [this, stp](typename base_type::Entry&){
