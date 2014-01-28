@@ -298,9 +298,12 @@
 					拡大の際に足りない成分は対角=1, 他は0とする */
 				// デバッグ時速度を考えるとテンプレートで実装できない(？)のでマクロ使用
 				// SEQ_MATDEFの組み合わせを生成 + (Aligned | UnAligned)
-				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)() const;
+				#define CONVFUNC(n0,n1,align)	BOOST_PP_CAT(BOOST_PP_CAT(BOOST_PP_CAT(convert,AFLAG(align)), n0),n1)
+				#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> CONVFUNC(n0,n1,align)() const; \
+												void convert(MatT<n0,n1,BOOLNIZE(align)>& dst) const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 				#undef DEF_CONV
+				#undef CONVFUNC
 				// サイズの合わない行列(DIM_N != n0)の演算関数は定義しない
 				//! 行列との積算 (3 operands)
 				#define DEF_MUL0(n0,n1,align) \
@@ -776,6 +779,9 @@
 					}
 					return ret;
 				}
+				void MT::convert(MatT<n0,n1,align>& dst) const {
+					 dst = convert##align##n0##n1();
+				}
 			*/
 			#define ITR_COPY_I(n,dim,align)	\
 				BOOST_PP_CAT( \
@@ -799,7 +805,13 @@
 					n1)() const { \
 				MatT<n0,n1,BOOLNIZE(align)> ret; \
 				BOOST_PP_REPEAT(n0, ITR_COPY, (n1)(align)) \
-				return ret; }
+				return ret; } \
+				void MT::convert(MatT<n0,n1,BOOLNIZE(align)>& dst) const { \
+					dst = BOOST_PP_CAT( \
+					BOOST_PP_CAT( \
+						BOOST_PP_CAT(convert, AFLAG(align)), \
+						n0), \
+					n1)(); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 		}
 		#elif BOOST_PP_FRAME_FLAGS(1) == 2
