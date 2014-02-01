@@ -73,7 +73,24 @@ namespace spn {
 				if(c == LBK)
 					bSkip = true;
 				else if(c == SC) {
-					if(itr0 != itr)
+					auto diff = itr - itr0;
+					bool bIgnore = false;
+					if(diff == 0)
+						bIgnore = true;
+					else if(diff >= 2) {
+						if(*itr0 == '\\' && *(itr0+1) == '.') {
+							if(diff == 2) {
+								// セグメントをスキップ
+								bIgnore = true;
+							} else if(diff == 4 && (*(itr0+2) == '\\' && *(itr0+3) == '.')) {
+								// セグメントを1つ戻す
+								Assert(Trap, !rl.empty())
+								rl.pop_back();
+								bIgnore = true;
+							}
+						}
+					}
+					if(!bIgnore)
 						rl.emplace_back(itr0, itr);
 					itr0 = ++itr;
 					continue;
