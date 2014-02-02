@@ -49,6 +49,7 @@ namespace spn {
 		//! ファイルフラグ変換 (WinAPI -> spinner)
 		static uint32_t ConvertFlag_W2S(uint32_t flag);
 		static PathStr GetCurrentDir();
+		static PathStr GetProgramDir();
 		static void SetCurrentDir(const PathStr& path);
 	};
 	using DirDep = Dir_depWin;

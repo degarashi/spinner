@@ -71,6 +71,7 @@ namespace spn {
 			//! ワイルドカードから正規表現への書き換え
 			static std::string ToRegEx(const std::string& s);
 			static std::string GetCurrentDir();
+			static std::string GetProgramDir();
 			static void SetCurrentDir(const std::string& path);
 	};
 }

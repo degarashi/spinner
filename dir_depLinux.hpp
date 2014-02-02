@@ -33,6 +33,7 @@ namespace spn {
 		static uint32_t ConvertFlag_S2L(uint32_t flag);
 		//! ファイルフラグ変換 (linux -> spinner)
 		static uint32_t ConvertFlag_L2S(uint32_t flag);
+		static PathStr GetProgramDir();
 		static PathStr GetCurrentDir();
 		static void SetCurrentDir(const PathStr& path);
 	};

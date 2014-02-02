@@ -157,4 +157,12 @@ namespace spn {
 	void Dir_depWin::SetCurrentDir(const PathStr& path) {
 		SetCurrentDirectoryW(reinterpret_cast<const wchar_t*>(path.c_str()));
 	}
+	PathStr Dir_depWin::GetProgramDir() {
+		PathCh buff[512];
+		DWORD ret = GetModuleFileNameW(NULL, reinterpret_cast<wchar_t*>(buff), sizeof(buff)/sizeof(buff[0]));
+		AssertT(Throw, ret!=0, (WError)(const char*), "GetProgramDir")
+		PathBlock pb(buff);
+		pb.popBack();
+		return PathStr(To16Str(pb.plain_utf32()).getStringPtr());
+	}
 }

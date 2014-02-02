@@ -16,6 +16,9 @@ namespace spn {
 	std::string Dir::GetCurrentDir() {
 		return To8Str(DirDep::GetCurrentDir()).moveTo();
 	}
+	std::string Dir::GetProgramDir() {
+		return To8Str(DirDep::GetProgramDir()).moveTo();
+	}
 	void Dir::SetCurrentDir(const std::string& path) {
 		PathStr ps;
 		if(path.length() > 1) {

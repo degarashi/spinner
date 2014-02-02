@@ -172,4 +172,11 @@ namespace spn {
 	void Dir_depLinux::SetCurrentDir(const PathStr& path) {
 		Chdir(path.c_str());
 	}
+	PathStr Dir_depLinux::GetProgramDir() {
+		char buff[512] = {};
+		AssertT(Throw, ::readlink("/proc/self/exe", buff, sizeof(buff)-1) != -1, (PError)(const char*), "GetProgramDir")
+		PathBlock pb(buff);
+		pb.popBack();
+		return PathStr(pb.plain_utf8());
+	}
 }
