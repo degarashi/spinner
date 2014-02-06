@@ -1,3 +1,13 @@
+# [設定必須の変数]
+# SOUND_API (openal | opensl)
+# SSE_LEVEL (0-4)
+# (to Use SSE instructions)
+#	set(SSE_LEVEL 2)
+# (to Use NEON instructions)
+#	set(NEON_LEVEL 1)
+#
+# (Androidの場合)
+# ARCHITECTURE (x86 | arm)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -14,11 +24,6 @@ elseif(${UNIX})
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
-
-# Use SSE instructions
-# set(SSE_LEVEL 2)
-# Use NEON instructions
-# set(NEON_LEVEL 1)
 
 if(DEFINED SSE_LEVEL)
 	if(${SSE_LEVEL} GREATER 0)
