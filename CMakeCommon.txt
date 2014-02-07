@@ -14,17 +14,6 @@ include_directories(${PROJECT_SOURCE_DIR})
 set(CMAKE_C_FLAGS_DEBUG "")
 set(CMAKE_CXX_FLAGS_DEBUG "")
 
-# OS依存ファイルのマクロ設定
-if(${WIN32})
-	add_definitions(-DWIN32)
-	set(TOOL_PREFIX mingw)
-elseif(${UNIX})
-	add_definitions(-DUNIX)
-	set(TOOL_PREFIX deb)
-else()
-	message(FATAL_ERROR "couldn't detect OS type")
-endif()
-
 if(DEFINED SSE_LEVEL)
 	if(${SSE_LEVEL} GREATER 0)
 		add_definitions(-DSSE_LEVEL=${SSE_LEVEL})

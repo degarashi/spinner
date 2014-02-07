@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 2.8)
 project(spinner)
-# Android:		set(ARCHITECTURE x86)又はset(ARCHITECTURE arm)とする
-# Win32|Linux:	必要に応じてset(SSE_LEVEL 0..3)
+
+# Linux: BUILD_TYPE = Linux
+# MinGW: BUILD_TYPE = MinGW
+# Android:	BUILD_TYPE = AndroidX86 or AndroidArm
+message(STATUS ${BUILD_TYPE})
+include("${BUILD_TYPE}.cmake" require)
 include(CMakeCommon.txt require)
-include(CMakeCompiler.txt require)
 
 # OS依存ファイルの設定
 if(${WIN32})
