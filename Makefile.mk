@@ -16,23 +16,28 @@ ANDROID_ARM_FLAG	:= -DSOUND_API=opensl -DBUILD_TYPE=AndroidArm
 CMake = mkdir -p $(1); cd $(1); cmake $(PWD) -G 'Unix Makefiles' -DCMAKE_SYSTEM_NAME=Generic -DCMAKE_BUILD_TYPE=$(3) -DCMAKE_INSTALL_PREFIX=$(INSTALL_PATH) $(2) ;
 Make = cd $(1); make -j$(2);
 Install = cd $(1); make install;
+Clean = cd $(1); make clean;
 CMake_Make = $(call CMake,$(1),$(2),$(3)) $(call Make,$(1),$(4))
 
 LinuxMake = $(call CMake_Make,$(BUILD_PATH)_deb,$(LINUX_FLAG),$(1),$(LINUX_NJOB))
 LinuxInstall = $(call Install,$(BUILD_PATH)_deb)
+LinuxClean = $(call Clean,$(BUILD_PATH)_deb)
 MinGWMake = $(call CMake_Make,$(BUILD_PATH)_mingw,$(MINGW_FLAG),$(1),$(MINGW_NJOB))
 MinGWInstall = $(call Install,$(BUILD_PATH)_mingw)
+MinGWClean = $(call Clean,$(BUILD_PATH)_mingw)
 AndroidX86Make = $(call CMake_Make,$(BUILD_PATH)_x86,$(ANDROID_X86_FLAG),$(1),$(ANDROID_NJOB))
 AndroidX86Install = $(call Install,$(BUILD_PATH)_x86)
+AndroidX86Clean = $(call Clean,$(BUILD_PATH)_x86)
 AndroidArmMake = $(call CMake_Make,$(BUILD_PATH)_arm,$(ANDROID_ARM_FLAG),$(1),$(ANDROID_NJOB))
 AndroidArmInstall = $(call Install,$(BUILD_PATH)_arm)
+AndroidArmClean = $(call Clean,$(BUILD_PATH)_arm)
 
 linux-d:
 	$(call LinuxMake,Debug)
 linux:
 	$(call LinuxMake,Release)
 linux-clean:
-	rm -rf $(BUILD_PATH)_deb
+	$(call LinuxClean)
 linux-d-install: linux-d
 	$(call LinuxInstall)
 linux-install: linux
@@ -43,7 +48,7 @@ mingw-d:
 mingw:
 	$(call MinGWMake,Release)
 mingw-clean:
-	rm -rf $(BUILD_PATH)_mingw
+	$(call MinGWClean)
 mingw-d-install: mingw-d
 	$(call MinGWInstall)
 mingw-install: mingw
@@ -54,7 +59,7 @@ x86-d:
 x86:
 	$(call AndroidX86Make,Release)
 x86-clean:
-	rm -rf $(BUILD_PATH)_x86
+	$(call AndroidX86Clean)
 x86-d-install: x86-d
 	$(call AndroidX86Install)
 x86-install: x86
@@ -65,7 +70,7 @@ arm-d:
 arm:
 	$(call AndroidArmMake,Release)
 arm-clean:
-	rm -rf $(BUILD_PATH)_arm
+	$(call AndroidArmClean)
 arm-d-install: arm-d
 	$(call AndroidArmInstall)
 arm-install: arm
