@@ -1,4 +1,6 @@
-#include <intrin.h>
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #include "tests/math.hpp"
 #include "tests/pqueue.hpp"
 #include "tests/resource.hpp"

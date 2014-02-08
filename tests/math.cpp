@@ -1,4 +1,6 @@
-#include <intrin.h>
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #include "math.hpp"
 #include "../vector.hpp"
 #include "../matrix.hpp"

@@ -1,5 +1,7 @@
 #pragma once
-#include <intrin.h>
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #if defined(SSE_LEVEL) && SSE_LEVEL > 0
 	#if SSE_LEVEL >= 3
 		#include <pmmintrin.h>

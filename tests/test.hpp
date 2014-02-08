@@ -1,5 +1,7 @@
 #pragma once
-#include <intrin.h>
+#ifdef WIN32
+	#include <intrin.h>
+#endif
 #include <random>
 #include "../optional.hpp"
 #include "../matrix.hpp"
