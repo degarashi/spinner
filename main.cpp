@@ -1,3 +1,4 @@
+#include <intrin.h>
 #include "tests/math.hpp"
 #include "tests/pqueue.hpp"
 #include "tests/resource.hpp"

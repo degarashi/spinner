@@ -1,3 +1,4 @@
+#include <intrin.h>
 #include "math.hpp"
 #include "../vector.hpp"
 #include "../matrix.hpp"

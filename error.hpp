@@ -109,9 +109,7 @@ struct AAct_Trap : AAct_Throw<E,Ts...> {
 		#endif
 	}
 };
-
 namespace spn {
-	extern thread_local std::string tls_errMsgTmp;
 	template <class Act, class Chk, class... Ts>
 	void CheckError(Act&& act, Chk&& chk, const char* filename, const char* funcname, int line, Ts&&... ts) {
 		const char* msg = chk.errorDesc(std::forward<Ts>(ts)...);

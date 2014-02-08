@@ -1,5 +1,6 @@
 #include "misc.hpp"
 #include "path.hpp"
+#include <cstdio>
 
 namespace spn {
 	namespace {

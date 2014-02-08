@@ -25,3 +25,4 @@ set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
 
 link_directories($ENV{HOME}/local/i686-w64-mingw32/lib)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mpreferred-stack-boundary=2")

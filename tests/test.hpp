@@ -1,4 +1,5 @@
 #pragma once
+#include <intrin.h>
 #include <random>
 #include "../optional.hpp"
 #include "../matrix.hpp"
