@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <string>
 
 namespace spn {
 	//! 複数のバッファ形式を1つに纏める
