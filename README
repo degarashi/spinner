@@ -16,3 +16,6 @@ Sorry, japanese text only (for now :)
 
 最後に。
 <作り始めたばかりなので実用性はありません>
+
+依存ライブラリ:
+	Boost-1.55.0(boost_regex, boost_serialization)
