@@ -6,7 +6,7 @@ project(spinner)
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
 message(STATUS ${BUILD_TYPE})
 include("${BUILD_TYPE}.cmake" require)
-include(CMakeCommon.txt require)
+include(Common.cmake require)
 
 # OS依存ファイルの設定
 if(${WIN32})
@@ -26,6 +26,9 @@ file(GLOB HEADERS2 "./serialization/*.hpp")
 install(FILES ${HEADERS} DESTINATION include/spinner)
 install(FILES ${HEADERS2} DESTINATION include/spinner/serialization)
 
+message(STATUS "${CMAKE_CXX_FLAGS}")
+message(STATUS "${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "${CMAKE_CXX_FLAGS_RELEASE}")
 if(NOT DEFINED ARCHITECTURE)
 	aux_source_directory(tests TEST_SRC)
 	add_executable(spn_test main.cpp ${TEST_SRC})
