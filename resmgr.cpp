@@ -18,6 +18,9 @@ namespace spn {
 	bool ResMgrBase::Release(SHandle sh) {
 		return s_rmList.get(sh.getResID())->release(sh);
 	}
+	uint32_t ResMgrBase::Count(SHandle sh) {
+		return s_rmList.get(sh.getResID())->count(sh);
+	}
 	SHandle ResMgrBase::Lock(WHandle wh) {
 		return s_rmList.get(wh.getResID())->lock(wh);
 	}

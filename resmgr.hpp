@@ -58,6 +58,7 @@ namespace spn {
 			void swap(SHandle& sh) noexcept;
 			/*! ResourceIDから対応マネージャを特定して解放 */
 			void release();
+			uint32_t count() const;
 	};
 
 	//! 型を保持しない弱参照ハンドル値
@@ -323,11 +324,13 @@ namespace spn {
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
 			static bool Release(SHandle sh);
+			static uint32_t Count(SHandle sh);
 			static SHandle Lock(WHandle wh);
 			static WHandle Weak(SHandle sh);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
+			virtual uint32_t count(SHandle sh) const = 0;
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
@@ -716,7 +719,7 @@ namespace spn {
 				return _refWH(wh);
 			}
 			//! 参照数を得る
-			uint32_t count(SHandle sh) const {
+			uint32_t count(SHandle sh) const override {
 				auto& ent = _refSH(sh);
 				return ent.count;
 			}
