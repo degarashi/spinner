@@ -236,6 +236,8 @@ namespace spn {
 			SHandleT(SHandle sh): SHandle(sh) {}
 
 		public:
+			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
+			static SHandleT FromSHandle(SHandle sh) { return SHandleT(sh); }
 			using WHdl = WHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
