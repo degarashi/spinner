@@ -49,6 +49,15 @@ namespace spn {
 	uint32_t SHandle::count() const {
 		return ResMgrBase::Count(*this);
 	}
+	WHandle SHandle::weak() const {
+		return ResMgrBase::Weak(*this);
+	}
+	ResMgrBase* SHandle::getManager() {
+		return ResMgrBase::GetManager(getResID());
+	}
+	const ResMgrBase* SHandle::getManager() const {
+		return ResMgrBase::GetManager(getResID());
+	}
 
 	// ------------------ WHandle ------------------
 	WHandle::WHandle(): _value(~0) {}

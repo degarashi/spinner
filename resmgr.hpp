@@ -14,6 +14,8 @@
 #include <boost/serialization/binary_object.hpp>
 
 namespace spn {
+	class WHandle;
+	class ResMgrBase;
 	//! 型を保持しない強参照ハンドル値
 	/*! インデックスに14bit, リソースIDに6bit, (デバッグ用)マジックナンバーに12bitを使用 */
 	class SHandle {
@@ -59,6 +61,10 @@ namespace spn {
 			/*! ResourceIDから対応マネージャを特定して解放 */
 			void release();
 			uint32_t count() const;
+			WHandle weak() const;
+
+			ResMgrBase* getManager();
+			const ResMgrBase* getManager() const;
 	};
 
 	//! 型を保持しない弱参照ハンドル値
@@ -291,6 +297,8 @@ namespace spn {
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
 			WHandleT(WHandle wh): WHandle(wh) {}
 		public:
+			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
+			static WHandleT FromWHandle(WHandle wh) { return WHandleT(wh); }
 			using SHdl = SHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
@@ -312,6 +320,23 @@ namespace spn {
 			HdlLock<SHdl> lock() const { return MGR::_ref().lockLH(*this); }
 			bool isHandleValid() const { return MGR::_ref().isHandleValid(*this); }
 	};
+	//! shared_ptrで言うenable_shared_from_thisの、リソースマネージャ版
+	class EnableFromThis {
+		template <class DATA, class DERIVED, template <class> class Allocator>
+		friend class ResMgrA;
+		private:
+			WHandle	_wh_this;
+			void _setResourceHandle(SHandle sh) {
+				_wh_this = sh.weak();
+			}
+		public:
+			template <class MGR, class DATA>
+			void handleFromThis(HdlLock<SHandleT<MGR,DATA>>& dst) const {
+				auto wh = WHandleT<MGR,DATA>::FromWHandle(_wh_this);
+				dst = wh.lock();
+				AssertP(Trap, dst.valid())
+			}
+	};
 
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
@@ -327,6 +352,7 @@ namespace spn {
 			static uint32_t Count(SHandle sh);
 			static SHandle Lock(WHandle wh);
 			static WHandle Weak(SHandle sh);
+			static ResMgrBase* GetManager(int rID);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
@@ -603,8 +629,23 @@ namespace spn {
 					auto id = _dataVec.add(Entry(std::forward<DAT2>(d), _wMagicIndex));
 					SHdl sh(id, _resID);
 				#endif
+				// EnableFromThisを継承したクラスの場合はここでハンドルをセットする
+				_setFromThis<DAT>(sh, nullptr);
 				return LHdl(sh);
 			}
+			//! EnableFromThisを継承しているか
+			template <class A>
+			using HasEFT = typename std::enable_if<std::is_base_of<EnableFromThis, A>::value>::type;
+			template <class D, class=void, class=HasEFT<D>>
+			void _setFromThis(SHdl sh, void*) {
+				sh.ref()._setResourceHandle(sh);
+			}
+			template <class D, class=HasEFT<decltype(*std::declval<D>())>>
+			void _setFromThis(SHdl sh, void*) {
+				sh.ref()._setResourceHandle(sh);
+			}
+			template <class D>
+			void _setFromThis(SHdl sh, ...) {}
 		public:
 			const MergeType& asMergeType() const {
 				s_merge._ths = this;

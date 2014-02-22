@@ -13,18 +13,21 @@ namespace spn {
 		s_rmList.rem(id);
 	}
 	void ResMgrBase::Increment(SHandle sh) {
-		s_rmList.get(sh.getResID())->increment(sh);
+		GetManager(sh.getResID())->increment(sh);
 	}
 	bool ResMgrBase::Release(SHandle sh) {
-		return s_rmList.get(sh.getResID())->release(sh);
+		return GetManager(sh.getResID())->release(sh);
 	}
 	uint32_t ResMgrBase::Count(SHandle sh) {
-		return s_rmList.get(sh.getResID())->count(sh);
+		return GetManager(sh.getResID())->count(sh);
 	}
 	SHandle ResMgrBase::Lock(WHandle wh) {
-		return s_rmList.get(wh.getResID())->lock(wh);
+		return GetManager(wh.getResID())->lock(wh);
 	}
 	WHandle ResMgrBase::Weak(SHandle sh) {
-		return s_rmList.get(sh.getResID())->weak(sh);
+		return GetManager(sh.getResID())->weak(sh);
+	}
+	ResMgrBase* ResMgrBase::GetManager(int rID) {
+		return s_rmList.get(rID);
 	}
 }
