@@ -225,13 +225,6 @@ namespace spn {
 	//! 強参照ハンドル
 	template <class MGR, class DATA = typename MGR::data_type>
 	class SHandleT : public SHandle {
-		using mgr_data = typename MGR::data_type;
-		using DownConv = std::is_convertible<DATA, mgr_data>;
-		using UpConv = std::is_convertible<mgr_data, DATA>;
-
-		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
-		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
-
 		friend MGR;
 		friend class HdlLock<SHandleT>;
 		private:
@@ -249,7 +242,16 @@ namespace spn {
 			using mgr_type = MGR;
 			using data_type = DATA;
 			using SHandle::SHandle;
-			SHandleT() = default;
+			SHandleT() {
+				using mgr_data = DATA;
+				using DownConv = std::is_convertible<DATA, mgr_data>;
+				using UpConv = std::is_convertible<mgr_data, DATA>;
+
+				// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
+				struct Check {
+					const int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1];
+				};
+			}
 			SHandleT(const SHandleT&) = default;
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
@@ -281,13 +283,6 @@ namespace spn {
 	//! 弱参照ハンドル
 	template <class MGR, class DATA = typename MGR::data_type>
 	class WHandleT : public WHandle {
-		using mgr_data = typename MGR::data_type;
-		using DownConv = std::is_convertible<DATA, mgr_data>;
-		using UpConv = std::is_convertible<mgr_data, DATA>;
-
-		// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
-		constexpr static int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1] = {};
-
 		friend MGR;
 		private:
 			// データ型をダウンコンバートする場合はMGRからしか許可しない
@@ -304,7 +299,16 @@ namespace spn {
 			using data_type = DATA;
 			using WHandle::WHandle;
 
-			WHandleT() = default;
+			WHandleT() {
+				using mgr_data = DATA;
+				using DownConv = std::is_convertible<DATA, mgr_data>;
+				using UpConv = std::is_convertible<mgr_data, DATA>;
+
+				// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
+				struct Check {
+					const int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1];
+				};
+			}
 			WHandleT(const WHandleT&) = default;
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,
@@ -797,12 +801,12 @@ namespace spn {
 		protected:
 			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
 			template <class NDATA, template<class,class> class Handle, class DATA>
-			static Handle<ThisType,NDATA> Cast(Handle<ThisType, DATA>&& h) {
+			static AnotherSHandle<NDATA> Cast(AnotherSHandle<DATA>&& h) {
 				// Handleのprivateなコンストラクタを経由して変換
-				return Handle<ThisType,NDATA>(std::move(h)); }
+				return AnotherSHandle<NDATA>(std::move(h)); }
 			template <class NDATA, template<class,class> class Handle, class DATA>
-			static Handle<ThisType,NDATA> Cast(const Handle<ThisType, DATA>& h) {
-				return Handle<ThisType,NDATA>(h); }
+			static AnotherSHandle<NDATA> Cast(const AnotherSHandle<DATA>& h) {
+				return AnotherSHandle<NDATA>(h); }
 
 			template <class NDATA, template<class> class HL, class DATA>
 			static HL<AnotherSHandle<NDATA>> Cast(HL<AnotherSHandle<DATA>>&& lh) {
@@ -956,11 +960,25 @@ namespace spn {
 				return base_type::release(sh);
 			}
 	};
-	//! 互換ハンドル一式を定義するマクロ
-	#define DEF_HANDLE(mgr, suffix, sp) \
-		using HL##suffix = mgr::AnotherLHandle<sp>; \
-		using H##suffix = mgr::AnotherSHandle<sp>; \
-		using W##suffix = mgr::AnotherWHandle<sp>;
+	// ------ 互換ハンドル一式を定義するマクロ ------
+	//! 名前なしハンドル
+	/*! \param mgr	マネージャクラス名
+		\param suffix	ハンドルに付けるサフィックス
+		\param bsp	元のデータ型
+		\param sp	参照時のデータ型
+		\param alloc	マネージャが使用するアロケータ */
+	#define DEF_AHANDLE_PROP(mgr, suffix, bsp, sp, alloc) \
+		using H##suffix = spn::SHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
+		using W##suffix = spn::WHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
+		using HL##suffix = spn::HdlLock<H##suffix>;
+	#define DEF_AHANDLE(mgr, suffix, bsp, sp) DEF_AHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator)
+	//! 名前付きハンドル
+	/*! \param key	キーの型 */
+	#define DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, alloc, key) \
+		using H##suffix = spn::SHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
+		using W##suffix = spn::WHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
+		using HL##suffix = spn::HdlLock<H##suffix>;
+	#define DEF_NHANDLE(mgr ,suffix, bsp, sp) DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator, spn::String<std::string>)
 }
 namespace std {
 	template <class MGR, class DATA>
@@ -982,6 +1000,7 @@ namespace std {
 		}
 	};
 }
+
 
 BOOST_CLASS_IMPLEMENTATION(spn::SHandle, object_serializable)
 BOOST_CLASS_TRACKING(spn::SHandle, track_never)

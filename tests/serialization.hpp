@@ -8,6 +8,12 @@
 
 namespace spn {
 	namespace test {
+		class TestRM;
+		struct MyEnt;
+	}
+	DEF_AHANDLE(test::TestRM, My, test::MyEnt, test::MyEnt)
+
+	namespace test {
 		// デフォルトコンストラクタ無し、コピー不可能なテスト用構造体
 		struct MyEnt : boost::serialization::traits<MyEnt,
 					boost::serialization::object_serializable,
@@ -31,8 +37,8 @@ namespace spn {
 			}
 		};
 		class TestRM : public ResMgrA<MyEnt, TestRM> {};
-		DEF_HANDLE(TestRM, My, MyEnt)
-
+	}
+	namespace test {
 		constexpr static int NTEST = 256,
 							NITER = 1024;
 		void SerializeTest_noseq();
