@@ -42,6 +42,7 @@ namespace spn {
 			//! デフォルト値は無効なハンドルID
 			SHandle();
 			SHandle(const SHandle&) = default;
+			SHandle(VWord w);
 			#ifdef DEBUG
 				SHandle(int idx, int resID, int mag);
 				Value::Word getMagic() const;

@@ -3,6 +3,7 @@
 namespace spn {
 	// ------------------ SHandle ------------------
 	SHandle::SHandle(): _value(~0) {}
+	SHandle::SHandle(VWord w): _value(w) {}
 	#ifdef DEBUG
 		SHandle::VWord SHandle::getMagic() const {
 			return _value.at<Value::MAGIC>();
