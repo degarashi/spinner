@@ -271,6 +271,7 @@ namespace spn {
 			static SHandleT FromHandle(SHandle sh) {
 				return SHandleT(sh);
 			}
+			void* getPtr() { MGR::_ref().getPtr(*this); }
 
 			//! 弱参照ハンドルを得る
 			WHdl weak() const { return WHdl::FromHandle(MGR::_ref().weak(*this)); }
@@ -357,10 +358,12 @@ namespace spn {
 			static SHandle Lock(WHandle wh);
 			static WHandle Weak(SHandle sh);
 			static ResMgrBase* GetManager(int rID);
+			static void* GetPtr(SHandle sh);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
 			virtual uint32_t count(SHandle sh) const = 0;
+			virtual void* getPtr(SHandle sh) = 0;
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
@@ -708,6 +711,10 @@ namespace spn {
 			void increment(SHandle sh) override {
 				Entry& ent = _refSH(sh);
 				++ent.count;
+			}
+			void* getPtr(SHandle sh) override {
+				auto& ent = _refSH(sh);
+				return &ent.data;
 			}
 			//! 名前なしリソースの作成
 			template <class DAT2>

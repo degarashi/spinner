@@ -30,4 +30,7 @@ namespace spn {
 	ResMgrBase* ResMgrBase::GetManager(int rID) {
 		return s_rmList.get(rID);
 	}
+	void* ResMgrBase::GetPtr(SHandle sh) {
+		return GetManager(sh.getResID())->getPtr(sh);
+	}
 }
