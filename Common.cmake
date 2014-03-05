@@ -7,7 +7,16 @@
 #	set(NEON_LEVEL 1)
 
 include_directories(${PROJECT_SOURCE_DIR})
-
+# 対象のビット数でフラグを分ける
+if(DEFINED M64)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m64")
+	#64bitプロセッサならSSE2は付いているはずなのでフラグを追加
+	if(NOT (${SSE_LEVEL} GREATER 2))
+		set(SSE_LEVEL 2)
+	endif()
+else()
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -m32")
+endif()
 # SSEが設定されているならコンパイラのフラグを付ける
 if(DEFINED SSE_LEVEL)
 	if(${SSE_LEVEL} GREATER 0)
