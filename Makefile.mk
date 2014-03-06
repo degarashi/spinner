@@ -5,8 +5,8 @@ PWD					:= $(shell pwd)
 BUILD_PATH			:= /var/tmp/my_build
 INSTALL_PATH		:= ${HOME}/baselibs
 LINUX_NJOB			:= 5
-ANDROID_NJOB		:= 2
-MINGW_NJOB			:= 2
+ANDROID_NJOB		:= 5
+MINGW_NJOB			:= 5
 SSE_LEVEL			:= 0
 LINUX_FLAG			:= -DSOUND_API=openal -DBUILD_TYPE=Linux
 MINGW_FLAG			:= -DSOUND_API=openal -DBUILD_TYPE=MinGW

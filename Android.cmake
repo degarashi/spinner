@@ -1,9 +1,9 @@
 set(UNIX 1)
 add_definitions(-DUNIX)
 
-set(BOOST_PATH /usr/local/src/boost_1_54_0)
-set(ANDROID_NDK_ROOT "/usr/local/adt-bundle-linux-x86/ndk")
-set(ANDROID_PLATFORM "linux-x86")
+set(BOOST_PATH /opt/boost/${ANDROID_ARCH_SHORT})
+set(ANDROID_PLATFORM "linux-x86_64")
+set(ANDROID_NDK_ROOT "/opt/adt-bundle-${ANDROID_PLATFORM}/ndk")
 set(ANDROID_VER "9")
 set(CMAKE_TOOLBASE "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_TOOLCHAIN}-4.8/prebuilt/${ANDROID_PLATFORM}/bin/${ANDROID_PREF}-")
 set(CMAKE_C_COMPILER "${CMAKE_TOOLBASE}gcc")
@@ -29,7 +29,7 @@ add_definitions(-DANDROID
 # 				-D_LITTLE_ENDIAN
 #				-DPAGE_SIZE=2048
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -I${BOOST_PATH}/include")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -ggdb3 -Og -UNDEBUG -fno-omit-frame-pointer -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -O2 -fomit-frame-pointer")
 
