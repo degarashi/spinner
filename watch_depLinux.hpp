@@ -1,7 +1,7 @@
 #pragma once
 #include "watch_common.hpp"
 #include <mutex>
-#include <thread>
+#include <boost/thread.hpp>
 #include <future>
 #include "optional.hpp"
 
@@ -11,8 +11,8 @@ namespace spn {
 		public:
 			using Event = FNotifyEvent<int>;
 		private:
-			using OPThread = spn::Optional<std::thread>;
-			std::recursive_mutex	_mutex;
+			using OPThread = spn::Optional<boost::thread>;
+			boost::recursive_mutex	_mutex;
 			int						_fd,
 									_cancelFd[2];
 			OPThread				_thread;

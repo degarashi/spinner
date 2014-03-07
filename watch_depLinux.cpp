@@ -9,7 +9,7 @@
 namespace spn {
 	FNotify_depLinux::FNotify_depLinux() {
 		Assert(Trap, (_fd = inotify_init()) >= 0, "failed to initialize inotify")
-		_thread = std::thread(std::packaged_task<void (FNotify_depLinux*)>(ASyncLoop), this);
+		_thread = boost::thread(ASyncLoop, this);
 		::pipe(_cancelFd);
 	}
 	FNotify_depLinux::~FNotify_depLinux() {
@@ -23,7 +23,7 @@ namespace spn {
 		close(_cancelFd[1]);
 	}
 	void FNotify_depLinux::_pushInfo(const inotify_event& e) {
-		std::lock_guard<decltype(_mutex)>	lk(_mutex);
+		boost::lock_guard<decltype(_mutex)>	lk(_mutex);
 		_eventL.push_back(Event{e.wd, DetectEvent(e.mask), e.name, e.cookie, static_cast<bool>(e.mask & IN_ISDIR)});
 	}
 	FNotify_depLinux::DSC FNotify_depLinux::addWatch(const std::string& path, uint32_t mask) {
@@ -60,7 +60,7 @@ namespace spn {
 		return FE_Invalid;
 	}
 	void FNotify_depLinux::procEvent(CallbackD cb) {
-		std::lock_guard<decltype(_mutex)> lk(_mutex);
+		boost::lock_guard<decltype(_mutex)> lk(_mutex);
 		for(auto& e : _eventL)
 			cb(e);
 		_eventL.clear();

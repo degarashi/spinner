@@ -29,7 +29,7 @@ add_definitions(-DANDROID
 # 				-D_LITTLE_ENDIAN
 #				-DPAGE_SIZE=2048
 
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -I${BOOST_PATH}/include")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-attributes -std=c++11 -I${BOOST_PATH}/include")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -ggdb3 -Og -UNDEBUG -fno-omit-frame-pointer -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -O2 -fomit-frame-pointer")
 
@@ -37,4 +37,5 @@ set(LDFLAGS "-no-canonical-prefixes")
 set(CMAKE_MODULE_LINKER_FLAGS ${LDFLAGS})
 set(CMAKE_SHARED_LINKER_FLAGS ${LDFLAGS})
 set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
+set(LINK_LIBS boost_thread boost_system pthread)
 
