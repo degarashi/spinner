@@ -6,6 +6,6 @@ set(ANDROID_ARCH_SHORT "x86")
 set(ANDROID_ARCH_LONG "x86")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${ANDROID_NDK_ROOT}/platforms/android-${ANDROID_VER}/arch-x86 -ffunction-sections -funwind-tables -no-canonical-prefixes -fstack-protector")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fstrict-aliasing -funswitch-loops -finline-limit=300")
-
-include(Android.cmake require)
+find_file(ANDROID_CMAKE Android.cmake PATHS ./)
+include(${ANDROID_CMAKE})
 

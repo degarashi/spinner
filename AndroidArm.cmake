@@ -1,3 +1,5 @@
+# AS_V7AをYESにするとARMv7設定になる
+
 set(ARCHITECTURE armeabi)
 set(TOOL_PREFIX arm)
 set(ANDROID_PREF "arm-linux-androideabi")
@@ -20,6 +22,6 @@ else()
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthumb")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-strict-aliasing -finline-limit=64")
 endif()
-
-include(Android.cmake require)
+find_file(ANDROID_CMAKE Android.cmake PATHS ./)
+include(${ANDROID_CMAKE})
 
