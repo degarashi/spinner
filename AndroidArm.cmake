@@ -22,6 +22,6 @@ else()
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mthumb")
 	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-strict-aliasing -finline-limit=64")
 endif()
-find_file(ANDROID_CMAKE Android.cmake PATHS ./)
+file(GLOB_RECURSE ANDROID_CMAKE Android.cmake)
 include(${ANDROID_CMAKE})
 
