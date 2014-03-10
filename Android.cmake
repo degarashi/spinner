@@ -37,5 +37,7 @@ set(LDFLAGS "-no-canonical-prefixes")
 set(CMAKE_MODULE_LINKER_FLAGS ${LDFLAGS})
 set(CMAKE_SHARED_LINKER_FLAGS ${LDFLAGS})
 set(CMAKE_EXE_LINKER_FLAGS ${LDFLAGS})
-set(LINK_LIBS boost_thread boost_system pthread)
+
+file(GLOB_RECURSE COMMON_CMAKE ${CMAKE_HOME_DIRECTORY} "Common.cmake")
+include(${COMMON_CMAKE})
 

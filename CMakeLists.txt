@@ -6,13 +6,13 @@ project(spinner)
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
 message(STATUS ${BUILD_TYPE})
 include("${BUILD_TYPE}.cmake" require)
-include(Common.cmake require)
 
 # OS依存ファイルの設定
 if(${WIN32})
 	set(CXX_SRC ${CXX_SRC} dir_depWin.cpp watch_depWin.cpp)
 elseif(${UNIX})
 	set(CXX_SRC ${CXX_SRC} dir_depLinux.cpp watch_depLinux.cpp)
+	set(LINK_LIBS boost_thread boost_system pthread)
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()

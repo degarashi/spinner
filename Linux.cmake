@@ -10,5 +10,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb3")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -O0 -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-set(LINK_LIBS boost_thread boost_system pthread)
+
+file(GLOB_RECURSE COMMON_CMAKE ${CMAKE_HOME_DIRECTORY} "Common.cmake")
+include(${COMMON_CMAKE})
 
