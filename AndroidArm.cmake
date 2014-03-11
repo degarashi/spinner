@@ -14,6 +14,8 @@ else()
 endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${ANDROID_NDK_ROOT}/platforms/android-${ANDROID_VER}/arch-arm -fpic -ffunction-sections -funwind-tables -fstack-protector -no-canonical-prefixes")
 add_definitions(-D__arm__)
+# ARMではExceptionPtrをサポートしてないらしいので無効化するマクロを定義
+add_definitions(-DNO_EXCEPTION_PTR)
 # ARM or THUMB
 if(AS_ARM)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -marm")
