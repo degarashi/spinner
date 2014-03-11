@@ -12,6 +12,7 @@ LINUX_FLAG			:= -DSOUND_API=openal -DBUILD_TYPE=Linux
 MINGW_FLAG			:= -DSOUND_API=openal -DBUILD_TYPE=MinGW
 ANDROID_X86_FLAG	:= -DSOUND_API=opensl -DBUILD_TYPE=AndroidX86
 ANDROID_ARM_FLAG	:= -DSOUND_API=opensl -DBUILD_TYPE=AndroidArm
+ANDROID_ARM7_FLAG	:= -DSOUND_API=opensl -DBUILD_TYPE=AndroidArm -DAS_V7A=YES
 
 CMake = mkdir -p $(1); cd $(1); cmake $(PWD) -G 'Unix Makefiles' -DCMAKE_SYSTEM_NAME=Generic -DCMAKE_BUILD_TYPE=$(3) -DCMAKE_INSTALL_PREFIX=$(INSTALL_PATH) $(2) ;
 Make = cd $(1); make -j$(2);
@@ -31,6 +32,9 @@ AndroidX86Clean = $(call Clean,$(BUILD_PATH)_x86)
 AndroidArmMake = $(call CMake_Make,$(BUILD_PATH)_arm,$(ANDROID_ARM_FLAG),$(1),$(ANDROID_NJOB))
 AndroidArmInstall = $(call Install,$(BUILD_PATH)_arm)
 AndroidArmClean = $(call Clean,$(BUILD_PATH)_arm)
+AndroidArm7Make = $(call CMake_Make,$(BUILD_PATH)_arm7,$(ANDROID_ARM7_FLAG),$(1),$(ANDROID_NJOB))
+AndroidArm7Install = $(call Install,$(BUILD_PATH)_arm7)
+AndroidArm7Clean = $(call Clean,$(BUILD_PATH)_arm7)
 
 linux-d:
 	$(call LinuxMake,Debug)
@@ -75,4 +79,15 @@ arm-d-install: arm-d
 	$(call AndroidArmInstall)
 arm-install: arm
 	$(call AndroidArmInstall)
+
+arm7-d:
+	$(call AndroidArm7Make,Debug)
+arm7:
+	$(call AndroidArm7Make,Release)
+arm7-clean:
+	$(call AndroidArm7Clean)
+arm7-d-install: arm7-d
+	$(call AndroidArm7Install)
+arm7-install: arm7
+	$(call AndroidArm7Install)
 

@@ -1,7 +1,7 @@
 set(UNIX 1)
 add_definitions(-DUNIX)
 
-set(BOOST_PATH /opt/boost/${ANDROID_ARCH_SHORT})
+set(BOOST_PATH "/opt/boost/${ANDROID_ARCH_LONG}")
 set(ANDROID_PLATFORM "linux-x86_64")
 set(ANDROID_NDK_ROOT "/opt/adt-bundle-${ANDROID_PLATFORM}/ndk")
 set(ANDROID_VER "9")
