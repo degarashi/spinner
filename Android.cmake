@@ -12,6 +12,8 @@ set(CMAKE_LD "${CMAKE_TOOLBASE}ld")
 set(CMAKE_AR "${CMAKE_TOOLBASE}ar")
 set(CMAKE_RANLIB "${CMAKE_TOOLBASE}ranlib")
 
+add_definitions(-DUSE_OPENGLES2)
+
 # Android用のビルド設定
 include_directories(${ANDROID_NDK_ROOT}/sources/cxx-stl/gnu-libstdc++/4.8/include
 					${ANDROID_NDK_ROOT}/sources/cxx-stl/gnu-libstdc++/4.8/libs/${ANDROID_ARCH_LONG}/include
