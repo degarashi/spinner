@@ -5,12 +5,18 @@ set(BOOST_PATH "/opt/boost/${ANDROID_ARCH_LONG}")
 set(ANDROID_PLATFORM "linux-x86_64")
 set(ANDROID_NDK_ROOT "/opt/adt-bundle-${ANDROID_PLATFORM}/ndk")
 set(ANDROID_VER "9")
-set(CMAKE_TOOLBASE "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_TOOLCHAIN}-4.8/prebuilt/${ANDROID_PLATFORM}/bin/${ANDROID_PREF}-")
-set(CMAKE_C_COMPILER "${CMAKE_TOOLBASE}gcc")
-set(CMAKE_CXX_COMPILER "${CMAKE_TOOLBASE}g++")
-set(CMAKE_LD "${CMAKE_TOOLBASE}ld")
-set(CMAKE_AR "${CMAKE_TOOLBASE}ar")
-set(CMAKE_RANLIB "${CMAKE_TOOLBASE}ranlib")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${ANDROID_NDK_ROOT}/platforms/android-${ANDROID_VER}/arch-${ANDROID_ARCH_SHORT}")
+if(USE_CLANG)
+	set(CMAKE_TOOLBASE "${ANDROID_NDK_ROOT}/toolchains/llvm-3.4/prebuilt/${ANDROID_PLATFORM}/bin/")
+	set(CMAKE_C_COMPILER "${CMAKE_TOOLBASE}clang")
+	set(CMAKE_CXX_COMPILER "${CMAKE_TOOLBASE}clang++")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --gcc-toolchain=${ANDROID_NDK_ROOT}/toolchains/${ANDROID_TOOLCHAIN}-4.8/prebuilt/${ANDROID_PLATFORM}")
+else()
+	set(CMAKE_TOOLBASE "${ANDROID_NDK_ROOT}/toolchains/${ANDROID_TOOLCHAIN}-4.8/prebuilt/${ANDROID_PLATFORM}/bin/${ANDROID_PREF}-")
+	set(CMAKE_C_COMPILER "${CMAKE_TOOLBASE}gcc")
+	set(CMAKE_CXX_COMPILER "${CMAKE_TOOLBASE}g++")
+endif()
 
 add_definitions(-DUSE_OPENGLES2)
 
@@ -27,10 +33,9 @@ add_definitions(-DANDROID
 				-D__ANDROID__
 				-DGLIBC
 				-D_GLIBCPP_USE_WCHAR_T
-				-D_REENTRANT)
-# 				-D_LITTLE_ENDIAN
+				-D_REENTRANT
+				-D_LITTLE_ENDIAN)
 #				-DPAGE_SIZE=2048
-
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wno-attributes -std=c++11 -I${BOOST_PATH}/include")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DDEBUG -ggdb3 -Og -UNDEBUG -fno-omit-frame-pointer -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -DNDEBUG -O2 -fomit-frame-pointer")
