@@ -28,10 +28,14 @@
 #define _Assert_Base(expr, act, ...)			{if(!(expr)) { act.onError(MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__)); }}
 #define _AssertT(act, expr, throwtype)			_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>()), BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(0,throwtype)))
 #define _AssertTArg(act, expr, throwtype, ...)	_Assert_Base(expr, (AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>(__VA_ARGS__)), BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(0,throwtype)))
+// 任意の例外クラスを指定してアサートチェック
+// 引数の有無で_AssertT(), _AssertTArg()を呼び分ける
 #define AssertT(act, expr, ...)					BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _AssertT, _AssertTArg)(act,expr,__VA_ARGS__)
-
+// デフォルトのエラーメッセージでアサートチェック
 #define _Assert(act, expr)						_AssertArg(act, expr, "Assertion failed")
 #define _AssertArg(act, expr, ...)				_Assert_Base(expr, (AAct_##act<std::runtime_error>()), __VA_ARGS__)
+// Act,Exprに続く引数が無いときは_Assert(), あるなら_AssertArg()を呼ぶ
+// 例外形式はstd::runtime_errorとして与えられた引数でエラーメッセージを生成
 #define Assert(act, ...)						BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _Assert, _AssertArg)(act, __VA_ARGS__)
 
 #ifdef DEBUG
@@ -84,14 +88,32 @@ struct AAct_Warn {
 template <class E, class... Ts>
 struct AAct_Throw : spn::ArgHolder<Ts...> {
 	using spn::ArgHolder<Ts...>::ArgHolder;
-	static void _Throw(const std::string& str) { throw E(str); }
+	// 例外クラスがconst std::stringでコンストラクトできる場合はエラーメッセージを渡し、残りの引数を無視
+	template <class E2, class... TArg, class Dummy=void*,
+		class=typename std::enable_if<
+			std::is_constructible<E2, const std::string&>::value
+			>::type
+		>
+	static void __Throw(const std::string& str, TArg... args) {
+		throw E(str); }
+
+	// そうでない場合はエラーメッセージをその場で出力し、引数はユーザーが渡したものを指定
+	template <class E2, class... TArg,
+		class=typename std::enable_if<
+			!std::is_constructible<E2, const std::string&>::value
+			>::type
+		>
+	static void __Throw(const std::string& str, TArg... args) {
+		AAct_Warn<E2>().onError(str);
+		throw E(args...); }
+
 	template <class T2, class... Ts2>
 	static void _Throw(const std::string& str, T2&& t, Ts2&&... ts) {
 		AAct_Warn<E>().onError(str);
 		throw E(std::forward<T2>(t), std::forward<Ts2>(ts)...); }
 	void onError(const std::string& str) {
 		this->inorder([&str](Ts... args){
-			_Throw(str, args...);
+			__Throw<E>(str, args...);
 		});
 	}
 };
@@ -104,9 +126,8 @@ struct AAct_Trap : AAct_Throw<E,Ts...> {
 		#ifdef DEBUG
 			AAct_Warn<E>().onError(str);
 			__builtin_trap();
-		#else
-			base_type::onError(str);
 		#endif
+		base_type::onError(str);
 	}
 };
 namespace spn {
