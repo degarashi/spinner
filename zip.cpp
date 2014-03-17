@@ -6,6 +6,48 @@
 namespace spn {
 	namespace zip {
 		namespace {
+			const ErrorMsgList cs_initError[] = {
+				{Z_OK, "no error"},
+				{Z_MEM_ERROR, "memory error"},
+				{Z_STREAM_ERROR, "invalid deflate level"},
+				{Z_VERSION_ERROR, "zlib version is not compatible"},
+				{0, std::string()}
+			},
+			cs_procError[] = {
+				{Z_OK, "no error"},
+				{Z_STREAM_ERROR, "invalid stream state"},
+				{Z_BUF_ERROR, "not enough buffer"},
+				{0, std::string()}
+			},
+			cs_endError[] = {
+				{Z_OK, "no error"},
+				{Z_STREAM_ERROR, "invalid stream state"},
+				{Z_DATA_ERROR, "invalid data memory(already freed?)"},
+				{0, std::string()}
+			};
+		};
+		ExceptionBase::ExceptionBase(int flag, const std::string& msg, const ErrorMsgList* elst):
+			std::runtime_error(""),
+			_flag(flag), _origMsg(msg)
+		{
+			std::string m("unknown error");
+			auto* e = elst;
+			while(!e->second.empty()) {
+				if(e->first == flag) {
+					m = e->second;
+					break;
+				}
+				++e;
+			}
+			m += ": ";
+			m += _origMsg;
+			reinterpret_cast<std::runtime_error&>(*this) = std::runtime_error(m);
+		}
+		InitException::InitException(int flag, const std::string& msg): ExceptionBase(flag, msg, cs_initError) {}
+		ProcException::ProcException(int flag, const std::string& msg): ExceptionBase(flag, msg, cs_procError) {}
+		EndException::EndException(int flag, const std::string& msg): ExceptionBase(flag, msg, cs_endError) {}
+
+		namespace {
 			uint32_t GetSignature(AdaptStream& as) {
 				uint32_t sig;
 				as.read(&sig, sizeof(sig));
@@ -86,7 +128,8 @@ namespace spn {
 				z.zalloc = Z_NULL;
 				z.zfree = Z_NULL;
 				z.opaque = Z_NULL;
-				inflateInit(&z);
+				int flag = inflateInit(&z);
+				AssertT(Throw, flag == Z_OK, (InitException)(int)(const char*), flag, z.msg)
 
 				constexpr size_t TMP_BUFFSIZE = 4096;
 				char tmp[TMP_BUFFSIZE];
@@ -105,8 +148,8 @@ namespace spn {
 					z.avail_out = ob.availOut();
 					size_t nRead = z.avail_in,
 							nWrite = z.avail_out;
-					// TODO: エラー値チェック
-					inflate(&z, Z_NO_FLUSH);
+					flag = inflate(&z, Z_NO_FLUSH);
+					AssertT(Throw, flag == Z_OK, (ProcException)(int)(const char*), flag, z.msg)
 					nRead -= z.avail_in;
 					nWrite -= z.avail_out;
 
@@ -123,7 +166,8 @@ namespace spn {
 						len += z.avail_in;
 					}
 				}
-				inflateEnd(&z);
+				flag = inflateEnd(&z);
+				AssertT(Throw, flag == Z_OK, (EndException)(int)(const char*), flag, z.msg)
 			}
 			using SizePair = std::pair<size_t, size_t>;
 			SizePair LoadHeader(AdaptStream& as) {

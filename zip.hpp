@@ -9,6 +9,21 @@ namespace spn {
 	using ByteBuff = std::vector<uint8_t>;
 
 	namespace zip {
+		using ErrorMsgList = std::pair<int, std::string>;
+		struct ExceptionBase : std::runtime_error {
+			int					_flag;
+			const std::string	_origMsg;
+			ExceptionBase(int flag, const std::string& msg, const ErrorMsgList* elst);
+		};
+		struct InitException : ExceptionBase {
+			InitException(int flag, const std::string& msg);
+		};
+		struct ProcException : ExceptionBase {
+			ProcException(int flag, const std::string& msg);
+		};
+		struct EndException : ExceptionBase {
+			EndException(int flag, const std::string& msg);
+		};
 		using SPos = typename std::istream::streampos;
 		struct LocalHeader {
 			constexpr static uint32_t SIGNATURE = 0x04034b50;
