@@ -5,6 +5,7 @@ set(BOOST_PATH "/opt/boost/${ANDROID_ARCH_LONG}")
 set(ANDROID_PLATFORM "linux-x86_64")
 set(ANDROID_NDK_ROOT "/opt/adt-bundle-${ANDROID_PLATFORM}/ndk")
 set(ANDROID_VER "9")
+set(TOOL_PREFIX ${ANDROID_ARCH_LONG})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --sysroot=${ANDROID_NDK_ROOT}/platforms/android-${ANDROID_VER}/arch-${ANDROID_ARCH_SHORT}")
 if(USE_CLANG)

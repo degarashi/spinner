@@ -1,7 +1,6 @@
 # AS_V7AをYESにするとARMv7設定になる
 
 set(ARCHITECTURE armeabi)
-set(TOOL_PREFIX arm)
 set(ANDROID_PREF "arm-linux-androideabi")
 set(ANDROID_TOOLCHAIN "arm-linux-androideabi")
 set(ANDROID_ARCH_SHORT "arm")

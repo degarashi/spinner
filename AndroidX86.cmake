@@ -1,5 +1,4 @@
 set(ARCHITECTURE x86)
-set(TOOL_PREFIX x86)
 set(ANDROID_PREF "i686-linux-android")
 set(ANDROID_TOOLCHAIN "x86")
 set(ANDROID_ARCH_SHORT "x86")
