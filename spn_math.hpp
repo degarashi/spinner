@@ -164,9 +164,10 @@ template <class T, int N>
 struct TrivialWrapper<T[N]> {
 	T _buff[N];
 	using AR = T (&)[N];
+	using AR_C = const T (&)[N];
 
 	AR operator * () { return _buff; }
-	const AR operator * () const { return _buff; }
+	AR_C operator * () const { return _buff; }
 	operator AR () { return _buff; }
 	T& operator [] (int n) { return _buff[n]; }
 	const T& operator [] (int n) const { return _buff[n]; }
