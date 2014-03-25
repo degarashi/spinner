@@ -12,6 +12,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/binary_object.hpp>
+#include "adaptstream.hpp"
 
 namespace spn {
 	class WHandle;
@@ -344,14 +345,22 @@ namespace spn {
 			}
 	};
 
+	class URI;
+	struct IURIOpener {
+		virtual UP_Adapt openURI(const URI& uri) = 0;
+		virtual std::string getResourceName(const URI& uri) = 0;
+	};
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
 		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
-		static RMList s_rmList;
+		using UP_URIOpen = std::unique_ptr<IURIOpener>;
+		static RMList		s_rmList;
+		static UP_URIOpen	s_uriOpen;
 		protected:
 			int _addManager(ResMgrBase* p);
 			void _remManager(int id);
 		public:
+			static void SetURIOpener(IURIOpener* uo);
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
 			static bool Release(SHandle sh);
@@ -360,6 +369,8 @@ namespace spn {
 			static WHandle Weak(SHandle sh);
 			static ResMgrBase* GetManager(int rID);
 			static void* GetPtr(SHandle sh);
+			//! URLに対応したリソースマネージャを探し、ハンドルを生成
+			static SHandle LoadResource(const URI& uri);
 
 			virtual void increment(SHandle sh) = 0;
 			virtual bool release(SHandle sh) = 0;
@@ -368,6 +379,9 @@ namespace spn {
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
+			//! 対応する拡張子か判定
+			virtual bool canLoad(const std::string& ext) const;
+			virtual SHandle loadResource(AdaptStream& ast, const std::string& name);
 	};
 
 	//! 名前付きリソース管理の為のラッパ

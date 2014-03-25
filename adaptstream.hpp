@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <memory>
 
 namespace spn {
 	// compatible interface of std::stream and SDL
@@ -8,6 +9,7 @@ namespace spn {
 		using streampos = typename std::istream::streampos;
 		using streamoff = typename std::istream::streamoff;
 		using streamsize = std::streamsize;
+		virtual ~AdaptStreamBase() {}
 	};
 	struct AdaptStream : AdaptStreamBase {
 		virtual AdaptStream& read(void* dst, streamsize len) = 0;
@@ -24,6 +26,7 @@ namespace spn {
 
 		const static std::ios_base::seekdir cs_flag[];
 		AdaptStd(std::istream& is);
+		AdaptStd(const AdaptStd&) = default;
 		AdaptStd& read(void* dst, streamsize len) override;
 		AdaptStd& seekg(streamoff dist, Dir dir) override;
 		streampos tellg() const override;
@@ -32,6 +35,7 @@ namespace spn {
 		std::ostream&	_os;
 
 		AdaptOStd(std::ostream& os);
+		AdaptOStd(const AdaptOStd&) = default;
 		AdaptOStd& write(const void* src, streamsize len) override;
 		AdaptOStd& seekp(streamoff dist, Dir dir) override;
 		streampos tellp() const override;
@@ -39,4 +43,5 @@ namespace spn {
 	struct AdaptIOStd : AdaptStd, AdaptOStd {
 		AdaptIOStd(std::iostream& ios);
 	};
+	using UP_Adapt = std::unique_ptr<AdaptStream>;
 }
