@@ -62,6 +62,7 @@ namespace spn {
 
 	// ------------------ WHandle ------------------
 	WHandle::WHandle(): _value(~0) {}
+	WHandle::WHandle(VWord w): _value(w) {}
 	WHandle::WHandle(int idx, int resID, VWord mag) {
 		_value.at<Value::INDEX>() = idx;
 		_value.at<Value::RESID>() = resID;

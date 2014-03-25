@@ -43,7 +43,7 @@ namespace spn {
 			//! デフォルト値は無効なハンドルID
 			SHandle();
 			SHandle(const SHandle&) = default;
-			SHandle(VWord w);
+			explicit SHandle(VWord w);
 			#ifdef DEBUG
 				SHandle(int idx, int resID, int mag);
 				Value::Word getMagic() const;
@@ -91,6 +91,7 @@ namespace spn {
 			WHandle();
 			WHandle(const WHandle& wh) = default;
 			WHandle(int idx, int resID, VWord mag);
+			explicit WHandle(VWord val);
 
 			VWord getResID() const;
 			VWord getIndex() const;
@@ -103,7 +104,22 @@ namespace spn {
 			bool operator != (const WHandle& wh) const;
 			bool operator < (const WHandle& wh) const;
 	};
-
+}
+namespace std {
+	template <>
+	struct hash<spn::SHandle> {
+		size_t operator()(spn::SHandle sh) const {
+			using Value = decltype(sh.getValue());
+			return hash<Value>()(sh.getValue()); }
+	};
+	template <>
+	struct hash<spn::WHandle> {
+		size_t operator()(spn::WHandle wh) const {
+			using Value = decltype(wh.getValue());
+			return hash<Value>()(wh.getValue()); }
+	};
+}
+namespace spn {
 	template <class MGR, class DATA>
 	class SHandleT;
 	template <class MGR, class DATA>
