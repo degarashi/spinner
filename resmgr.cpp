@@ -38,11 +38,10 @@ namespace spn {
 		return GetManager(sh.getResID())->getPtr(sh);
 	}
 	SHandle ResMgrBase::LoadResource(const URI& uri) {
+		UP_Adapt u(s_uriOpen->openURI(uri));
 		for(auto* p : s_rmList) {
 			if(p->canLoad(uri.getExtension().c_str())) {
-				UP_Adapt u(s_uriOpen->openURI(uri));
-				std::string name(s_uriOpen->getResourceName(uri));
-				SHandle ret = p->loadResource(*u, name);
+				SHandle ret = p->loadResource(*u, uri.getLast_utf8());
 				Assert(Trap, ret.valid())
 				return ret;
 			}

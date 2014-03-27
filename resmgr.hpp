@@ -364,7 +364,6 @@ namespace spn {
 	class URI;
 	struct IURIOpener {
 		virtual UP_Adapt openURI(const URI& uri) = 0;
-		virtual std::string getResourceName(const URI& uri) = 0;
 	};
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
