@@ -5,9 +5,9 @@ namespace spn {
 	none_t none;
 	// ------------------ ResMgrBase ------------------
 	ResMgrBase::RMList ResMgrBase::s_rmList;
-	ResMgrBase::UP_URIOpen ResMgrBase::s_uriOpen;
-	void ResMgrBase::SetURIOpener(IURIOpener* uo) {
-		s_uriOpen.reset(uo);
+	ResMgrBase::URIHandlerV ResMgrBase::s_handler;
+	ResMgrBase::URIHandlerV& ResMgrBase::GetHandler() {
+		return s_handler;
 	}
 	int ResMgrBase::_addManager(ResMgrBase* p) {
 		assert(std::find(s_rmList.begin(), s_rmList.end(), p) == s_rmList.end());
@@ -38,12 +38,14 @@ namespace spn {
 		return GetManager(sh.getResID())->getPtr(sh);
 	}
 	SHandle ResMgrBase::LoadResource(const URI& uri) {
-		UP_Adapt u(s_uriOpen->openURI(uri));
-		for(auto* p : s_rmList) {
-			if(p->canLoad(uri.getExtension().c_str())) {
-				SHandle ret = p->loadResource(*u, uri.getLast_utf8());
-				Assert(Trap, ret.valid())
-				return ret;
+		UP_Adapt u(s_handler.procHandler(uri));
+		if(u) {
+			for(auto* p : s_rmList) {
+				if(p->canLoad(uri.getExtension().c_str())) {
+					SHandle ret = p->loadResource(*u, uri.getLast_utf8());
+					Assert(Trap, ret.valid())
+					return ret;
+				}
 			}
 		}
 		return SHandle();

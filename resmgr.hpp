@@ -4,6 +4,7 @@
 #include "macro.hpp"
 #include "noseq.hpp"
 #include <unordered_map>
+#include <vector>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -365,17 +366,63 @@ namespace spn {
 	struct IURIOpener {
 		virtual UP_Adapt openURI(const URI& uri) = 0;
 	};
+	using SP_URIOpener = std::shared_ptr<IURIOpener>;
+	template <class T, class Chk, class Prio=uint32_t>
+	class HandlerV {
+		using SPHandler = std::shared_ptr<T>;
+		using HandlerPair = std::pair<Prio, SPHandler>;
+		using HandlerVec = std::vector<HandlerPair>;
+		HandlerVec	_handler;
+		static T*	s_dummy;
+		typename HandlerVec::iterator _findHandler(const SPHandler& h) {
+			return std::find_if(_handler.begin(), _handler.end(), [&h](const HandlerPair& p){
+				return p.second == h;
+			});
+		}
+		public:
+			void addHandler(Prio prio, const SPHandler& h) {
+				Assert(Trap, _findHandler(h)==_handler.end())
+				_handler.emplace_back(prio, h);
+				std::sort(_handler.begin(), _handler.end(), [](const HandlerPair& p0, const HandlerPair& p1) {
+					return p0.first < p1.first; });
+			}
+			void remHandler(const SPHandler& h) {
+				auto itr = _findHandler(h);
+				Assert(Trap, itr!=_handler.end());
+				_handler.erase(itr);
+			}
+			template <class... U>
+			auto procHandler(U&&... u) const -> decltype(std::declval<Chk>()(*s_dummy,std::forward<U>(u)...)) {
+				Chk chk;
+				for(auto& p : _handler) {
+					if(auto ret = chk(*p.second, std::forward<U>(u)...))
+						return ret;
+				}
+				return decltype(std::declval<Chk>()(*s_dummy,std::forward<U>(u)...))();
+			}
+			void clearHandler() {
+				_handler.clear();
+			}
+	};
+	template <class T, class Chk, class Prio>
+	T* HandlerV<T,Chk,Prio>::s_dummy(nullptr);
+
 	//! 型を限定しないリソースマネージャ基底
 	class ResMgrBase {
 		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
-		using UP_URIOpen = std::unique_ptr<IURIOpener>;
-		static RMList		s_rmList;
-		static UP_URIOpen	s_uriOpen;
+		static RMList						s_rmList;
+		struct HChk {
+			UP_Adapt operator()(IURIOpener& o, const URI& uri) const {
+				return o.openURI(uri);
+			}
+		};
+		using URIHandlerV = HandlerV<IURIOpener, HChk>;
+		static URIHandlerV	s_handler;
 		protected:
 			int _addManager(ResMgrBase* p);
 			void _remManager(int id);
 		public:
-			static void SetURIOpener(IURIOpener* uo);
+			static URIHandlerV& GetHandler();
 			// ハンドルのResIDから処理するマネージャを特定
 			static void Increment(SHandle sh);
 			static bool Release(SHandle sh);
