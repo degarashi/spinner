@@ -4,7 +4,7 @@ namespace spn {
 	// ------------------ AdaptStd ------------------
 	const std::ios_base::seekdir AdaptStd::cs_flag[] = {std::istream::beg, std::istream::cur, std::istream::end};
 	AdaptStd::AdaptStd(std::istream& is): _is(&is) {}
-	AdaptStd::AdaptStd(UP_Ist&& u): _up(std::move(u)), _is(_up.get()) {}
+	AdaptStd::AdaptStd(UP_IStream&& u): _up(std::move(u)), _is(_up.get()) {}
 	AdaptStd& AdaptStd::read(void* dst, streamsize len) {
 		_is->read(reinterpret_cast<char*>(dst), len);
 		return *this;
@@ -18,7 +18,7 @@ namespace spn {
 	}
 	// ------------------ AdaptOStd ------------------
 	AdaptOStd::AdaptOStd(std::ostream& os): _os(&os) {}
-	AdaptOStd::AdaptOStd(UP_Ost&& u): _up(std::move(u)), _os(_up.get()) {}
+	AdaptOStd::AdaptOStd(UP_OStream&& u): _up(std::move(u)), _os(_up.get()) {}
 	AdaptOStd& AdaptOStd::write(const void* src, streamsize len) {
 		_os->write(reinterpret_cast<const char*>(src), len);
 		return *this;
@@ -32,4 +32,5 @@ namespace spn {
 	}
 	// ------------------ AdaptIOStd ------------------
 	AdaptIOStd::AdaptIOStd(std::iostream& ios): AdaptStd(ios), AdaptOStd(ios) {}
+	AdaptIOStd::AdaptIOStd(UP_IOStream&& u): AdaptStd(*u), AdaptOStd(std::move(u)) {}
 }
