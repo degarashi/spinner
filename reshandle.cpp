@@ -47,6 +47,9 @@ namespace spn {
 	void SHandle::release() {
 		ResMgrBase::Release(*this);
 	}
+	void SHandle::increment() {
+		ResMgrBase::Increment(*this);
+	}
 	uint32_t SHandle::count() const {
 		return ResMgrBase::Count(*this);
 	}

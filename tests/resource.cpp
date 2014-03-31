@@ -23,6 +23,8 @@ namespace spn {
 			};
 			MyMgr mm;
 			auto hdl = mm.doit();
+			spn::LHandle lh;
+			lh = std::move(hdl);
 
 			int tekito = 100;
 			noseq_list<int&> asd;

@@ -37,19 +37,19 @@ namespace spn {
 	void* ResMgrBase::GetPtr(SHandle sh) {
 		return GetManager(sh.getResID())->getPtr(sh);
 	}
-	SHandle ResMgrBase::LoadResource(const URI& uri) {
+	LHandle ResMgrBase::LoadResource(const URI& uri) {
 		UP_Adapt u(s_handler.procHandler(uri));
 		auto name = uri.getLast_utf8(),
 			ext = uri.getExtension();
 		if(u) {
 			for(auto* p : s_rmList) {
-				if(SHandle ret = p->loadResource(*u, uri))
-					return ret;
+				if(LHandle ret = p->loadResource(*u, uri))
+					return std::move(ret);
 			}
 		}
-		return SHandle();
+		return LHandle();
 	}
-	SHandle ResMgrBase::loadResource(AdaptStream& ast, const URI& uri) {
-		return SHandle();
+	LHandle ResMgrBase::loadResource(AdaptStream& ast, const URI& uri) {
+		return LHandle();
 	}
 }
