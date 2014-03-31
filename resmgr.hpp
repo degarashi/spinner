@@ -408,6 +408,7 @@ namespace spn {
 	T* HandlerV<T,Chk,Prio>::s_dummy(nullptr);
 
 	//! 型を限定しないリソースマネージャ基底
+	#define mgr_base	(::spn::ResMgrBase::_ref())
 	class ResMgrBase {
 		using RMList = noseq_list<ResMgrBase*, std::allocator, int>;
 		static RMList						s_rmList;
@@ -441,9 +442,8 @@ namespace spn {
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
 			virtual ~ResMgrBase() {}
-			//! 対応する拡張子か判定
-			virtual bool canLoad(const std::string& ext) const;
-			virtual SHandle loadResource(AdaptStream& ast, const std::string& name);
+			//! 対応する拡張子か判定し、もしそうなら読み込む
+			virtual SHandle loadResource(AdaptStream& ast, const URI& uri);
 	};
 
 	//! 名前付きリソース管理の為のラッパ

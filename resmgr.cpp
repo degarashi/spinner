@@ -39,21 +39,17 @@ namespace spn {
 	}
 	SHandle ResMgrBase::LoadResource(const URI& uri) {
 		UP_Adapt u(s_handler.procHandler(uri));
+		auto name = uri.getLast_utf8(),
+			ext = uri.getExtension();
 		if(u) {
 			for(auto* p : s_rmList) {
-				if(p->canLoad(uri.getExtension().c_str())) {
-					SHandle ret = p->loadResource(*u, uri.getLast_utf8());
-					Assert(Trap, ret.valid())
+				if(SHandle ret = p->loadResource(*u, uri))
 					return ret;
-				}
 			}
 		}
 		return SHandle();
 	}
-	SHandle ResMgrBase::loadResource(AdaptStream& ast, const std::string& name) {
+	SHandle ResMgrBase::loadResource(AdaptStream& ast, const URI& uri) {
 		return SHandle();
-	}
-	bool ResMgrBase::canLoad(const std::string& ext) const {
-		return false;
 	}
 }
