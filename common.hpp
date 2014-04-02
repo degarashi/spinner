@@ -1,4 +1,6 @@
 #pragma once
+#include <tuple>
+#include <type_traits>
 
 namespace spn {
 	//! コンパイル時数値計算 & 比較
@@ -54,4 +56,20 @@ namespace spn {
 	template <int N0, int N1, int... N>
 	struct TMax<N0, N1, N...> {
 		constexpr static int result = TValue<N0, TMax<N1, N...>::result>::great; };
+	//! SFINAEで関数を無効化する際に使うダミー変数
+	static void* Enabler;
+	//! コンパイル時定数で数値のN*10乗を計算
+	template <class T, int N, typename std::enable_if<N==0>::type*& = Enabler>
+	constexpr T ConstantPow10(T value=1, std::integral_constant<int,N>* =nullptr) {
+		return value;
+	}
+	template <class T, int N, typename std::enable_if<(N<0)>::type*& = Enabler>
+	constexpr T ConstantPow10(T value=1, std::integral_constant<int,N>* =nullptr) {
+		return ConstantPow10(value/10, (std::integral_constant<int,N+1>*)nullptr);
+	}
+	template <class T, int N, typename std::enable_if<(N>0)>::type*& = Enabler>
+	constexpr T ConstantPow10(T value=1.f, std::integral_constant<int,N>* =nullptr) {
+		return ConstantPow10(value*10, (std::integral_constant<int,N-1>*)nullptr);
+	}
 }
+
