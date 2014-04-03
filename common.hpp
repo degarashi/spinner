@@ -71,5 +71,22 @@ namespace spn {
 	constexpr T ConstantPow10(T value=1.f, std::integral_constant<int,N>* =nullptr) {
 		return ConstantPow10(value*10, (std::integral_constant<int,N-1>*)nullptr);
 	}
+
+	//! std::tupleのハッシュを計算
+	struct TupleHash {
+		template <class Tup>
+		static size_t get(size_t value, const Tup& tup, std::integral_constant<int,-1>) { return value; }
+		template <class Tup, int N>
+		static size_t get(size_t value, const Tup& tup, std::integral_constant<int,N>) {
+			const auto& t = std::get<N>(tup);
+			size_t h = std::hash<typename std::decay<decltype(t)>::type>()(t);
+			value = (value ^ (h<<(h&0x07))) ^ (h>>3);
+			return get(value, tup, std::integral_constant<int,N-1>());
+		}
+		template <class... Ts>
+		size_t operator()(const std::tuple<Ts...>& tup) const {
+			return get(0xdeadbeef * 0xdeadbeef, tup, std::integral_constant<int,sizeof...(Ts)-1>());
+		}
+	};
 }
 
