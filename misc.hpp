@@ -79,7 +79,15 @@ namespace spn {
 	template <class RT, class OBJ, class... Args>
 	struct ReturnType<RT (OBJ::*)(Args...) const> {
 		using type = RT; };
-
+	//! ベクトルの差分距離判定(not distance)
+	template <int N, bool A>
+	bool IsNear(const VecT<N,A>& v0, const VecT<N,A>& v1, float eps = std::numeric_limits<float>::epsilon()) {
+		for(int i=0 ; i<N ; i++) {
+			if(!IsNear(v0.m[i], v1.m[i], eps))
+				return false;
+		}
+		return true;
+	}
 	//! 指定した順番で関数を呼び、クラスの初期化をする(マネージャの初期化用)
 	/*! デストラクタは初期化の時と逆順で呼ばれる */
 	template <class... Ts>
@@ -638,23 +646,6 @@ namespace spn {
 			return 2*spn::PI - ac0;
 		return ac0;
 	}
-	//! 値が近いか
-	/*! \param[in] val value to check
-		\param[in] vExcept target value
-		\param[in] vEps value threshold */
-	template <class T>
-	bool IsNear(const T& val, const T& vExcept, const T& vEps = std::numeric_limits<T>::epsilon()) {
-		return IsInRange(val, vExcept-vEps, vExcept+vEps);
-	}
-	//! 浮動少数点数の値がNaNになっているか
-	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
-	bool IsNaN(const T& val) {
-		return !(val>=T(0)) && !(val<T(0)); }
-	//! 浮動少数点数の値がNaN又は無限大になっているか
-	template <class T, class = typename std::enable_if<std::is_floating_point<T>::value>::type>
-	bool IsOutstanding(const T& val) {
-		auto valA = std::fabs(val);
-		return valA==std::numeric_limits<float>::infinity() || IsNaN(valA); }
 	//! 平面上の一点が三角形の内部に含まれるかどうかを判定する
 	/*! \param vtx0 三角形の頂点0
 		\param vtx1 三角形の頂点1
