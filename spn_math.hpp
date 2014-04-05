@@ -268,3 +268,28 @@ namespace spn {
 	template <bool A>
 	struct ExpQuatT;
 }
+namespace std {
+	template <int N, bool A>
+	struct hash<spn::VecT<N,A>> {
+		size_t operator()(const spn::VecT<N,A>& v) const {
+			auto* src = reinterpret_cast<const uint32_t*>(&v);
+			size_t tmp = 0xc000feee;
+			for(int i=0 ; i<N ; i++)
+				tmp ^= size_t(src[i] << (i+3)) ^ src[i];
+			return tmp;
+		}
+	};
+	template <int M, int N, bool A>
+	struct hash<spn::MatT<M,N,A>> {
+		size_t operator()(const spn::MatT<M,N,A>& m) const {
+			size_t tmp = 0xc000feee;
+			for(int i=0 ; i<M ; i++) {
+				auto* src = reinterpret_cast<const uint32_t*>(m.ma[i]);
+				for(int j=0 ; j<N ; j++)
+					tmp ^= (src[j] << (j+3)) ^ src[j];
+			}
+			return tmp;
+		}
+	};
+}
+
