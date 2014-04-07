@@ -672,9 +672,10 @@ namespace spn {
 	AffineParts DecompAffine(const AMat43& m);
 	//! ソースコード文字列に行番号を付ける
 	/*! \param[in] src 元のソースコード
+		\param[in] numOffset 最初の数値(0や負数だとその分は番号を振らない)
 		\param[in] bPrevLR 最初に改行を入れるか
 		\param[in] bPostLR 最後に改行を入れるか*/
-	std::string AddLineNumber(const std::string& src, bool bPrevLR, bool bPostLR);
+	std::string AddLineNumber(const std::string& src, int numOffset, bool bPrevLR, bool bPostLR);
 
 	//! 汎用シングルトン
 	template <typename T>

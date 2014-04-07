@@ -41,14 +41,16 @@ namespace spn {
 		ap.rotation = Quat::FromAxis(colm[0], colm[1], colm[2]);
 		return ap;
 	}
-	std::string AddLineNumber(const std::string& src, bool bPrevLR, bool bPostLR) {
+	std::string AddLineNumber(const std::string& src, int numOffset, bool bPrevLR, bool bPostLR) {
 		std::string::size_type pos[2] = {};
 		std::stringstream ss;
 		if(bPrevLR)
 			ss << std::endl;
-		int lnum = 1;
+		int lnum = numOffset;
 		for(;;) {
-			ss << lnum++ << ":\t";
+			if(lnum > 0)
+				ss << lnum << ":\t";
+			++lnum;
 			pos[1] = src.find_first_of('\n', pos[0]);
 			if(pos[1] == std::string::npos) {
 				ss.write(&src[pos[0]], src.length()-pos[0]);
