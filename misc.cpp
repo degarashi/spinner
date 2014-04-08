@@ -42,15 +42,17 @@ namespace spn {
 		ap.rotation = Quat::FromAxis(colm[0], colm[1], colm[2]);
 		return ap;
 	}
-	std::string AddLineNumber(const std::string& src, int numOffset, bool bPrevLR, bool bPostLR) {
+	std::string AddLineNumber(const std::string& src, int numOffset, int viewNum, bool bPrevLR, bool bPostLR) {
 		std::string::size_type pos[2] = {};
 		std::stringstream ss;
 		if(bPrevLR)
 			ss << std::endl;
 		int lnum = numOffset;
 		for(;;) {
-			if(lnum > 0)
-				ss << lnum << ":\t";
+			if(lnum >= viewNum)
+				ss << (boost::format("%5d:\t") % lnum);
+			else
+				ss << "      \t";
 			++lnum;
 			pos[1] = src.find_first_of('\n', pos[0]);
 			if(pos[1] == std::string::npos) {

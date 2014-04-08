@@ -674,9 +674,10 @@ namespace spn {
 	//! ソースコード文字列に行番号を付ける
 	/*! \param[in] src 元のソースコード
 		\param[in] numOffset 最初の数値(0や負数だとその分は番号を振らない)
+		\param[in] viewNum 行番号の表示を開始する位置
 		\param[in] bPrevLR 最初に改行を入れるか
 		\param[in] bPostLR 最後に改行を入れるか*/
-	std::string AddLineNumber(const std::string& src, int numOffset, bool bPrevLR, bool bPostLR);
+	std::string AddLineNumber(const std::string& src, int numOffset, int viewNum, bool bPrevLR, bool bPostLR);
 
 	using OPLinePos = spn::Optional<std::pair<int, typename std::string::const_iterator>>;
 	//! regexに合致する最初の行
