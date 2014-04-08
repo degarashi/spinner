@@ -13,6 +13,8 @@
 #include <deque>
 #include <atomic>
 #include <thread>
+#include <boost/regex_fwd.hpp>
+
 //! 32bitの4文字チャンクを生成
 #define MAKECHUNK(c0,c1,c2,c3) ((c3<<24) | (c2<<16) | (c1<<8) | c0)
 //! 特定のメソッドを持っているかチェック
@@ -45,7 +47,6 @@
 	std::true_type HasType_##name(typename T::name*) { return std::true_type(); } \
 	template <class T> \
 	std::false_type HasType_##name(...) { return std::false_type(); }
-
 namespace spn {
 	//! Y軸を上とした時のZベクトルに対するXベクトルを算出, またはベクトルに垂直なベクトルを得る
 	template <bool A>
@@ -676,6 +677,16 @@ namespace spn {
 		\param[in] bPrevLR 最初に改行を入れるか
 		\param[in] bPostLR 最後に改行を入れるか*/
 	std::string AddLineNumber(const std::string& src, int numOffset, bool bPrevLR, bool bPostLR);
+
+	using OPLinePos = spn::Optional<std::pair<int, typename std::string::const_iterator>>;
+	//! regexに合致する最初の行
+	/*!	\param[in] str 検索する文字列
+		\param[in] re 検索パターン(行単位)
+		\retval 合致する行が見つかった時: std::pair<先頭からの行番号, その位置>
+		\retval 見つからなかった時: spn::none*/
+	OPLinePos RegexFindFirst(const std::string& str, const boost::regex& re);
+	//! regexに合致する最後の行
+	OPLinePos RegexFindLast(const std::string& str, const boost::regex& re);
 
 	//! 汎用シングルトン
 	template <typename T>

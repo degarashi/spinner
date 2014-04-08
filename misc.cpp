@@ -1,4 +1,5 @@
 #include "misc.hpp"
+#include <boost/regex.hpp>
 
 namespace spn {
 	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2) {
@@ -64,6 +65,44 @@ namespace spn {
 			ss << std::endl;
 		return ss.str();
 	}
+	namespace {
+		// 行分離用Regex
+		const static boost::regex re_line("^(.+?)(\\n|$)");
+		template <class CB>
+		void RegexFindCallback(const std::string& str, const boost::regex& re, CB cb) {
+			boost::smatch m, m2;
+			int lnum = 0;
+			auto itrB = str.cbegin(),
+				itrE = str.cend();
+			// まず行で分ける
+			while(boost::regex_search(itrB, itrE, m, re_line)) {
+				// ユーザー指定のRegexでチェック
+				if(boost::regex_search(m[1].first, m[1].second, m2, re)) {
+					if(!cb(lnum, m))
+						break;
+				}
+				itrB = m[0].second;
+				++lnum;
+			}
+		}
+	}
+	OPLinePos RegexFindFirst(const std::string& str, const boost::regex& re) {
+		OPLinePos ret;
+		RegexFindCallback(str, re, [&ret](int lnum, const boost::smatch& m)->bool{
+			ret = std::make_pair(lnum, m[0].first);
+			return false;
+		});
+		return ret;
+	}
+	OPLinePos RegexFindLast(const std::string& str, const boost::regex& re) {
+		OPLinePos ret;
+		RegexFindCallback(str, re, [&ret](int lnum, const boost::smatch& m)->bool{
+			ret = std::make_pair(lnum, m[0].first);
+			return true;
+		});
+		return ret;
+	}
+
 	bool IsInTriangle(const Vec3& vtx0, const Vec3& vtx1, const Vec3& vtx2, const Vec3& pos) {
 		Vec3 normal = *NormalFromPoints(vtx0, vtx1, vtx2);
 
