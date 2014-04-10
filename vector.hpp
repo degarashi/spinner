@@ -88,6 +88,9 @@
 				// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
 				template <bool A>
 				float dot(const VecT<DIM,A>& v) const;
+				//! 各要素を足しあわせた合計
+				float sum() const;
+				//! 各要素の算術平均
 				float average() const;
 				template <bool A>
 				float distance(const VecT<DIM,A>& v) const;
@@ -302,8 +305,11 @@
 			template float VT::dot(const VecT<DIM,false>& v) const;
 			template float VT::dot(const VecT<DIM,true>& v) const;
 
+			float VT::sum() const {
+				return _sumup(LOADTHISZ());
+			}
 			float VT::average() const {
-				return _sumup(LOADTHIS()) * spn::Rcp22Bit(DIM);
+				return sum() * spn::Rcp22Bit(DIM);
 			}
 			template <bool A>
 			float VT::distance(const VecT<DIM,A>& v) const {
