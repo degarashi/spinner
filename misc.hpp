@@ -698,7 +698,7 @@ namespace spn {
 			Singleton() {
 				assert(!ms_singleton || !"initializing error - already initialized");
 				intptr_t offset = reinterpret_cast<intptr_t>(reinterpret_cast<T*>(1)) - 
-									reinterpret_cast<intptr_t>(reinterpret_cast<Singleton<T>*>(reinterpret_cast<T*>(1)));
+									reinterpret_cast<intptr_t>(static_cast<Singleton<T>*>(reinterpret_cast<T*>(1)));
 				ms_singleton = reinterpret_cast<T*>(reinterpret_cast<intptr_t>(this) + offset);
 			}
 			virtual ~Singleton() {
