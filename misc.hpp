@@ -89,6 +89,61 @@ namespace spn {
 		}
 		return true;
 	}
+	//! 汎用ツリー構造
+	template <class T>
+	class TreeNode : public T {
+		// 巡回参照を避けるために親ノードはweak_ptrで格納
+		public:
+			using SP = std::shared_ptr<TreeNode<T>>;
+			using WP = std::weak_ptr<TreeNode<T>>;
+		private:
+			SP	_spChild,
+				_spSibling;
+			WP	_wpParent;
+
+		public:
+			using T::T;
+			using T::operator=;
+			TreeNode(const T& t): T(t) {}
+			TreeNode(T&& t): T(std::move(t)) {}
+			TreeNode() = default;
+			TreeNode(const TreeNode&) = default;
+			TreeNode(TreeNode&&) = default;
+
+			void setParent(const SP& s) {
+				_wpParent = s.weak();
+			}
+			void setParent(const WP& w) {
+				_wpParent = w;
+			}
+			SP getParent() const {
+				return SP(_wpParent.lock());
+			}
+			void removeChild() {
+				_spChild = nullptr;
+			}
+			void addChild(const SP& s) {
+				if(_spChild)
+					_spChild.addSibling(s);
+				else
+					_spChild = s;
+			}
+			void addSibling(const SP& s) {
+				if(_spSibling)
+					_spSibling->addSibling(s);
+				else
+					_spSibling = s;
+			}
+			//! 深さ優先で巡回
+			template <class Callback>
+			void iterate(Callback cb) {
+				cb(*this);
+				if(_spChild)
+					_spChild->iterate(cb);
+				if(_spSibling)
+					_spSibling->iterate(cb);
+			}
+	};
 	//! グループ分けされた値を一本のvectorに収める
 	template <class T>
 	class OffsetIndex {
