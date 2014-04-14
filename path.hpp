@@ -6,7 +6,6 @@
 #include "optional.hpp"
 #include "abstbuff.hpp"
 #include "serialization/chars.hpp"
-#define BOOST_PP_VARIADICS 1
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/deque.hpp>
 #include <boost/serialization/base_object.hpp>

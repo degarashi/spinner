@@ -2,7 +2,6 @@
 #include <vector>
 #include <type_traits>
 #include <algorithm>
-#define BOOST_PP_VARIADICS 1
 #include <boost/variant.hpp>
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/version.hpp>

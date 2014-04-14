@@ -37,4 +37,5 @@ elseif(DEFINED NEON_LEVEL)
 		message(STATUS "configured as to using NEON-" ${NEON_LEVEL} " instructions...")
 	endif()
 endif()
+add_definitions(-DBOOST_PP_VARIADICS=1)
 

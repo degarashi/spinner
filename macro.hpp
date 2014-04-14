@@ -1,6 +1,5 @@
 #pragma once
 
-#define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 
 //! 何も展開しない

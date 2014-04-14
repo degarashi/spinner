@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "error.hpp"
 #include "bits.hpp"
-#define BOOST_PP_VARIADICS 1
 #include <boost/serialization/access.hpp>
 #include "serialization/chars.hpp"
 #include "serialization/traits.hpp"

@@ -4,7 +4,6 @@
 #if !BOOST_PP_IS_ITERATING
 	#if !defined(VECTOR_H_) || INCLUDE_VECTOR_LEVEL >= 1
 		#define VECTOR_H_
-		#define BOOST_PP_VARIADICS 1
 		#include <boost/preprocessor.hpp>
 		#include <boost/operators.hpp>
 		#include <cmath>

@@ -3,7 +3,6 @@
 #if !BOOST_PP_IS_ITERATING
 	#if !defined(MATRIX_H_) || INCLUDE_MATRIX_LEVEL >= 1
 		#define MATRIX_H_
-		#define BOOST_PP_VARIADICS 1
 		#include <boost/preprocessor.hpp>
 		#include <cstring>
 		#include <stdexcept>
