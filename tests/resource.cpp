@@ -11,7 +11,7 @@ namespace spn {
 				}
 			};
 			struct MyMgr : ResMgrN<MyClass, MyMgr> {
-				using Hdl = ResMgrN<MyClass, MyMgr>::AnotherLHandle<MyDerived>;
+				using Hdl = ResMgrN<MyClass, MyMgr>::AnotherLHandle<MyDerived, true>;
 				LHdl doit() {
 					auto ldhl = ResMgrN<MyClass, MyMgr>::acquire(MyClass{123,321});
 					return ldhl;

@@ -128,8 +128,21 @@ namespace spn {
 	template <class MGR, class DATA>
 	class WHandleT;
 
+	namespace {
+		namespace tmp {
+			template <class HDL>
+			void ReleaseHB(HDL& hdl, std::integral_constant<bool,true>) {
+				hdl.release();
+			}
+			template <class HDL>
+			void ReleaseHB(HDL& hdl, std::integral_constant<bool,false>) {
+				SHandle sh(hdl);
+				sh.release();
+			}
+		}
+	}
 	//! 強参照スマートハンドル
-	template <class HDL>
+	template <class HDL, bool DIRECT>
 	class HdlLockB {
 		protected:
 			HDL _hdl;
@@ -161,7 +174,7 @@ namespace spn {
 			}
 			void release() {
 				if(_hdl.valid()) {
-					_hdl.release();
+					tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
 					_hdl = HDL();
 				}
 			}
@@ -210,34 +223,35 @@ namespace spn {
 			WHdl weak() const { return _hdl.weak(); }
 			uint32_t count() const { return _hdl.count(); }
 	};
+	namespace tmp {}
 	//! 強参照スマートハンドル
-	template <class HDL>
-	class HdlLock : public HdlLockB<HDL> {
+	template <class HDL, bool DIRECT>
+	class HdlLock : public HdlLockB<HDL,DIRECT> {
 		#define DOWNCONV	typename std::enable_if<std::is_convertible<typename HDL::data_type, DATA>::value>::type
 		#define UPCONV		typename std::enable_if<std::is_convertible<DATA,typename HDL::data_type>::value>::type
 		#define SAMETYPE	typename std::enable_if<!std::is_same<DATA, typename HDL::data_type>::value>::type
-		using base = HdlLockB<HDL>;
+		using base = HdlLockB<HDL, DIRECT>;
 		using data_type = typename HDL::data_type;
 		friend typename HDL::mgr_type;
 		private:
 			//! 参照インクリメント(down convert)
-			template <class DATA, class = DOWNCONV, class = SAMETYPE>
-			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
+			template <class DATA, bool D, class = DOWNCONV, class = SAMETYPE>
+			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>& hl): HdlLock(hl.get()) {}
 			//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
-			template <class DATA, class = DOWNCONV, class = SAMETYPE>
-			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl): base(reinterpret_cast<base&&>(hl)) {}
+			template <class DATA, bool D, class = DOWNCONV, class = SAMETYPE>
+			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>&& hl): base(reinterpret_cast<base&&>(hl)) {}
 		public:
 			using base::base;
 			HdlLock() = default;
 			//! 参照ムーブ(カウント変更なし)
-			template <class DATA, class = UPCONV>
-			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>>&& hl) noexcept {
+			template <class DATA, bool D, class = UPCONV>
+			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>&& hl) noexcept {
 				//WARN: メモリを直接読み込んでしまっている、スマートじゃない実装
 				base::_hdl.swap(*(HDL*)&hl);
 			}
 			//! 参照インクリメント(up convert)
-			template <class DATA, class = UPCONV>
-			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>>& hl): HdlLock(hl.get()) {}
+			template <class DATA, bool D, class = UPCONV>
+			HdlLock(const HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>& hl): HdlLock(hl.get()) {}
 
 			#undef DOWNCONV
 			#undef UPCONV
@@ -250,28 +264,29 @@ namespace spn {
 			const data_type* operator -> () const { return &base::_hdl.cref(); }
 			data_type* operator -> () { return &base::_hdl.ref(); }
 	};
-	template <>
-	class HdlLock<SHandle> : public HdlLockB<SHandle> {
-		using base = HdlLockB<SHandle>;
+	template <bool DIRECT>
+	class HdlLock<SHandle, DIRECT> : public HdlLockB<SHandle, DIRECT> {
+		using base = HdlLockB<SHandle, DIRECT>;
 		public:
 			using base::base;
 			HdlLock() = default;
 			//TODO: コードが冗長過ぎるので要改善
-			template <class T>
-			HdlLock(const HdlLock<T>& hl): base(reinterpret_cast<const base&>(hl)) {}
-			template <class T>
-			HdlLock(HdlLock<T>&& hl): base(reinterpret_cast<base&&>(hl)) {}
-			template <class T>
-			HdlLock& operator = (const HdlLock<T>& t) { base::operator=(reinterpret_cast<const base&>(t)); return *this; }
-			template <class T>
-			HdlLock& operator = (HdlLock<T>&& t) { base::operator=(reinterpret_cast<base&&>(t)); return *this; }
+			template <class T, bool D>
+			HdlLock(const HdlLock<T,D>& hl): base(reinterpret_cast<const base&>(hl)) {}
+			template <class T, bool D>
+			HdlLock(HdlLock<T,D>&& hl): base(reinterpret_cast<base&&>(hl)) {}
+			template <class T, bool D>
+			HdlLock& operator = (const HdlLock<T,D>& t) { base::operator=(reinterpret_cast<const base&>(t)); return *this; }
+			template <class T, bool D>
+			HdlLock& operator = (HdlLock<T,D>&& t) { base::operator=(reinterpret_cast<base&&>(t)); return *this; }
 	};
 
 	//! 強参照ハンドル
 	template <class MGR, class DATA = typename MGR::data_type>
 	class SHandleT : public SHandle {
 		friend MGR;
-		friend class HdlLock<SHandleT>;
+		friend class HdlLock<SHandleT, false>;
+		friend class HdlLock<SHandleT, true>;
 		private:
 			// データ型をダウンコンバートする場合はMGRからしか許可しない
 			template <class DAT,
@@ -367,7 +382,7 @@ namespace spn {
 			//! リソース参照
 			/*!	参照が無効なら例外を投げる
 			*	\return リソースの参照 */
-			HdlLock<SHdl> lock() const { return MGR::_ref().lockLH(*this); }
+			HdlLock<SHdl,true> lock() const { return MGR::_ref().lockLH(*this); }
 			bool isHandleValid() const { return MGR::_ref().isHandleValid(*this); }
 	};
 	//! shared_ptrで言うenable_shared_from_thisの、リソースマネージャ版
@@ -380,8 +395,8 @@ namespace spn {
 				_wh_this = sh.weak();
 			}
 		public:
-			template <class MGR, class DATA>
-			void handleFromThis(HdlLock<SHandleT<MGR,DATA>>& dst) const {
+			template <class MGR, class DATA, bool D>
+			void handleFromThis(HdlLock<SHandleT<MGR,DATA>,D>& dst) const {
 				auto wh = WHandleT<MGR,DATA>::FromWHandle(_wh_this);
 				dst = wh.lock();
 				AssertP(Trap, dst.valid())
@@ -433,7 +448,7 @@ namespace spn {
 	template <class T, class Chk, class Prio>
 	T* HandlerV<T,Chk,Prio>::s_dummy(nullptr);
 
-	using LHandle = HdlLock<SHandle>;
+	using LHandle = HdlLock<SHandle,true>;
 	//! 型を限定しないリソースマネージャ基底
 	#define mgr_base	(::spn::ResMgrBase::_ref())
 	class ResMgrBase {
@@ -510,7 +525,7 @@ namespace spn {
 			using ThisType = ResMgrA<DAT,DERIVED,Allocator>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
-			using LHdl = HdlLock<SHdl>;
+			using LHdl = HdlLock<SHdl,true>;
 		public:
 			class Entry : public boost::serialization::traits<Entry,
 							boost::serialization::object_serializable,
@@ -899,8 +914,8 @@ namespace spn {
 			using AnotherSHandle = SHandleT<ThisType, NDATA>;
 			template <class NDATA>
 			using AnotherWHandle = WHandleT<ThisType, NDATA>;
-			template <class NDATA>
-			using AnotherLHandle = HdlLock<AnotherSHandle<NDATA>>;
+			template <class NDATA, bool DIRECT>
+			using AnotherLHandle = HdlLock<AnotherSHandle<NDATA>, DIRECT>;
 			size_t size() const {
 				return _dataVec.size();
 			}
@@ -919,12 +934,12 @@ namespace spn {
 			static AnotherSHandle<NDATA> Cast(const AnotherSHandle<DATA>& h) {
 				return AnotherSHandle<NDATA>(h); }
 
-			template <class NDATA, template<class> class HL, class DATA>
-			static HL<AnotherSHandle<NDATA>> Cast(HL<AnotherSHandle<DATA>>&& lh) {
-				return HL<AnotherSHandle<NDATA>>(std::move(lh)); }
-			template <class NDATA, template<class> class HL, class DATA>
-			static HL<AnotherSHandle<NDATA>> Cast(const HL<AnotherSHandle<DATA>>& lh) {
-				return HL<AnotherSHandle<NDATA>>(lh); }
+			template <class NDATA, template<class,bool> class HL, class DATA, bool DIRECT>
+			static HL<AnotherSHandle<NDATA>,DIRECT> Cast(HL<AnotherSHandle<DATA>,DIRECT>&& lh) {
+				return HL<AnotherSHandle<NDATA>,DIRECT>(std::move(lh)); }
+			template <class NDATA, template<class,bool> class HL, class DATA, bool DIRECT>
+			static HL<AnotherSHandle<NDATA>,DIRECT> Cast(const HL<AnotherSHandle<DATA>,DIRECT>& lh) {
+				return HL<AnotherSHandle<NDATA>,DIRECT>(lh); }
 	};
 	template <class DAT, class DERIVED, template <class> class Allocator>
 	const std::function<void (typename ResMgrA<DAT,DERIVED,Allocator>::Entry&)> ResMgrA<DAT,DERIVED,Allocator>::cs_defCB = [](Entry&){};
@@ -1047,7 +1062,7 @@ namespace spn {
 			std::pair<LHdl,bool> emplace(KEY2&& key, Args&&... args) {
 				auto fn = std::bind(&base_type::template emplace<Args&&...>, std::ref(*this), RRef(std::forward<Args>(args))...);
 				// 本当は以下の様に書きたいけどgccじゃコンパイルが通らないので・・
- 				// auto fn = [&]() { return base_type::emplace(std::forward<Args>(args)...); };
+				// auto fn = [&]() { return base_type::emplace(std::forward<Args>(args)...); };
 				return _acquire(std::forward<KEY2>(key), fn);
 			}
 
@@ -1081,14 +1096,16 @@ namespace spn {
 	#define DEF_AHANDLE_PROP(mgr, suffix, bsp, sp, alloc) \
 		using H##suffix = spn::SHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
 		using W##suffix = spn::WHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
-		using HL##suffix = spn::HdlLock<H##suffix>;
+		using HL##suffix = spn::HdlLock<H##suffix, true>; \
+		using BOOST_PP_CAT(BOOST_PP_CAT(HL,suffix),F) = spn::HdlLock<H##suffix, false>;
 	#define DEF_AHANDLE(mgr, suffix, bsp, sp) DEF_AHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator)
 	//! 名前付きハンドル
 	/*! \param key	キーの型 */
 	#define DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, alloc, key) \
 		using H##suffix = spn::SHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
 		using W##suffix = spn::WHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
-		using HL##suffix = spn::HdlLock<H##suffix>;
+		using HL##suffix = spn::HdlLock<H##suffix, true>; \
+		using BOOST_PP_CAT(BOOST_PP_CAT(HL,suffix),F) = spn::HdlLock<H##suffix, false>;
 	#define DEF_NHANDLE(mgr ,suffix, bsp, sp) DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator, spn::String<std::string>)
 }
 namespace std {
@@ -1104,9 +1121,9 @@ namespace std {
 			return hash<uint64_t>()(wh.getValue());
 		}
 	};
-	template <class H>
-	struct hash<spn::HdlLock<H>> {
-		size_t operator()(const spn::HdlLock<H>& h) const {
+	template <class H, bool D>
+	struct hash<spn::HdlLock<H,D>> {
+		size_t operator()(const spn::HdlLock<H,D>& h) const {
 			return hash<H>()(h.get());
 		}
 	};
@@ -1121,8 +1138,8 @@ BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::SHandleT, object_serializable)
 BOOST_CLASS_TRACKING_TEMPLATE((class), spn::SHandleT, track_never)
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::WHandleT, object_serializable)
 BOOST_CLASS_TRACKING_TEMPLATE((class), spn::WHandleT, track_never)
-BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::HdlLockB, object_serializable)
-BOOST_CLASS_TRACKING_TEMPLATE((class), spn::HdlLockB, track_never)
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(bool), spn::HdlLockB, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class)(bool), spn::HdlLockB, track_never)
 
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(class), spn::ResWrap, object_serializable)
 BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::ResWrap, track_selectively)
