@@ -67,6 +67,7 @@ namespace spn {
 			void increment();
 			uint32_t count() const;
 			WHandle weak() const;
+			void setNull();
 
 			ResMgrBase* getManager();
 			const ResMgrBase* getManager() const;
@@ -100,6 +101,7 @@ namespace spn {
 			VWord getIndex() const;
 			VWord getMagic() const;
 			VWord getValue() const;
+			void setNull();
 			bool valid() const;
 			void  swap(WHandle& wh) noexcept;
 			explicit operator bool () const;
@@ -175,12 +177,12 @@ namespace spn {
 			void release() {
 				if(_hdl.valid()) {
 					tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
-					_hdl = HDL();
+					_hdl.setNull();
 				}
 			}
 			//! 解放せずにハンドルを無効化する
 			void setNull() {
-				_hdl = HDL();
+				_hdl.setNull();
 			}
 			void reset(HDL hdl) {
 				release();
@@ -294,6 +296,15 @@ namespace spn {
 						class = typename std::enable_if<!std::is_same<DAT, DATA>::value>::type>
 			SHandleT(const SHandleT<MGR,DAT>& sh): SHandle(sh) {}
 			SHandleT(SHandle sh): SHandle(sh) {}
+			void _check() {
+				using mgr_data = DATA;
+				using DownConv = std::is_convertible<DATA, mgr_data>;
+				using UpConv = std::is_convertible<mgr_data, DATA>;
+				// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
+				struct Check {
+					const int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1];
+				};
+			}
 
 		public:
 			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
@@ -302,16 +313,7 @@ namespace spn {
 			using mgr_type = MGR;
 			using data_type = DATA;
 			using SHandle::SHandle;
-			SHandleT() {
-				using mgr_data = DATA;
-				using DownConv = std::is_convertible<DATA, mgr_data>;
-				using UpConv = std::is_convertible<mgr_data, DATA>;
-
-				// static_assertion: DATAからMGR::data_typeは異なっていても良いが、アップコンバートかダウンコンバート出来なければならない
-				struct Check {
-					const int StaticAssertion[(DownConv::value || UpConv::value) ? 0 : -1];
-				};
-			}
+			SHandleT() = default;
 			SHandleT(const SHandleT&) = default;
 			// data_typeが異なっていてもアップコンバート可能ならば暗黙的な変換を許可する
 			template <class DAT,

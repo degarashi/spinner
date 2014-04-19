@@ -16,7 +16,9 @@ namespace spn {
 			_value.at<Value::INDEX>() = idx;
 			_value.at<Value::RESID>() = resID;
 		}
-
+	void SHandle::setNull() {
+		_value = ~0;
+	}
 	SHandle::VWord SHandle::getIndex() const {
 		return _value.at<Value::INDEX>();
 	}
@@ -70,6 +72,9 @@ namespace spn {
 		_value.at<Value::INDEX>() = idx;
 		_value.at<Value::RESID>() = resID;
 		_value.at<Value::MAGIC>() = mag;
+	}
+	void WHandle::setNull() {
+		_value = ~0;
 	}
 	WHandle::VWord WHandle::getIndex() const {
 		return _value.at<Value::INDEX>();
