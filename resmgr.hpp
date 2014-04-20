@@ -158,10 +158,12 @@ namespace spn {
 			using handle_type = HDL;
 			using WHdl = typename HDL::WHdl;
 			HdlLockB() = default;
-			HdlLockB(HdlLockB&& hdl) {
+			template <bool D>
+			HdlLockB(HdlLockB<HDL,D>&& hdl) {
 				swap(hdl);
 			}
-			HdlLockB(const HdlLockB& hdl): _hdl(hdl.get()) {
+			template <bool D>
+			HdlLockB(const HdlLockB<HDL,D>& hdl): _hdl(hdl.get()) {
 				if(_hdl)
 					_hdl.increment();
 			}
@@ -189,16 +191,20 @@ namespace spn {
 				HdlLockB tmp(hdl);
 				swap(tmp);
 			}
-			void swap(HdlLockB& hl) noexcept { _hdl.swap(hl._hdl); }
-			HdlLockB& operator = (const HdlLockB& hl) {
+			template <bool D>
+			void swap(HdlLockB<HDL,D>& hl) noexcept { _hdl.swap(hl._hdl); }
+			template <bool D>
+			HdlLockB& operator = (const HdlLockB<HDL,D>& hl) {
 				reset(hl.get());
 				return *this;
 			}
-			HdlLockB& operator = (HdlLockB&& hl) noexcept {
+			template <bool D>
+			HdlLockB& operator = (HdlLockB<HDL,D>&& hl) noexcept {
 				swap(hl);
 				return *this;
 			}
-			bool operator == (const HdlLockB& hl) const {
+			template <bool D>
+			bool operator == (const HdlLockB<HDL,D>& hl) const {
 				return _hdl == hl.get();
 			}
 			HdlLockB& operator = (HDL hdl) {
