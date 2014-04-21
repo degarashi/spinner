@@ -158,15 +158,15 @@ namespace spn {
 			using handle_type = HDL;
 			using WHdl = typename HDL::WHdl;
 			HdlLockB() = default;
-			template <bool D>
-			HdlLockB(HdlLockB<HDL,D>&& hdl) {
-				swap(hdl);
-			}
-			template <bool D>
-			HdlLockB(const HdlLockB<HDL,D>& hdl): _hdl(hdl.get()) {
+			HdlLockB(HdlLockB&& hdl) { swap(hdl); }
+			HdlLockB(const HdlLockB& hdl): _hdl(hdl.get()) {
 				if(_hdl)
 					_hdl.increment();
 			}
+			template <bool D>
+			HdlLockB(HdlLockB<HDL,D>&& hdl): HdlLockB(reinterpret_cast<HdlLockB&&>(hdl)) {}
+			template <bool D>
+			HdlLockB(const HdlLockB<HDL,D>& hdl): HdlLockB(reinterpret_cast<const HdlLockB&>(hdl)) {}
 			//! 参照インクリメント
 			HdlLockB(HDL hdl): _hdl(hdl) {
 				if(_hdl.valid())
@@ -193,11 +193,16 @@ namespace spn {
 			}
 			template <bool D>
 			void swap(HdlLockB<HDL,D>& hl) noexcept { _hdl.swap(hl._hdl); }
-			template <bool D>
-			HdlLockB& operator = (const HdlLockB<HDL,D>& hl) {
+			HdlLockB& operator = (const HdlLockB& hl) {
 				reset(hl.get());
 				return *this;
 			}
+			HdlLockB& operator = (HdlLockB&& hl) noexcept {
+				swap(hl);
+				return *this;
+			}
+			template <bool D>
+			HdlLockB& operator = (const HdlLockB<HDL,D>& hl) { return operator =(reinterpret_cast<const HdlLockB&>(hl)); }
 			template <bool D>
 			HdlLockB& operator = (HdlLockB<HDL,D>&& hl) noexcept {
 				swap(hl);
@@ -250,6 +255,7 @@ namespace spn {
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>&& hl): base(reinterpret_cast<base&&>(hl)) {}
 		public:
 			using base::base;
+			using base::operator =;
 			HdlLock() = default;
 			//! 参照ムーブ(カウント変更なし)
 			template <class DATA, bool D, class = UPCONV>
@@ -277,6 +283,7 @@ namespace spn {
 		using base = HdlLockB<SHandle, DIRECT>;
 		public:
 			using base::base;
+			using base::operator =;
 			HdlLock() = default;
 			//TODO: コードが冗長過ぎるので要改善
 			template <class T, bool D>
