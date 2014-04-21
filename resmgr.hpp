@@ -149,6 +149,8 @@ namespace spn {
 		protected:
 			HDL _hdl;
 		private:
+			template <class H, bool D>
+			friend class HdlLockB;
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int ver) {
