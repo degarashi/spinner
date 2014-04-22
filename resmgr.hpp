@@ -592,6 +592,15 @@ namespace spn {
 					return *this;
 				}
 				Entry& operator = (const Entry& e) = default;
+				bool operator == (const Entry& e) const {
+					return count == e.count &&
+							accessCount == e.accessCount &&
+							w_magic == e.w_magic &&
+							#ifdef DEBUG
+								magic == e.magic &&
+							#endif
+							data == e.data;
+				}
 
 				operator typename TheType<data_type>::type () { return data; }
 				operator typename TheType<data_type>::ctype () const { return data; }

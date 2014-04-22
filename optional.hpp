@@ -177,6 +177,12 @@ namespace spn {
 			decltype(_buffer.castCT()) operator * () const {
 				return get();
 			}
+			template <class TC>
+			operator TC () const {
+				Assert(Trap, false, "invalid implicit data convertion")
+				throw 0;
+			}
+			template <class = void>
 			operator bool () const {
 				return _bInit;
 			}
@@ -186,6 +192,18 @@ namespace spn {
 			}
 			typename std::add_pointer<decltype(_buffer.castCT())>::type operator -> () const {
 				return &get();
+			}
+			bool operator == (const Optional& t) const {
+				bool b = _bInit;
+				if(b == t._bInit) {
+					if(b)
+						return get() == t.get();
+					return true;
+				}
+				return false;
+			}
+			bool operator != (const Optional& t) const {
+				return !(this->operator == (t));
 			}
 			Optional& operator = (const Optional<T>& t) {
 				_release();
