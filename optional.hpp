@@ -177,11 +177,10 @@ namespace spn {
 			decltype(_buffer.castCT()) operator * () const {
 				return get();
 			}
+			// 暗黙の型変換は不正なので敢えて定義しない
+			// invalid implicit data convertion
 			template <class TC>
-			operator TC () const {
-				Assert(Trap, false, "invalid implicit data convertion")
-				throw 0;
-			}
+			operator TC () const;
 			template <class = void>
 			operator bool () const {
 				return _bInit;
