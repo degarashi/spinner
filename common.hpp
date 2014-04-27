@@ -2,6 +2,7 @@
 #include <tuple>
 #include <type_traits>
 #include <cmath>
+#include <limits>
 
 namespace spn {
 	//! コンパイル時数値計算 & 比較
