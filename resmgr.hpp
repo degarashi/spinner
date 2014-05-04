@@ -528,17 +528,17 @@ namespace spn {
 	//! ResWrap<>を取り除く
 	template <class T>
 	struct DecayWrap {
-		using result = T;
+		using type = T;
 	};
 	template <class T, class K>
 	struct DecayWrap<ResWrap<T,K>> {
-		using result = T;
+		using type = T;
 	};
 	//! 名前なしリソース (anonymous-only)
 	template <class DAT, class DERIVED, template <class> class Allocator=std::allocator>
 	class ResMgrA : public Singleton<DERIVED>, public ResMgrBase {
 		public:
-			using data_type = typename DecayWrap<DAT>::result;
+			using data_type = typename DecayWrap<DAT>::type;
 			using ThisType = ResMgrA<DAT,DERIVED,Allocator>;
 			using SHdl = SHandleT<ThisType>;
 			using WHdl = WHandleT<ThisType>;
@@ -782,7 +782,7 @@ namespace spn {
 					SHdl sh(id, _resID);
 				#endif
 				// EnableFromThisを継承したクラスの場合はここでハンドルをセットする
-				_setFromThis<DAT>(sh, nullptr);
+				_setFromThis<data_type>(sh, nullptr);
 				return LHdl(sh);
 			}
 			//! EnableFromThisを継承しているか
