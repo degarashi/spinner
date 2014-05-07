@@ -787,14 +787,19 @@ namespace spn {
 			}
 			//! EnableFromThisを継承しているか
 			template <class A>
-			using HasEFT = typename std::enable_if<std::is_base_of<EnableFromThis, A>::value>::type;
-			template <class D, class=void, class=HasEFT<D>>
+			using HasEFT = typename std::enable_if<
+								std::is_base_of<
+									EnableFromThis,
+									typename std::decay<A>::type
+								>::value
+							>::type*&;
+			template <class D, HasEFT<D> = Enabler>
 			void _setFromThis(SHdl sh, void*) {
 				sh.ref()._setResourceHandle(sh);
 			}
-			template <class D, class=HasEFT<decltype(*std::declval<D>())>>
+			template <class D, HasEFT<decltype(*std::declval<D>())> = Enabler>
 			void _setFromThis(SHdl sh, void*) {
-				sh.ref()._setResourceHandle(sh);
+				sh.ref()->_setResourceHandle(sh);
 			}
 			template <class D>
 			void _setFromThis(SHdl sh, ...) {}
