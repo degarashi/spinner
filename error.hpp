@@ -46,7 +46,7 @@
 #endif
 
 template <class... Ts>
-std::string ConcatMessage(boost::format& fmt, Ts&&... t) { return fmt.str(); }
+std::string ConcatMessage(boost::format& fmt, Ts&&... /*t*/) { return fmt.str(); }
 template <class T, class... Ts>
 std::string ConcatMessage(boost::format& fmt, T&& t, Ts&&... ts) {
 	fmt % std::forward<T>(t);
@@ -93,7 +93,7 @@ struct AAct_Throw : spn::ArgHolder<Ts...> {
 			std::is_constructible<E2, const std::string&>::value
 			>::type
 		>
-	static void __Throw(const std::string& str, TArg... args) {
+	static void __Throw(const std::string& str, TArg... /*args*/) {
 		throw E(str); }
 
 	// そうでない場合はエラーメッセージをその場で出力し、引数はユーザーが渡したものを指定

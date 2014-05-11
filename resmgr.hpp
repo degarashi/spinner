@@ -38,7 +38,7 @@ namespace spn {
 
 			friend class boost::serialization::access;
 			template <class Archive>
-			void serialize(Archive& ar, const unsigned int ver) {
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
 				ar & _value.value();
 			}
 		public:
@@ -87,7 +87,7 @@ namespace spn {
 
 			friend class boost::serialization::access;
 			template <class Archive>
-			void serialize(Archive& ar, const unsigned int ver) {
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
 				ar & _value.value();
 			}
 		public:
@@ -153,7 +153,7 @@ namespace spn {
 			friend class HdlLockB;
 			friend class boost::serialization::access;
 			template <class Archive>
-			void serialize(Archive& ar, const unsigned int ver) {
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
 				ar & _hdl;
 			}
 		public:
@@ -707,7 +707,7 @@ namespace spn {
 				// シリアライズフラグの解除はマニュアル
 			}
 			template <class Archive>
-			void normal_serialize(Archive& ar, const unsigned int ver) {
+			void normal_serialize(Archive& ar, const unsigned int /*ver*/) {
 				#ifdef DEBUG
 					ar & _sMagicIndex;
 				#endif
@@ -802,7 +802,7 @@ namespace spn {
 				sh.ref()->_setResourceHandle(sh);
 			}
 			template <class D>
-			void _setFromThis(SHdl sh, ...) {}
+			void _setFromThis(SHdl /*sh*/, ...) {}
 		public:
 			const MergeType& asMergeType() const {
 				s_merge._ths = this;
@@ -1048,7 +1048,7 @@ namespace spn {
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			friend boost::serialization::access;
 			template <class Archive>
-			void load(Archive& ar, const unsigned int ver) {
+			void load(Archive& ar, const unsigned int /*ver*/) {
 				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
 				// ポインタの振りなおし
 				for(auto& p : _nameMap) {
@@ -1057,7 +1057,7 @@ namespace spn {
 				}
 			}
 			template <class Archive>
-			void save(Archive& ar, const unsigned int ver) const {
+			void save(Archive& ar, const unsigned int /*ver*/) const {
 				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
 			}
 

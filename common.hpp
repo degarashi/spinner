@@ -77,7 +77,7 @@ namespace spn {
 	//! std::tupleのハッシュを計算
 	struct TupleHash {
 		template <class Tup>
-		static size_t get(size_t value, const Tup& tup, std::integral_constant<int,-1>) { return value; }
+		static size_t get(size_t value, const Tup& /*tup*/, std::integral_constant<int,-1>) { return value; }
 		template <class Tup, int N>
 		static size_t get(size_t value, const Tup& tup, std::integral_constant<int,N>) {
 			const auto& t = std::get<N>(tup);
@@ -99,7 +99,7 @@ namespace spn {
 		return std::fabs(vExcept-val) <= vEps;
 	}
 	template <class T, class... Ts>
-	bool IsNearT(const std::tuple<Ts...>& tup0, const std::tuple<Ts...>& tup1, const T& epsilon, std::integral_constant<int,-1>*) {
+	bool IsNearT(const std::tuple<Ts...>& /*tup0*/, const std::tuple<Ts...>& /*tup1*/, const T& /*epsilon*/, std::integral_constant<int,-1>*) {
 		return true;
 	}
 	//! std::tuple全部の要素に対してIsNearを呼ぶ

@@ -38,7 +38,6 @@ namespace spn {
 
 			auto pc = AVec3::FromPacked(MakeChunk(64,128,192,255));
 			auto pc2 = pc.toPacked();
-			pc2 = pc2;
 
 			noseq_list<float> ls;
 			auto id0 = ls.add(256);

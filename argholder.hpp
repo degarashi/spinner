@@ -29,7 +29,7 @@ namespace spn {
 	template <class... Ts>
 	struct ArgHolder {
 		ArgHolder() = default;
-		ArgHolder(ArgHolder&& a) {}
+		ArgHolder(ArgHolder&& /*a*/) {}
 		template <class CB, class... TsA>
 		auto reverse(CB cb, TsA&&... tsa) -> decltype(cb(std::forward<TsA>(tsa)...)) {
 			return cb(std::forward<TsA>(tsa)...);

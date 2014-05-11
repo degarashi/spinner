@@ -16,7 +16,7 @@
 namespace boost {
 	namespace serialization {
 		template <class Archive>
-		void serialize(Archive& ar, boost::blank& blk, const unsigned int) {
+		void serialize(Archive& /*ar*/, boost::blank& /*blk*/, const unsigned int /*ver*/) {
 			// 何も出力しない
 		}
 	}
@@ -160,7 +160,7 @@ namespace spn {
 		friend class boost::serialization::access;
 		BOOST_SERIALIZATION_SPLIT_MEMBER();
 		template <class Archive>
-		void load(Archive& ar, const unsigned int ver) {
+		void load(Archive& ar, const unsigned int /*ver*/) {
 			AssertP(Trap, !_bRemoving && _remList.empty())
 			bool bIDS;
 			size_t nEnt;
@@ -196,7 +196,7 @@ namespace spn {
 			}
 		}
 		template <class Archive>
-		void save(Archive& ar, const unsigned int ver) const {
+		void save(Archive& ar, const unsigned int /*ver*/) const {
 			AssertP(Trap, !_bRemoving && _remList.empty())
 			size_t nEnt = _array.size();
 			ar & s_bIDS & nEnt & _nFree & _firstFree;

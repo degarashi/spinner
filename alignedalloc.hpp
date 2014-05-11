@@ -47,7 +47,7 @@ namespace spn {
 			~AlignedPool() noexcept {}
 
 			//! メモリを割り当てる
-			pointer allocate(size_type num, typename AlignedPool<T,Align>::const_pointer hint = 0) {
+			pointer allocate(size_type num /*, typename AlignedPool<T,Align>::const_pointer hint = 0*/) {
 				uintptr_t ret = reinterpret_cast<uintptr_t>(std::malloc(TSize * num + Align));
 				uintptr_t ret2 = (ret + Align) & ~Mask;
 				// オフセット記録
@@ -61,7 +61,7 @@ namespace spn {
 			}
 
 			//! メモリを解放する
-			void deallocate(pointer p, size_type num) {
+			void deallocate(pointer p, size_type /*num*/) {
 				auto up = (uintptr_t)p;
 				size_t diff = *reinterpret_cast<OffsetType*>(up-1);
 				up -= diff;

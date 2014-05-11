@@ -42,7 +42,7 @@ namespace spn {
 			static int _ExtGetNum(const std::string& ext);
 			static int _ExtIncNum(std::string& ext, int n=1);
 			template <class CB>
-			void _iterateSegment(const char32_t* c, int len, char32_t sc, CB cb) {
+			void _iterateSegment(const char32_t* c, int /*len*/, char32_t /*sc*/, CB cb) {
 				char32_t tc[128];
 				auto* pTc = tc;
 				while(*c != EOS) {

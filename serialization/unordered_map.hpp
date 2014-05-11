@@ -9,7 +9,7 @@ namespace boost {
 			split_free(ar, um, ver);
 		}
 		template <class Archive, class Key, class T, class Hash, class KeyEqual, class Allocator>
-		void load(Archive& ar, std::unordered_map<Key,T,Hash,KeyEqual,Allocator>& um, const unsigned int ver) {
+		void load(Archive& ar, std::unordered_map<Key,T,Hash,KeyEqual,Allocator>& um, const unsigned int /*ver*/) {
 			um.clear();
 			size_t nEnt;
 			ar & nEnt;
@@ -23,7 +23,7 @@ namespace boost {
 			}
 		}
 		template <class Archive, class Key, class T, class Hash, class KeyEqual, class Allocator>
-		void save(Archive& ar, const std::unordered_map<Key,T,Hash,KeyEqual,Allocator>& um, const unsigned int ver) {
+		void save(Archive& ar, const std::unordered_map<Key,T,Hash,KeyEqual,Allocator>& um, const unsigned int /*ver*/) {
 			size_t nEnt = um.size();
 			ar & nEnt;
 			for(auto& p : um)
