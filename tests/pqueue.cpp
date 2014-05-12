@@ -1,5 +1,6 @@
 #include "test.hpp"
 #include "pqueue.hpp"
+#include "../random.hpp"
 
 namespace spn {
 	namespace test {
@@ -33,7 +34,7 @@ namespace spn {
 			}
 
 			using Data = MoveOnly<MoveOnly<int>>;
-			Random rd;
+			auto rd = mgr_random.get(0);
 			pqueue<Data, std::deque, std::less<Data>, InsertBefore> q;
 			// 並び順のチェック
 			auto fnCheck = [&q]() {
@@ -46,7 +47,7 @@ namespace spn {
 			// ランダムな値を追加
 			auto fnAddrand = [&](int n) {
 				for(int i=0 ; i<n ; i++)
-					q.push(Data(rd.randomIPositive()));
+					q.push(Data(rd.getUniformMin(0)));
 			};
 
 			fnAddrand(512);

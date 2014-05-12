@@ -1,10 +1,11 @@
 #include "test.hpp"
 #include "serialization.hpp"
+#include "../random.hpp"
 
 namespace spn {
 	namespace test {
 		void SerializeTest_noseq() {
-			auto& rd = Random::getInstance();
+			auto rd = mgr_random.get(0);
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
 				buffer.str("");
@@ -15,12 +16,12 @@ namespace spn {
 				std::vector<decltype(base.add(0))> ids;
 				for(int j=0 ; j<NITER ; j++) {
 					// ランダムにデータを追加/削除する
-					if(base.empty() || ((rd.randomI()&0x3) != 0)) {
+					if(base.empty() || ((rd.getUniformRange<int>(0,3)) != 0)) {
 						// 追加
-						ids.push_back(base.add(rd.randomI()));
+						ids.push_back(base.add(rd.getUniform<int>()));
 					} else {
 						// 削除
-						int idx = rd.randomI(0, ids.size()-1);
+						int idx = rd.getUniformRange<int>(0, ids.size()-1);
 						auto itr = ids.begin() + idx;
 						base.rem(*itr);
 						ids.erase(itr);
@@ -34,7 +35,7 @@ namespace spn {
 			}
 		}
 		void SerializeTest_resmgr() {
-			auto& rd = Random::getInstance();
+			auto rd = mgr_random.get(0);
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
 				Optional<TestRM> op;
@@ -42,12 +43,12 @@ namespace spn {
 				std::vector<HLMy> handle;
 				for(int j=0 ; j<NITER ; j++) {
 					// ランダムにデータを追加・削除
-					if(handle.empty() || rd.randomI(0, 1)==0) {
+					if(handle.empty() || rd.getUniformRange<int>(0, 1)==0) {
 						// 追加
-						handle.push_back(op->emplace(rd.randomI(), rd.randomI()));
+						handle.push_back(op->emplace(rd.getUniform<int>(), rd.getUniform<int>()));
 					} else {
 						// 削除
-						int idx = rd.randomI(0, handle.size()-1);
+						int idx = rd.getUniformRange<int>(0, handle.size()-1);
 						handle[idx].release();
 						handle.erase(handle.begin()+idx);
 					}

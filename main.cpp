@@ -6,9 +6,12 @@
 #include "tests/resource.hpp"
 #include "tests/serialization.hpp"
 #include "tests/filetree.hpp"
+#include "random.hpp"
 
 using namespace spn::test;
 int main(int argc, char **argv) {
+	spn::MTRandomMgr rmgr;
+	mgr_random.initEngine(0);
 	MatTest();
 	PoseTest();
 	BitFieldTest();

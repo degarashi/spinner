@@ -9,6 +9,7 @@
 #include "../bits.hpp"
 #include "../noseq.hpp"
 #include "test.hpp"
+#include "../random.hpp"
 
 namespace spn {
 	namespace test {
@@ -66,8 +67,8 @@ namespace spn {
 									<< "mask" << mask << std::endl;
 		}
 		void GapTest() {
-			auto& rd = Random::getInstance();
-			auto gen = std::bind(&Random::randomF, std::ref(rd));
+			auto rd = mgr_random.get(0);
+			auto gen = std::bind(&MTRandom::getUniform<float>, std::ref(rd));
 			using F16 = std::array<float,16>;
 			F16 tmp;
 			std::generate(tmp.begin(), tmp.end(), std::ref(gen));
