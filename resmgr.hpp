@@ -423,6 +423,7 @@ namespace spn {
 	class URI;
 	struct IURIOpener {
 		virtual UP_Adapt openURI(const URI& uri) = 0;
+		virtual ~IURIOpener() {}
 	};
 	using SP_URIOpener = std::shared_ptr<IURIOpener>;
 	template <class T, class Chk, class Prio=uint32_t>

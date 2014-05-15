@@ -55,6 +55,7 @@ namespace spn {
 
 		//! デバッグ用プリント関数
 		virtual void print(std::ostream& os, int indent=0) const = 0;
+		virtual ~IFTFile() {}
 	};
 	//! ファイル1つに相当
 	struct FileInfo : IFTFile {
