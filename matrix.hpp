@@ -72,10 +72,15 @@
 
 				// -------------------- ctor --------------------
 				MatT() = default;
-				BOOST_PP_IF(ALIGN, NOTHING, explicit) MatT(const AMat& m);
+				MatT(const AMat& m);
 				BOOST_PP_IF(ALIGN, explicit, NOTHING) MatT(const UMat& m);
 				MatT& mul_self();
 
+				#if ALIGN==1
+					//! AMat -> Matへ暗黙変換
+					operator UMat& ();
+					operator const UMat& () const;
+				#endif
 				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
 				#define DIAGONAL(z,n,data)		BOOST_PP_REPEAT_##z(DIM_N, DIAGONAL2, n)
 				MatT(float s, _TagDiagonal) {
@@ -367,6 +372,11 @@
 				for(int i=0 ; i<DIM_M ; i++)
 					STORETHIS(i, LOADPSU(m.ma[i]));
 			}
+			#if ALIGN==1
+				//! AMat -> Matへ暗黙変換
+				MT::operator UMat& () { return *reinterpret_cast<UMat*>(this); }
+				MT::operator const UMat& () const { return *reinterpret_cast<const UMat*>(this); }
+			#endif
 			// 行列拡張Get = Mat::getRowE()
 			void MT::identity() {
 				*this = MatT(1.0f, TagDiagonal);
