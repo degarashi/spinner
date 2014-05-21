@@ -30,7 +30,7 @@ namespace spn {
 
 			template <class T, int N>
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,N>) {
-				using T0 = typename base::template At<N>::type;
+				using T0 = typename T::template At<N>::type;
 				return OrHL<T0>() | _IterateHL<T>(std::integral_constant<int,N-1>());
 			}
 			template <class T>
@@ -49,8 +49,7 @@ namespace spn {
 			}
 			template <class T>
 			auto _refresh(const Class* self, std::integral_constant<int,-1>) const -> const decltype(T::value)& {
-				if(_rflag & Get<T>())
-					_rflag &= ~(self->_refresh(ref<T>(self), _GetNull<T>()) | Get<T>());
+				_rflag &= ~(self->_refresh(ref<T>(self), _GetNull<T>()) | Get<T>());
 				return self->_get(_GetNull<T>());
 			}
 
@@ -89,6 +88,12 @@ namespace spn {
 				// 更新チェックなしで参照を返す
 				const auto& ret = self->_get(_GetNull<T>());
 				return const_cast<typename std::decay<decltype(ret)>::type&>(ret);
+			}
+			template <class T>
+			auto refF(const Class* self) -> decltype(ref<T>(self)) {
+				// 更新フラグありで参照を返す
+				setFlag<T>();
+				return ref<T>(self);
 			}
 			//! キャッシュ機能付きの値を変更する際に使用
 			template <class T, class TA>
