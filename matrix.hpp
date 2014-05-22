@@ -72,8 +72,8 @@
 
 				// -------------------- ctor --------------------
 				MatT() = default;
-				BOOST_PP_IF(ALIGN, NOTHING, explicit) MatT(const AMat& m);
-				BOOST_PP_IF(ALIGN, explicit, NOTHING) MatT(const UMat& m);
+				MatT(const AMat& m);
+				MatT(const UMat& m);
 				MatT& mul_self();
 
 				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
