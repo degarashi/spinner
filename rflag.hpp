@@ -4,15 +4,40 @@
 #include <boost/preprocessor.hpp>
 
 namespace spn {
+	template <class... Ts>
+	struct ValueHolder {
+		template <class T2>
+		void ref(T2*) {}
+		template <class T2>
+		void cref(T2*) const {}
+	};
+	template <class T, class... Ts>
+	struct ValueHolder<T, Ts...> : ValueHolder<Ts...> {
+		using base = ValueHolder<Ts...>;
+		using value_type = typename T::value_type;
+		value_type	value;
+
+		value_type& ref(T*) { return value; }
+		const value_type& cref(T*) const { return value; }
+		template <class T2>
+		auto ref(T2* p) -> decltype(base::ref(p)) {
+			return base::ref(p); }
+		template <class T2>
+		auto cref(T2* p) const -> decltype(base::cref(p)) {
+			return base::cref(p); }
+	};
 	//! キャッシュ変数の自動管理クラス
 	template <class Class, class... Ts>
-	class RFlag : public spn::CType<Ts...> {
+	class RFlag : public ValueHolder<Ts...> {
 		public:
 			using FlagValue = uint32_t;
 		private:
-			using base = spn::CType<Ts...>;
-			mutable FlagValue _rflag = All();
+			using base = ValueHolder<Ts...>;
+			using ct_base = spn::CType<Ts...>;
+			template <class T>
+			static T* _GetNull() { return reinterpret_cast<T*>(0); }
 
+			mutable FlagValue _rflag = All();
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
 			template <class T0>
 			static constexpr FlagValue _Add_If(std::integral_constant<bool,false>) { return 0; }
@@ -20,13 +45,13 @@ namespace spn {
 			static constexpr FlagValue _Add_If(std::integral_constant<bool,true>) { return OrLH<T0>(); }
 			template <class T, int N>
 			static constexpr FlagValue _IterateLH(std::integral_constant<int,N>) {
-				using T0 = typename base::template At<N>::type;
+				using T0 = typename ct_base::template At<N>::type;
 				using T0Has = typename T0::template Has<T>;
 				return _Add_If<T0>(T0Has()) |
 						_IterateLH<T>(std::integral_constant<int,N+1>());
 			}
 			template <class T>
-			static constexpr FlagValue _IterateLH(std::integral_constant<int,base::size>) { return 0; }
+			static constexpr FlagValue _IterateLH(std::integral_constant<int,ct_base::size>) { return 0; }
 
 			template <class T, int N>
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,N>) {
@@ -36,27 +61,28 @@ namespace spn {
 			template <class T>
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,-1>) { return 0; }
 
-			template <class T>
-			static T* _GetNull() { return reinterpret_cast<T*>(0); }
-
 			template <class T, int N>
-			auto _refresh(const Class* self, std::integral_constant<int,N>) const -> const decltype(T::value)& {
+			auto _refresh(const Class* self, std::integral_constant<int,N>) const -> decltype(base::cref(_GetNull<T>())) {
+				const base* ptrC = this;
+				base* ptr = const_cast<base*>(ptrC);
 				using TN = typename T::template At<N>::type;
 				// フラグをチェック
 				if(_rflag & Get<TN>())
-					_rflag &= ~(self->_refresh(ref<TN>(self), _GetNull<TN>()) | Get<TN>());
+					_rflag &= ~(self->_refresh(ptr->ref(_GetNull<TN>()), _GetNull<TN>()) | Get<TN>());
 				return _refresh<T>(self, std::integral_constant<int,N-1>());
 			}
 			template <class T>
-			auto _refresh(const Class* self, std::integral_constant<int,-1>) const -> const decltype(T::value)& {
-				_rflag &= ~(self->_refresh(ref<T>(self), _GetNull<T>()) | Get<T>());
-				return self->_get(_GetNull<T>());
+			auto _refresh(const Class* self, std::integral_constant<int,-1>) const -> decltype(base::cref(_GetNull<T>())) {
+				const base* ptrC = this;
+				base* ptr = const_cast<base*>(ptrC);
+				_rflag &= ~(self->_refresh(ptr->ref(_GetNull<T>()), _GetNull<T>()) | Get<T>());
+				return ptrC->cref(_GetNull<T>());
 			}
 
 		public:
 			template <class T>
 			static constexpr FlagValue Get() {
-				return 1 << base::template Find<T>::result;
+				return 1 << ct_base::template Find<T>::result;
 			}
 			static constexpr FlagValue All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
@@ -78,29 +104,27 @@ namespace spn {
 				_rflag |= Get<T>();
 			}
 			template <class T>
-			auto get(const Class* self) const -> decltype(self->_get(_GetNull<T>())) {
+			auto get(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
 				if(!(OrHL<T>() & _rflag))
-					return self->_get(_GetNull<T>());
+					return base::cref(_GetNull<T>());
 				return _refresh<T>(self, std::integral_constant<int,T::size-1>());
 			}
 			template <class T>
-			auto ref(const Class* self) const -> typename std::decay<decltype(self->_get(_GetNull<T>()))>::type& {
+			auto ref() const -> typename std::decay<decltype(base::cref(_GetNull<T>()))>::type& {
 				// 更新チェックなしで参照を返す
-				const auto& ret = self->_get(_GetNull<T>());
+				const auto& ret = base::cref(_GetNull<T>());
 				return const_cast<typename std::decay<decltype(ret)>::type&>(ret);
 			}
 			template <class T>
-			auto refF(const Class* self) -> decltype(ref<T>(self)) {
+			auto refF() -> decltype(ref<T>()) {
 				// 更新フラグありで参照を返す
 				setFlag<T>();
-				return ref<T>(self);
+				return ref<T>();
 			}
 			//! キャッシュ機能付きの値を変更する際に使用
 			template <class T, class TA>
-			void set(Class* self, TA&& t) {
-				// 更新フラグを立てる
-				setFlag<T>();
-				ref<T>(self) = std::forward<TA>(t);
+			void set(TA&& t) {
+				refF<T>() = std::forward<TA>(t);
 			}
 	};
 
@@ -111,8 +135,8 @@ namespace spn {
 		friend class spn::RFlag;
 	#define RFLAG_RVALUE_BASE(name, valueT, ...) \
 		struct name : spn::CType<__VA_ARGS__> { \
-			valueT value; } name##_value; \
-		const valueT& _get(name*) const { return name##_value.value; }
+			using value_type = valueT; \
+			value_type value; };
 	#define RFLAG_RVALUE(name, ...) \
 			RFLAG_RVALUE_BASE(name, __VA_ARGS__) \
 			BOOST_PP_IF( \
