@@ -429,67 +429,69 @@
 			#endif
 			#if DMIN == 2
 				MT MT::Rotation(float ang) {
-					float s = std::sin(ang),
-							c = std::cos(ang);
+					const float S = std::sin(ang),
+								C = std::cos(ang);
 					MatT mt(TagIdentity);
-					mt.ma[0][0] = c;
-					mt.ma[0][1] = -s;
-					mt.ma[1][0] = s;
-					mt.ma[1][1] = c;
+					mt.ma[0][0] = C;
+					mt.ma[0][1] = S;
+					mt.ma[1][0] = -S;
+					mt.ma[1][1] = C;
 					return mt;
 				}
 			#elif DMIN >= 3
 					MT MT::RotationX(float ang) {
-						float C = std::cos(ang),
-							S = std::sin(ang);
-
+						const float C = std::cos(ang),
+									S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], reg_setr_ps(1,0,0,0));
-						STORETHISPS(mt.ma[1], reg_setr_ps(0,C,-S,0));
-						STORETHISPS(mt.ma[2], reg_setr_ps(0,S,C,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(1,	0,	0,	0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(0,	C,	S,	0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(0,	-S,	C,	0));
 						#if DIM_M == 4
 							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
 					MT MT::RotationY(float ang) {
-						float C = std::cos(ang),
-							S = std::sin(ang);
+						const float C = std::cos(ang),
+									S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], reg_setr_ps(C,0,S,0));
-						STORETHISPS(mt.ma[1], reg_setr_ps(0,1,0,0));
-						STORETHISPS(mt.ma[2], reg_setr_ps(-S,0,C,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(C,	0,	-S,	0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(0,	1,	0,	0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(S,	0,	C,	0));
 						#if DIM_M == 4
 							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
 					MT MT::RotationZ(float ang) {
-						float C = std::cos(ang),
-							S = std::sin(ang);
+						const float C = std::cos(ang),
+									S = std::sin(ang);
 						MatT mt;
-						STORETHISPS(mt.ma[0], reg_setr_ps(C,-S,0,0));
-						STORETHISPS(mt.ma[1], reg_setr_ps(S,C,0,0));
-						STORETHISPS(mt.ma[2], reg_setr_ps(0,0,1,0));
+						STORETHISPS(mt.ma[0], reg_setr_ps(C,	S,	0,	0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(-S,	C,	0,	0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(0,	0,	1,	0));
 						#if DIM_M == 4
 							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif
 						return mt;
 					}
 					MT MT::RotationAxis(const UVec3& axis, float ang) {
-						float C = std::cos(ang),
-							S = std::sin(ang),
-							RC = 1-C;
+						const float C = std::cos(ang),
+									S = std::sin(ang),
+									RC = 1-C;
 						MatT mt;
-						STORETHISPS(mt.ma[0], reg_setr_ps(C+Square(axis.x)*RC,
-														axis.x * axis.y * RC + axis.z*S,
-														axis.x * axis.z * RC + axis.y*S, 0));
-						STORETHISPS(mt.ma[1], reg_setr_ps(axis.x * axis.y * RC - axis.z*S,
-														C + Square(axis.y) * RC,
-														 axis.y * axis.z * RC + axis.x*S, 0));
-						STORETHISPS(mt.ma[2], reg_setr_ps(axis.x * axis.z * RC + axis.y*S,
-														axis.y * axis.z * RC + axis.x*S,
-														C + Square(axis.z) * RC, 0));
+						const float M00 = C + Square(axis.x) * RC,
+									M01 = axis.x * axis.y * RC + axis.z*S,
+									M02 = axis.x * axis.z * RC - axis.y*S,
+									M10 = axis.x * axis.y * RC - axis.z*S,
+									M11 = C + Square(axis.y) * RC,
+									M12 = axis.y * axis.z * RC + axis.x*S,
+									M20 = axis.x * axis.z * RC + axis.y*S,
+									M21 = axis.y * axis.z * RC - axis.x*S,
+									M22 = C + Square(axis.z) * RC;
+						STORETHISPS(mt.ma[0], reg_setr_ps(M00, M01, M02, 0));
+						STORETHISPS(mt.ma[1], reg_setr_ps(M10, M11, M12, 0));
+						STORETHISPS(mt.ma[2], reg_setr_ps(M20, M21, M22, 0));
 						#if DIM_M == 4
 							STORETHISPS(mt.ma[3], reg_setr_ps(0,0,0,1));
 						#endif

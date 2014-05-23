@@ -101,7 +101,7 @@
 			float dot(const QuatT& q) const;
 			QuatT operator >> (const QuatT& q) const;
 			QuatT& operator >>= (const QuatT& q);
-			QuatT lerp(const QuatT& q, float t) const;
+			QuatT slerp(const QuatT& q, float t) const;
 
 			VEC3 getXAxis() const;			//!< 回転を行列表現した時のX軸
 			VEC3 getXAxisInv() const;		//!< 正規直行座標に回転を掛けた後のX軸
@@ -222,7 +222,7 @@
 		}
 		void QT::scale(float s) {
 			QuatT q(TagIdentity);
-			q.lerp(*this, s);
+			q.slerp(*this, s);
 			*this = q;
 		}
 		float QT::len_sq() const {
@@ -297,10 +297,13 @@
 		DEF_OPS(*, reg_mul_ps)
 		DEF_OPS(/, _mmDivPs)
 		*/
-		QT QT::lerp(const QuatT& q, float t) const {
-			float theta = std::acos(dot(q));
-			QuatT rq = *this * (std::sin(theta*(1-t)) / std::sin(theta));
-			rq += q * (std::sin(theta * t) / std::sin(theta));
+		QT QT::slerp(const QuatT& q, float t) const {
+			const float theta = std::acos(dot(q)),
+						S = std::sin(theta);
+			if(std::fabs(S) < 1e-6f)
+				return *this;
+			QuatT rq = *this * (std::sin(theta*(1-t)) / S);
+			rq += q * (std::sin(theta * t) / S);
 			return rq;
 		}
 		QT QT::Rotation(const VEC3& axis, float ang) {
@@ -335,7 +338,7 @@
 				}
 				VEC3 axis = from.cross(to);
 				axis.normalize();
-				float ang = acos(d);
+				float ang = std::acos(d);
 				return std::make_tuple(axis, ang, true);
 			}
 		}
@@ -389,12 +392,12 @@
 			return LookAtLH(axis[2]);
 		}
 		QT QT::Rotation(const VEC3& from, const VEC3& to) {
-			VEC3 rAxis = to % from;
+			VEC3 rAxis = from % to;
 			if(rAxis.len_sq() < 1e-4f)
 				return QuatT(0,0,0,1);
 			rAxis.normalize();
 			float d = from.dot(to);
-			d = acos(d);
+			d = std::acos(d);
 			return Rotation(rAxis, d);
 		}
 
@@ -458,13 +461,13 @@
 		}
 
 		#define ELEM00 (1-2*y*y-2*z*z)
-		#define ELEM01 (2*x*y-2*w*z)
-		#define ELEM02 (2*x*z+2*w*y)
-		#define ELEM10 (2*x*y+2*w*z)
+		#define ELEM01 (2*x*y+2*w*z)
+		#define ELEM02 (2*x*z-2*w*y)
+		#define ELEM10 (2*x*y-2*w*z)
 		#define ELEM11 (1-2*x*x-2*z*z)
-		#define ELEM12 (2*y*z-2*w*x)
-		#define ELEM20 (2*x*z-2*w*y)
-		#define ELEM21 (2*y*z+2*w*x)
+		#define ELEM12 (2*y*z+2*w*x)
+		#define ELEM20 (2*x*z+2*w*y)
+		#define ELEM21 (2*y*z-2*w*x)
 		#define ELEM22 (1-2*x*x-2*y*y)
 		MAT33 QT::asMat33() const {
 			MAT33 ret(ELEM00, ELEM01, ELEM02,

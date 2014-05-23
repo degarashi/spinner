@@ -468,7 +468,8 @@
 							m3 = reg_shuffle_ps(r1, r1, _REG_SHUFFLE(0,0,2,1));
 					r0 = reg_mul_ps(m0,m2);
 					r1 = reg_mul_ps(m1,m3);
-					return VT(reg_sub_ps(r0, r1));
+					r0 = reg_sub_ps(r0, r1);
+					return VT(r0);
 				}
 				template VT VT::cross(const VecT<DIM,false>&) const;
 				template VT VT::cross(const VecT<DIM,true>&) const;
@@ -552,7 +553,7 @@
 					return *this;
 				}
 				VT VT::operator * (const QuatT<ALIGNB>& q) const {
-					auto tq = q.conjugation() * QuatT<ALIGNB>(*this,0) * q;
+					auto tq = q * QuatT<ALIGNB>(*this,0) * q.conjugation();
 					return tq.getVector();
 				}
 				VT&& VT::operator * (QuatT<ALIGNB>&& q) const {

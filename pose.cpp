@@ -302,7 +302,7 @@ namespace spn {
 		Pose3D ret;
 		ret._accum = _accum-1;
 		ret._ofs = _ofs.l_intp(p1._ofs, t);
-		ret._rot = _rot.lerp(p1._rot, t);
+		ret._rot = _rot.slerp(p1._rot, t);
 		ret._scale = _scale.l_intp(p1._scale, t);
 		return ret;
 	}
