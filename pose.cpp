@@ -290,13 +290,13 @@ namespace spn {
 		setOfs(v.x, v.y, v.z);
 	}
 	AVec3 Pose3D::getUp() const {
-		return getRot().getYAxisInv();
+		return getRot().getYAxis();
 	}
 	AVec3 Pose3D::getRight() const {
-		return getRot().getXAxisInv();
+		return getRot().getXAxis();
 	}
 	AVec3 Pose3D::getDir() const {
-		return getRot().getZAxisInv();
+		return getRot().getZAxis();
 	}
 	Pose3D Pose3D::lerp(const Pose3D& p1, float t) const {
 		Pose3D ret;
