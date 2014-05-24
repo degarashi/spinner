@@ -109,6 +109,9 @@
 			VEC3 getYAxisInv() const;		//!< 正規直行座標に回転を掛けた後のY軸
 			VEC3 getZAxis() const;			//!< 回転を行列表現した時のZ軸
 			VEC3 getZAxisInv() const;		//!< 正規直行座標に回転を掛けた後のZ軸
+			VEC3 getRight() const;			//!< X軸に回転を適用したベクトル
+			VEC3 getUp() const;				//!< Y軸に回転を適用したベクトル
+			VEC3 getDir() const;			//!< Z軸に回転を適用したベクトル
 
 			float distance(const QuatT& q) const;
 
@@ -498,6 +501,12 @@
 		VEC3 QT::getZAxis() const {
 			return VEC3(ELEM02, ELEM12, ELEM22); }
 		VEC3 QT::getZAxisInv() const {
+			return VEC3(ELEM20, ELEM21, ELEM22); }
+		VEC3 QT::getRight() const {
+			return VEC3(ELEM00, ELEM01, ELEM02); }
+		VEC3 QT::getUp() const {
+			return VEC3(ELEM10, ELEM11, ELEM12); }
+		VEC3 QT::getDir() const {
 			return VEC3(ELEM20, ELEM21, ELEM22); }
 		QT QT::RotationYPR(float yaw, float pitch, float roll) {
 			QuatT q(0,0,0,1);
