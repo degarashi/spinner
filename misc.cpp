@@ -19,11 +19,11 @@ namespace spn {
 					CramerDet(v0, a0) * detInv);
 	}
 	void GramSchmidtOrth(Vec3& v0, Vec3& v1, Vec3& v2) {
-		v0.normalize();
+		Assert(Throw, v0.normalize() >= 1e-6f)
 		v1 -= v0 * v0.dot(v1);
-		v1.normalize();
+		Assert(Throw, v1.normalize() >= 1e-6f)
 		v2 -= v0*v0.dot(v2) + v1*v1.dot(v2);
-		v2.normalize();
+		Assert(Throw, v2.normalize() >= 1e-6f)
 	}
 	AffineParts DecompAffine(const AMat43& m) {
 		AMat33 tm;

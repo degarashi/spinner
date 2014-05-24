@@ -55,7 +55,7 @@
 			static QuatT RotationY(float ang);
 			static QuatT RotationZ(float ang);
 			static QuatT Rotation(const VEC3& axis, float ang);
-			static QuatT LookAtLH(const VEC3& dir);
+			static QuatT LookAt(const VEC3& dir, const VEC3& up);
 			static QuatT Rotation(const VEC3& from, const VEC3& to);
 			static QuatT SetLookAt(AXIS_FLAG targetAxis, AXIS_FLAG baseAxis, const VEC3& baseVec, const VEC3& at, const VEC3& pos);
 
@@ -326,47 +326,44 @@
 		}
 
 		namespace {
-			std::tuple<VEC3,float,bool> GetRotAxis(const VEC3& from, const VEC3& to) {
+			spn::Optional<std::pair<VEC3, float>> GetRotAxis(const VEC3& from, const VEC3& to) {
 				float d = from.dot(to);
 				if(d > 1.0f - 1e-4f)
-					return std::make_tuple(VEC3(0,0,0), 0.0f, false);
+					return spn::none;
 				if(d < -1.0f + 1e-4f) {
 					VEC3 axis(1,0,0);
 					if(std::fabs(axis.dot(from)) > 1.0f-1e-3f)
 						axis = VEC3(0,1,0);
-					return std::make_tuple(axis, PI, true);
+					return std::make_pair(axis, PI);
 				}
 				VEC3 axis = from.cross(to);
 				axis.normalize();
 				float ang = std::acos(d);
-				return std::make_tuple(axis, ang, true);
+				return std::make_pair(axis, ang);
 			}
 		}
-		QT QT::LookAtLH(const VEC3& dir) {
-			VEC3 axis;
-			float ang, upang;
-			auto ret0 = GetRotAxis(VEC3(0,0,1), dir);
-			axis = std::get<0>(ret0);
-			ang = std::get<1>(ret0);
-			if(!std::get<2>(ret0))
-				return QuatT(0,0,0,1);
-			QuatT q1 = QuatT::Rotation(axis, ang);
-			// UP軸を回転軸と合わせる
-			VEC3 rD = VEC3(1,0,0) * q1;
-			VEC3 rD2(rD.x, 0, rD.z);
-			rD2.normalize();
-			auto ret = GetRotAxis(rD, rD2);
-			axis = std::get<0>(ret);
-			upang = std::get<1>(ret);
-			QuatT q0 = QuatT::Rotation(axis, upang);
-			q1 >>= q0;
-			return q1;
+		QT QT::LookAt(const VEC3& dir, const VEC3& up) {
+			VEC3 t_up = up;
+			VEC3 rv = t_up % dir;
+			float len_s = rv.len_sq();
+			if(len_s < 1e-6f) {
+				// 真上か真下を向いている
+				// upベクトルは適当に定める
+				t_up = dir.verticalVector();
+				rv = t_up % dir;
+			} else {
+				rv *= RSqrt(len_s);
+				t_up = dir % rv;
+			}
+			return FromAxis(rv, t_up, dir);
 		}
 		QT QT::SetLookAt(AXIS_FLAG targetAxis, AXIS_FLAG baseAxis, const VEC3& baseVec, const VEC3& at, const VEC3& pos) {
+			// [0] = target
+			// [1] = right
+			// [2] = base
 			int axF[3] = {targetAxis, 0, baseAxis};
-			VEC3 axis[3];
-			uint32_t flag = (1<<targetAxis) | (1<<baseAxis);
-			switch(flag) {
+			// target, base以外の軸を設定
+			switch((1<<targetAxis) | (1<<baseAxis)) {
 				// 110
 				case 0x06:
 					axF[1] = AXIS_X;
@@ -383,13 +380,18 @@
 					Assert(Trap, false, "invalid axis flag")
 			}
 
-			axis[axF[0]] = at - pos;
-			axis[axF[0]].normalize();
-			axis[axF[1]] = baseVec.cross(axis[axF[0]]);
-			axis[axF[1]].normalize();
-			axis[axF[2]] = axis[axF[0]].cross(axis[axF[1]]);
-
-			return LookAtLH(axis[2]);
+			VEC3 axis[3];
+			auto &vTarget = axis[axF[0]],
+				&vOther = axis[axF[1]],
+				&vBase = axis[axF[2]];
+			vTarget = at - pos;
+			if(vTarget.normalize() < 1e-6f)
+				return QT(0,0,0,1);
+			vOther = baseVec.cross(vTarget);
+			if(vOther.normalize() < 1e-6f)
+				return QT(0,0,0,1);
+			vBase = vTarget.cross(vOther);
+			return FromAxis(axis[0], axis[1], axis[2]);
 		}
 		QT QT::Rotation(const VEC3& from, const VEC3& to) {
 			VEC3 rAxis = from % to;

@@ -143,6 +143,8 @@
 					/*! \return x,y,zそれぞれをwで割った値 */
 					Vec3 asVec3Coord() const;
 				#elif DIM==3
+					//! ベクトルに垂直なベクトルを適当に定める
+					VecT verticalVector() const;
 					/*! \return this X v の外積ベクトル */
 					template <bool A>
 					VecT cross(const VecT<DIM,A>& v) const;
@@ -452,6 +454,16 @@
 			#elif DIM==3
 				const VecT<2,ALIGNB>& VT::asVec2() const {
 					return reinterpret_cast<const VecT<2,ALIGNB>&>(*this);
+				}
+				//! ベクトルに垂直なベクトルを適当に定める
+				VT VT::verticalVector() const {
+					VT ret = VT(1,0,0) % *this;
+					float len_s = ret.len_sq();
+					if(len_s < 1e-6f) {
+						ret = VT(0,0,1) % *this;
+						return ret.normalization();
+					}
+					return ret * RSqrt(len_s);
 				}
 				/*! \return this X v の外積ベクトル */
 				template <bool A>
