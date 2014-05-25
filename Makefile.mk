@@ -36,6 +36,14 @@ AndroidArm7Make = $(call CMake_Make,$(BUILD_PATH)_arm7,$(ANDROID_ARM7_FLAG),$(1)
 AndroidArm7Install = $(call Install,$(BUILD_PATH)_arm7)
 AndroidArm7Clean = $(call Clean,$(BUILD_PATH)_arm7)
 
+.PHONY: tags update
+# サブモジュールをアップデートする時に使用
+UpdateRepository = cd $(1) && git fetch origin && git checkout origin/master
+# タグ情報を更新
+tags:
+	@cscope -b -f ./.git/cscope.out
+	@ctags -R -f ./.git/tags .
+
 linux-d:
 	$(call LinuxMake,Debug)
 linux:
