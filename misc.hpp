@@ -177,6 +177,9 @@ namespace spn {
 			int getNGroup() const { return _offset.size()-1; }
 			int getGroupSize(int n) const { return _offset[n+1]-_offset[n]; }
 			const Array& getArray() const { return _value; }
+			const Offset& getOffset() const { return _offset; }
+			Array& refArray() { return _value; }
+			Offset& refOffset() { return _offset; }
 			//! 特定のグループ範囲を取り出す
 			Pair getGroup(int n) const {
 				const int *pBegin = _value.data() + _offset[n],

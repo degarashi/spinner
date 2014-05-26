@@ -122,5 +122,14 @@ namespace spn {
 	bool IsOutstanding(const T& val) {
 		auto valA = std::fabs(val);
 		return valA==std::numeric_limits<float>::infinity() || IsNaN(valA); }
+
+	//! std::tupleの要素ごとの距離(IsNear)比較
+	template <class T, int NPow>
+	struct TupleNear {
+		template <class P>
+		bool operator()(const P& t0, const P& t1) const {
+			return IsNear(t0, t1, spn::ConstantPow10<T,NPow>());
+		}
+	};
 }
 
