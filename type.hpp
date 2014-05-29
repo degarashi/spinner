@@ -131,69 +131,89 @@ namespace spn {
 	};
 
 	template <class... TS>
-	struct CType {
-		template <int N>
-		struct At {
-			static_assert(N<sizeof...(TS),"At: out of index");
-			using type = typename TypeAt<N,TS...>::type;
-		};
-		template <bool flag, int N, class DEFAULT>
-		struct __At {
-			using type = DEFAULT;
-		};
-		template <int N, class DEFAULT>
-		struct __At<true,N,DEFAULT> {
-			using type = typename At<N>::type;
-		};
-		template <int N, class DEFAULT=void>
-		struct _At {
-			using type = typename __At<TValue<N,sizeof...(TS)>::lesser, N,DEFAULT>::type;
-		};
-		template <class... TS2>
-		using ConcatAfter = CType<TS..., TS2...>;
-		template <class... TS2>
-		using ConcatBefore = CType<TS2..., TS...>;
+	class CType {
+		private:
+			template <class T>
+			struct _Find {
+				enum { result= TypeFind<T,0,TS...>::result };
+			};
 
-		template <class T>
-		struct _Find {
-			enum { result= TypeFind<T,0,TS...>::result };
-		};
-		template <class T>
-		struct Find : _Find<T> {
-			static_assert(_Find<T>::result>=0, "Find: not found");
-		};
-		template <class T>
-		struct Has : std::integral_constant<bool, _Find<T>::result>=0> {};
-		using AsTuple = std::tuple<TS...>;
-		template <class Dummy=void>
-		struct Another {
-			using result = CType<decltype(TS()())...>;
-		};
-		constexpr static int size = sizeof...(TS),
-							sum = TypeSum<TS...>::result,
-							maxsize = TMax<sizeof(TS)...>::result;
-		// タイプリストの位置に対する比較
-		template <class T0, class T1>
-		using Less = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::lesser>;
-		template <class T0, class T1>
-		using Greater = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::greater>;
-		template <class T0, class T1>
-		using Equal = std::is_same<T0,T1>;
-		template <class T0, class T1>
-		using LessEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::less_eq>;
-		template <class T0, class T1>
-		using GreatEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::great_eq>;
+		public:
+			//! インデックス指定で型を取り出す
+			template <int N>
+			struct At {
+				static_assert(N<sizeof...(TS),"At: out of index");
+				using type = typename TypeAt<N,TS...>::type;
+			};
+			//! 末尾に型を追加
+			template <class... TS2>
+			using Append = CType<TS..., TS2...>;
+			//! 先頭に型を追加
+			template <class... TS2>
+			using Prepend = CType<TS2..., TS...>;
+			//! 型のインデックス検索
+			template <class T>
+			struct Find : _Find<T> {
+				static_assert(_Find<T>::result>=0, "Find: not found");
+			};
+			//! 型を持っていればintegral_constant<bool,true>
+			template <class T>
+			struct Has : std::integral_constant<bool, _Find<T>::result>=0> {};
+			//! std::tupleに変換
+			using AsTuple = std::tuple<TS...>;
+			//! 要素のそれぞれについてoperator()をした結果の型リストを生成
+			template <class Dummy=void>
+			struct Another {
+				using result = CType<decltype(TS()())...>;
+			};
 
-		// 型がimcompleteなケースを考えてテンプレートクラスとしてある
-		template <class Dummy=void>
-		struct Size {
-			constexpr static int maxbit = MaxBit<TS...>::result; };
-		template <int N, template <class> class Getter=GetSize_Normal>
-		struct SumN {
-			static_assert(N<=sizeof...(TS),"Sum: out of index");
-			constexpr static int result = _SumN<N, Getter, TS...>::result; };
-		template <class T, template <class> class Getter=GetSize_Normal>
-		struct SumT {
-			constexpr static int result = _SumT<T, Getter, TS...>::result; };
+			constexpr static int size = sizeof...(TS),					//!< 型リストの要素数
+								sum = TypeSum<TS...>::result,			//!< 要素のサイズ合計
+								maxsize = TMax<sizeof(TS)...>::result;	//!< 要素の最大サイズ
+			//! タイプリストの位置に対する比較(LessThan)
+			template <class T0, class T1>
+			using Less = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::lesser>;
+			//! タイプリストの位置に対する比較(GreaterThan)
+			template <class T0, class T1>
+			using Greater = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::greater>;
+			//! タイプリストの位置に対する比較(Equal)
+			template <class T0, class T1>
+			using Equal = std::is_same<T0,T1>;
+			//! タイプリストの位置に対する比較(LessThan or Equal)
+			template <class T0, class T1>
+			using LessEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::less_eq>;
+			//! タイプリストの位置に対する比較(GreaterThan or Equal)
+			template <class T0, class T1>
+			using GreatEq = std::integral_constant<bool, TValue<Find<T0>::result, Find<T1>::result>::great_eq>;
+
+			// 型がimcompleteなケースを考えてテンプレートクラスとしてある
+			//! ビットフィールド用: 必要なビット数を計算
+			//! 各タイプの::offset, ::lengthフィールドを使って計算
+			template <class Dummy=void>
+			struct Size {
+				constexpr static int maxbit = MaxBit<TS...>::result; };
+			//! インデックス指定による先頭からのサイズ累計
+			template <int N, template <class> class Getter=GetSize_Normal>
+			struct SumN {
+				static_assert(N<=sizeof...(TS),"Sum: out of index");
+				constexpr static int result = _SumN<N, Getter, TS...>::result; };
+			//! タイプ指定による先頭からのサイズ累計
+			template <class T, template <class> class Getter=GetSize_Normal>
+			struct SumT {
+				constexpr static int result = _SumT<T, Getter, TS...>::result; };
+
+		private:
+			template <bool flag, int N, class DEFAULT>
+			struct __At {
+				using type = DEFAULT;
+			};
+			template <int N, class DEFAULT>
+			struct __At<true,N,DEFAULT> {
+				using type = typename At<N>::type;
+			};
+			template <int N, class DEFAULT=void>
+			struct _At {
+				using type = typename __At<TValue<N,sizeof...(TS)>::lesser, N,DEFAULT>::type;
+			};
 	};
 }

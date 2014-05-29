@@ -94,8 +94,8 @@ namespace spn {
 	/*! \param[in] val value to check
 		\param[in] vExcept target value
 		\param[in] vEps value threshold */
-	template <class T, typename std::enable_if<std::is_arithmetic<T>::value>::type*& = Enabler>
-	bool IsNear(const T& val, const T& vExcept, T vEps = std::numeric_limits<T>::epsilon()) {
+	template <class T, class T2, typename std::enable_if<std::is_arithmetic<T>::value>::type*& = Enabler>
+	bool IsNear(const T& val, const T& vExcept, T2 vEps = std::numeric_limits<T>::epsilon()) {
 		return std::fabs(vExcept-val) <= vEps;
 	}
 	template <class T, class... Ts>
