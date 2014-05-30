@@ -90,25 +90,28 @@ namespace spn {
 		return true;
 	}
 	//! 汎用ツリー構造
-	template <class T>
-	class TreeNode : public T {
+	template <class I, class T>
+	class TreeNode : public I, public std::enable_shared_from_this<T> {
 		// 巡回参照を避けるために親ノードはweak_ptrで格納
 		public:
-			using SP = std::shared_ptr<TreeNode<T>>;
-			using WP = std::weak_ptr<TreeNode<T>>;
+			using this_t = TreeNode<I,T>;
+			using pointer = this_t*;
+			using SP = std::shared_ptr<this_t>;
+			using WP = std::weak_ptr<this_t>;
 		private:
 			SP	_spChild,
 				_spSibling;
 			WP	_wpParent;
+			static void _PrintIndent(std::ostream& os, int n) {
+				while(--n >= 0)
+					os << '\t';
+			}
 
 		public:
-			using T::T;
-			using T::operator=;
-			TreeNode(const T& t): T(t) {}
-			TreeNode(T&& t): T(std::move(t)) {}
+			using I::operator =;
 			TreeNode() = default;
-			TreeNode(const TreeNode&) = default;
-			TreeNode(TreeNode&&) = default;
+			TreeNode(const I& v): I(v) {}
+			TreeNode(I&& v): I(std::move(v)) {}
 
 			void setParent(const SP& s) {
 				_wpParent = s.weak();
@@ -119,12 +122,35 @@ namespace spn {
 			SP getParent() const {
 				return SP(_wpParent.lock());
 			}
-			void removeChild() {
-				_spChild = nullptr;
+			const SP& getChild() const {
+				return _spChild;
+			}
+			const SP& getSibling() const {
+				return _spSibling;
+			}
+			void removeChild(pointer target) {
+				if(pointer pC = _spChild.get()) {
+					if(pC == target) {
+						_spChild->setParent(WP());
+						_spChild = _spChild.getSibling();
+					} else
+						_spChild->removeSibling(nullptr, target);
+				}
+			}
+			void removeSibling(pointer prev, pointer target) {
+				if(target == this) {
+					if(prev)
+						prev->_spSibling = target;
+					else {
+						if(auto spP = getParent())
+							spP->_spChild = _spSibling;
+					}
+				} else if(_spSibling)
+					_spSibling->removeSibling(this, target);
 			}
 			void addChild(const SP& s) {
 				if(_spChild)
-					_spChild.addSibling(s);
+					_spChild->addSibling(s);
 				else
 					_spChild = s;
 			}
@@ -134,16 +160,35 @@ namespace spn {
 				else
 					_spSibling = s;
 			}
+			void removeLink() {
+				removeChild();
+				if(auto spP = getParent())
+					spP->removeChild(this);
+			}
 			//! 深さ優先で巡回
 			template <class Callback>
-			void iterate(Callback cb) {
-				cb(*this);
+			void iterateDepthFirst(Callback&& cb, int depth=0) {
+				cb(*this, depth);
 				if(_spChild)
-					_spChild->iterate(cb);
+					_spChild->iterateDepthFirst(cb, depth+1);
 				if(_spSibling)
-					_spSibling->iterate(cb);
+					_spSibling->iterateDepthFirst(cb, depth);
+			}
+			//! 主にデバッグ用
+			void print(std::ostream& os, int indent) const {
+				_PrintIndent(os, indent);
+				I::print(os);
 			}
 	};
+	template <class I, class T>
+	inline std::ostream& operator << (std::ostream& os, const TreeNode<I,T>& t) {
+		auto& self = const_cast<TreeNode<I,T>&>(t);
+		self.iterateDepthFirst([&os](auto& s, int indent){
+			s.print(os, indent);
+			os << std::endl;
+		});
+		return os;
+	}
 	//! グループ分けされた値を一本のvectorに収める
 	template <class T>
 	class OffsetIndex {
