@@ -1,5 +1,8 @@
 #include "misc.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-register"
 #include <boost/regex.hpp>
+#pragma GCC diagnostic pop
 
 namespace spn {
 	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2) {

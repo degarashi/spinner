@@ -6,7 +6,10 @@
 #else
 	#error "unknown OS"
 #endif
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-register"
 #include <boost/regex.hpp>
+#pragma GCC diagnostic pop
 
 namespace spn {
 	//! ディレクトリ管理

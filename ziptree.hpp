@@ -2,7 +2,10 @@
 #include "zip.hpp"
 #include "misc.hpp"
 #include "path.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-register"
 #include <boost/regex.hpp>
+#pragma GCC diagnostic pop
 
 namespace spn {
 	namespace zip {

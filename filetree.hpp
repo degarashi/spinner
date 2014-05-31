@@ -1,7 +1,10 @@
 //! ファイルツリー構造を保持するクラス。とりあえずWindows専用
 #pragma once
 #include "misc.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-register"
 #include <boost/regex.hpp>
+#pragma GCC diagnostic pop
 #include <unordered_map>
 #include "dir.hpp"
 
