@@ -95,9 +95,10 @@ namespace spn {
 		// 巡回参照を避けるために親ノードはweak_ptrで格納
 		public:
 			using this_t = TreeNode<I,T>;
+			using this_tc = const this_t;
 			using pointer = this_t*;
-			using SP = std::shared_ptr<this_t>;
-			using WP = std::weak_ptr<this_t>;
+			using SP = std::shared_ptr<T>;
+			using WP = std::weak_ptr<T>;
 		private:
 			SP	_spChild,
 				_spSibling;
@@ -114,7 +115,7 @@ namespace spn {
 			TreeNode(I&& v): I(std::move(v)) {}
 
 			void setParent(const SP& s) {
-				_wpParent = s.weak();
+				_wpParent = WP(s);
 			}
 			void setParent(const WP& w) {
 				_wpParent = w;
@@ -153,12 +154,16 @@ namespace spn {
 					_spChild->addSibling(s);
 				else
 					_spChild = s;
+				if(s)
+					s->setParent(this->shared_from_this());
 			}
 			void addSibling(const SP& s) {
 				if(_spSibling)
 					_spSibling->addSibling(s);
 				else
 					_spSibling = s;
+				if(s)
+					s->setParent(this->shared_from_this());
 			}
 			void removeLink() {
 				removeChild();
@@ -166,13 +171,27 @@ namespace spn {
 					spP->removeChild(this);
 			}
 			//! 深さ優先で巡回
-			template <class Callback>
+			template <class Callback, bool BConst=false>
 			void iterateDepthFirst(Callback&& cb, int depth=0) {
-				cb(*this, depth);
+				using thistc = std::conditional_t<BConst, this_tc, this_t>;
+				cb(static_cast<thistc&>(*this), depth);
 				if(_spChild)
 					_spChild->iterateDepthFirst(cb, depth+1);
 				if(_spSibling)
 					_spSibling->iterateDepthFirst(cb, depth);
+			}
+			template <class Callback>
+			void iterateDepthFirst(Callback&& cb, int depth=0) const {
+				iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
+			}
+			SP clone(const WP& parent=WP()) const {
+				SP sp = std::make_shared<T>(*this->shared_from_this());
+				if(_spChild)
+					sp->_spChild = _spChild->clone(sp);
+				if(_spSibling)
+					sp->_spSibling = _spSibling->clone(sp);
+				sp->_wpParent = parent;
+				return std::move(sp);
 			}
 			//! 主にデバッグ用
 			void print(std::ostream& os, int indent) const {
@@ -840,7 +859,7 @@ namespace spn {
 		public:
 			Singleton() {
 				assert(!ms_singleton || !"initializing error - already initialized");
-				intptr_t offset = reinterpret_cast<intptr_t>(reinterpret_cast<T*>(1)) - 
+				intptr_t offset = reinterpret_cast<intptr_t>(reinterpret_cast<T*>(1)) -
 									reinterpret_cast<intptr_t>(static_cast<Singleton<T>*>(reinterpret_cast<T*>(1)));
 				ms_singleton = reinterpret_cast<T*>(reinterpret_cast<intptr_t>(this) + offset);
 			}
