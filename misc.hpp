@@ -111,6 +111,14 @@ namespace spn {
 		public:
 			using I::operator =;
 			TreeNode() = default;
+			TreeNode(TreeNode&& t) = default;
+			//! copy-ctorに置いてはリンク情報をコピーしない
+			TreeNode(const TreeNode& t): I(t) {}
+			// コピー禁止
+			TreeNode& operator = (const TreeNode&) = delete;
+			// ムーブは可
+			TreeNode& operator = (TreeNode&& t) = default;
+
 			TreeNode(const I& v): I(v) {}
 			TreeNode(I&& v): I(std::move(v)) {}
 
@@ -118,6 +126,7 @@ namespace spn {
 				_wpParent = WP(s);
 			}
 			void setParent(const WP& w) {
+				AssertP(Trap, w.lock.get() != this, "self-reference detected")
 				_wpParent = w;
 			}
 			SP getParent() const {
@@ -150,6 +159,7 @@ namespace spn {
 					_spSibling->removeSibling(this, target);
 			}
 			void addChild(const SP& s) {
+				AssertP(Trap, s.get() != this, "self-reference detected")
 				if(_spChild)
 					_spChild->addSibling(s);
 				else
@@ -158,6 +168,7 @@ namespace spn {
 					s->setParent(this->shared_from_this());
 			}
 			void addSibling(const SP& s) {
+				AssertP(Trap, s.get() != this, "self-reference detected")
 				if(_spSibling)
 					_spSibling->addSibling(s);
 				else
