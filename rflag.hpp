@@ -79,13 +79,31 @@ namespace spn {
 				return ptrC->cref(_GetNull<T>());
 			}
 
+			template <class TA>
+			static constexpr FlagValue _GetSingle() {
+				return 1 << ct_base::template Find<TA>::result;
+			}
+			template <class... TsA>
+			static constexpr FlagValue _Sum(std::integral_constant<int,0>) { return 0; }
+			template <class TA, class... TsA, int N>
+			static constexpr FlagValue _Sum(std::integral_constant<int,N>) {
+				return _GetSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
+			}
+
 		public:
-			template <class T>
+			template <class... TsA>
 			static constexpr FlagValue Get() {
-				return 1 << ct_base::template Find<T>::result;
+				return _Sum<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
 			}
 			static constexpr FlagValue All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
+			}
+			FlagValue GetFlag() const {
+				return _rflag;
+			}
+			template <class... TsA>
+			FlagValue Test() const {
+				return GetFlag() & Get<TsA...>();
 			}
 
 			template <class T>
@@ -99,10 +117,11 @@ namespace spn {
 			}
 
 			//! 更新フラグだけを立てる
-			template <class T>
+			template <class... TsA>
 			void setFlag() {
-				_rflag |= Get<T>();
+				_rflag |= Get<TsA...>();
 			}
+
 			template <class T>
 			auto get(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
 				if(!(OrHL<T>() & _rflag))
