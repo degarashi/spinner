@@ -1,5 +1,6 @@
 #pragma once
 #include "type.hpp"
+#include "error.hpp"
 #define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 
@@ -61,24 +62,15 @@ namespace spn {
 			template <class T>
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,-1>) { return 0; }
 
-			template <class T, int N>
-			auto _refresh(const Class* self, std::integral_constant<int,N>) const -> decltype(base::cref(_GetNull<T>())) {
-				const base* ptrC = this;
-				base* ptr = const_cast<base*>(ptrC);
-				using TN = typename T::template At<N>::type;
-				// フラグをチェック
-				if(_rflag & Get<TN>())
-					_rflag &= ~(self->_refresh(ptr->ref(_GetNull<TN>()), _GetNull<TN>()) | Get<TN>());
-				return _refresh<T>(self, std::integral_constant<int,N-1>());
-			}
 			template <class T>
-			auto _refresh(const Class* self, std::integral_constant<int,-1>) const -> decltype(base::cref(_GetNull<T>())) {
+			auto _refresh(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
-				_rflag &= ~(self->_refresh(ptr->ref(_GetNull<T>()), _GetNull<T>()) | Get<T>());
+				_rflag &= ~(self->_refresh(ptr->ref(_GetNull<T>()), _GetNull<T>()));
+				_rflag &= ~Get<T>();
+				AssertP(Trap, !(_rflag & OrHL<T>()), "refresh flag was not cleared correctly")
 				return ptrC->cref(_GetNull<T>());
 			}
-
 			template <class TA>
 			static constexpr FlagValue _GetSingle() {
 				return 1 << ct_base::template Find<TA>::result;
@@ -88,6 +80,14 @@ namespace spn {
 			template <class TA, class... TsA, int N>
 			static constexpr FlagValue _Sum(std::integral_constant<int,N>) {
 				return _GetSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
+			}
+
+			template <class... TsA>
+			void _setFlag(std::integral_constant<int,0>) {}
+			template <class T, class... TsA, int N>
+			void _setFlag(std::integral_constant<int,N>) {
+				_rflag |= OrLH<T>();
+				_setFlag<TsA...>(std::integral_constant<int,N-1>());
 			}
 
 		public:
@@ -119,14 +119,14 @@ namespace spn {
 			//! 更新フラグだけを立てる
 			template <class... TsA>
 			void setFlag() {
-				_rflag |= Get<TsA...>();
+				_setFlag<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
 			}
 
 			template <class T>
 			auto get(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
-				if(!(OrHL<T>() & _rflag))
+				if(!(_rflag & Get<T>()))
 					return base::cref(_GetNull<T>());
-				return _refresh<T>(self, std::integral_constant<int,T::size-1>());
+				return _refresh<T>(self);
 			}
 			template <class T>
 			auto ref() const -> typename std::decay<decltype(base::cref(_GetNull<T>()))>::type& {
