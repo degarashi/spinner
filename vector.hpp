@@ -54,6 +54,7 @@
 				explicit VecT(reg128 r);
 				explicit VecT(float a);
 				explicit VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
+				VecT(std::initializer_list<float> il);
 				reg128 loadPS() const;
 				reg128 loadPSZ() const;
 
@@ -64,6 +65,7 @@
 				VecT& operator = (const AVec& v);
 				VecT& operator = (const UVec& v);
 				VecT& operator = (reg128 r);
+				VecT& operator = (std::initializer_list<float> il);
 				// -------------------- operators --------------------
 				// ベクトルとの積算や除算は同じ要素同士の演算とする
 				#define DEF_PRE(op, func)	VecT& operator BOOST_PP_CAT(op,=) (float s); \
@@ -204,7 +206,19 @@
 				STORETHIS(reg_load1_ps(&a));
 			}
 			VT::VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))) {
-				BOOST_PP_SEQ_FOR_EACH(DEF_ARGSET, NOTHING, BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM))
+				BOOST_PP_SEQ_FOR_EACH(
+					DEF_ARGSET,
+					NOTHING,
+					BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)
+				)
+			}
+			VT::VecT(std::initializer_list<float> il) {
+				// 要素数が満たなかったら残りは0にする
+				alignas(16) float tmp[4] = {};
+				auto* pTmp = tmp;
+				for(auto itr=il.begin() ; itr!=il.end() ; ++itr)
+					*pTmp++ = *itr;
+				STORETHIS(reg_load_ps(tmp));
 			}
 			reg128 VT::loadPS() const {
 				return LOADTHIS();
@@ -215,6 +229,9 @@
 			VT& VT::operator = (reg128 r) {
 				STORETHIS(r);
 				return *this;
+			}
+			VT& VT::operator = (std::initializer_list<float> il) {
+				return *this = VecT(il);
 			}
 			float VT::_sumup(reg128 xm) {
 				SUMVEC(xm)

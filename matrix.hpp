@@ -74,6 +74,7 @@
 				MatT() = default;
 				MatT(const AMat& m);
 				MatT(const UMat& m);
+				MatT(std::initializer_list<float> il);
 				MatT& mul_self();
 
 				#define DIAGONAL2(z,n1,n0)		ma[n0][n1] = BOOST_PP_IF(BOOST_PP_EQUAL(n0,n1), s, 0);
@@ -159,11 +160,13 @@
 						return Column(xmm_matI[n]);
 					return Column(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DIM_M, SET_COLUMN, n)));
 				}
+				#undef SET_COLUMN
 
 				#define DEF_GETROW(z,n,data)	BOOST_PP_CAT(const Row& getRow, n)() const { return *reinterpret_cast<const Row*>(ma[n]); }
 				//! マクロからのアクセス用: 行毎に個別のメンバ関数を用意
 				/*! マクロのColumn取得は多分、不要 */
 				BOOST_PP_REPEAT(DIM_M, DEF_GETROW, NOTHING)
+				#undef DEF_GETROW
 
 				// -------------------- operators --------------------
 				#define FUNC(z,n,func)		STORETHIS(n, func(LOADTHIS(n), r0));
@@ -184,6 +187,8 @@
 				DEF_OP(*, reg_mul_ps)
 				DEF_OP(/, _mmDivPs)
 				#undef DEF_OP
+				#undef FUNC
+				#undef FUNC2
 
 				#define FUNC3(z,n,func)		STORETHIS(n, func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
 				#define FUNC4(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
@@ -197,6 +202,8 @@
 
 				DEF_OPM(+, reg_add_ps)
 				DEF_OPM(-, reg_sub_ps)
+				#undef FUNC3
+				#undef FUNC4
 
 				// -------------------- others --------------------
 				// 行列拡張Get = Mat::getRowE()
@@ -314,6 +321,7 @@
 				#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const;
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
 				#undef DEF_MUL
+				#undef DEF_MUL0
 				//! 行列との積算 (2 operands)
 				#define DEF_MULE0(n0,n1,align) \
 					BOOST_PP_IF( \
@@ -327,8 +335,10 @@
 				#define DEF_MULE(n0,n1,align)	MatT& operator *= (const MatT<n0,n1,BOOLNIZE(align)>& m);
 				BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE0)
 				#undef DEF_MULE
+				#undef DEF_MULE0
 				//! 行列の代入
 				MT& operator = (const MT& m);
+				MT& operator = (std::initializer_list<float> il);
 
 				//! 行列との積算 (右から掛ける)
 				/*! 列ベクトルとして扱う = ベクトルを転置して左から行ベクトルを掛ける */
@@ -358,6 +368,8 @@
 			DEF_OPERATOR_FUNC(-, reg_sub_ps)
 			DEF_OPERATOR_FUNC(*, reg_mul_ps)
 			DEF_OPERATOR_FUNC(/, _mmDivPs)
+			#undef FUNC_OP
+			#undef DEF_OPERATOR_FUNC
 
 			MT::MatT(const AMat& m) {
 				for(int i=0 ; i<DIM_M ; i++)
@@ -366,6 +378,15 @@
 			MT::MatT(const UMat& m) {
 				for(int i=0 ; i<DIM_M ; i++)
 					STORETHIS(i, LOADPSU(m.ma[i]));
+			}
+			MT::MatT(std::initializer_list<float> il) {
+				// 足りない要素分はすべてゼロにする
+				alignas(16) float tmp[DIM_M*DIM_N] = {};
+				auto* pTmp = tmp;
+				for(auto itr=il.begin() ; itr!=il.end() ; ++itr)
+					*pTmp++ = *itr;
+				for(int i=0 ; i<DIM_M ; i++)
+					STORETHIS(i, LOADPSU(tmp+i*DIM_N));
 			}
 			// 行列拡張Get = Mat::getRowE()
 			void MT::identity() {
@@ -384,6 +405,10 @@
 			MT& MT::operator = (const MT& m) {
 				BOOST_PP_REPEAT(DIM_M, DEF_COPY, NOTHING)
 				return *this;
+			}
+			#undef DEF_COPY
+			MT& MT::operator = (std::initializer_list<float> il) {
+				return *this = MT(il);
 			}
 			#define SET_ARGS2(z,n,data) (BOOST_PP_CAT(data, n))
 			MT MT::Scaling(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
@@ -591,6 +616,7 @@
 				reg128 accum = reg_setzero_ps();
 				#define ACCUM_ABS(dummy,n,dummy2)	reg_add_ps(accum, _mmAbsPs(LOADTHIS(n)));
 				BOOST_PP_REPEAT(DIM_M, ACCUM_ABS, NOTHING)
+				#undef ACCUM_ABS
 				accum = reg_and_ps(accum, xmm_mask[DIM_N]);
 				return reg_movemask_ps(accum) == 0;
 			}
@@ -765,6 +791,7 @@
 					#define BOOST_PP_LOCAL_MACRO(n) STORETHISPS(ret.ma[n], xm[n]);
 					#define BOOST_PP_LOCAL_LIMITS (0,DIM_N)
 					#include BOOST_PP_LOCAL_ITERATE()
+					#undef LOADROWE
 				#endif
 				return ret;
 			}
@@ -814,6 +841,8 @@
 						n0), \
 					n1)(); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
+			#undef ITR_COPY_I
+			#undef ITR_COPY
 		}
 		#elif BOOST_PP_FRAME_FLAGS(1) == 2
 		namespace spn {
@@ -826,6 +855,7 @@
 				)
 				return *this;
 			}
+			#undef DEF_MULSELF
 			// 行列の積算
 			/*	Pseudo-code:
 				MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,align>& m) const {
@@ -859,6 +889,8 @@
 				BOOST_PP_REPEAT_FROM_TO(1,BOOST_PP_SEQ_ELEM(1,AU_n1), MUL_INNER, BOOST_PP_SEQ_ELEM(0,AU_n1)) \
 				STORETHISPS(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
+			#undef DEF_MUL0
+			#undef DEF_MUL
 		}
 		#else
 		namespace spn {
@@ -908,6 +940,10 @@
 				BOOST_PP_REPEAT_FROM_TO(1,DIM_N, MUL_INNER2, AU) \
 				STORETHISPS(ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MULE0)
+			#undef DEF_MULE0
+			#undef DEF_MULE
+			#undef DEF_INNER2
+			#undef DEF_OUTER2
 
 			// 他の行列やベクトルと計算するメソッドを定義
 			/*	Pseudo-code:
