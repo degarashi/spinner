@@ -108,21 +108,15 @@ namespace spn {
 	const float* Pose2D::_getPtr() const {
 		return reinterpret_cast<const float*>(&_ofs);
 	}
-	void Pose2D::setScale(const Vec2& ofs) {
-		setScale(ofs.x, ofs.y);
-	}
-	void Pose2D::setScale(float x, float y) {
-		_scale->x = x;
-		_scale->y = y;
+	void Pose2D::setScale(const Vec2& s) {
+		_scale->x = s.x;
+		_scale->y = s.y;
 		_rflag |= PRF_SCALE;
 		++_accum;
 	}
-	void Pose2D::setOfs(const Vec2& ofs) {
-		setOfs(ofs.x, ofs.y);
-	}
-	void Pose2D::setOfs(float x, float y) {
-		_ofs->x = x;
-		_ofs->y = y;
+	void Pose2D::setOffset(const Vec2& ofs) {
+		_ofs->x = ofs.x;
+		_ofs->y = ofs.y;
 		_rflag |= PRF_OFFSET;
 		++_accum;
 	}
@@ -250,18 +244,18 @@ namespace spn {
 	const float* Pose3D::_getPtr() const {
 		return reinterpret_cast<const float*>(&_ofs);
 	}
-	void Pose3D::setOfs(float x, float y, float z) {
+	void Pose3D::setOffset(const AVec3& v) {
 		++_accum;
-		_ofs.x = x;
-		_ofs.y = y;
-		_ofs.z = z;
+		_ofs.x = v.x;
+		_ofs.y = v.y;
+		_ofs.z = v.z;
 		_rflag |= PRF_OFFSET;
 	}
-	void Pose3D::setScale(float x, float y, float z) {
+	void Pose3D::setScale(const AVec3& s) {
 		++_accum;
-		_scale.x = x;
-		_scale.y = y;
-		_scale.z = z;
+		_scale.x = s.x;
+		_scale.y = s.y;
+		_scale.z = s.z;
 		_rflag |= PRF_SCALE;
 	}
 	void Pose3D::setRot(const AQuat& q) {
@@ -279,15 +273,9 @@ namespace spn {
 	void Pose3D::addAxisRot(const AVec3& axis, float radf) {
 		setRot(getRot().rotation(axis, radf));
 	}
-	void Pose3D::addOfsVec(const AVec3& ad) {
+	void Pose3D::addOffset(const AVec3& ad) {
 		const AVec3& ofs = getOffset();
-		setOfs(ofs.x+ad.x, ofs.y+ad.y, ofs.z+ad.z);
-	}
-	void Pose3D::setScaleVec(const AVec3& s) {
-		setScale(s.x, s.y, s.z);
-	}
-	void Pose3D::setOfsVec(const AVec3& v) {
-		setOfs(v.x, v.y, v.z);
+		setOffset(ad + ofs);
 	}
 	AVec3 Pose3D::getUp() const {
 		return getRot().getUp();

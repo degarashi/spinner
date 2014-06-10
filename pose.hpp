@@ -57,11 +57,9 @@ namespace spn {
 			void identity();
 
 			void setAll(const Vec2& ofs, float ang, const Vec2& sc);
-			void setScale(float x, float y);
 			void setScale(const Vec2& ofs);
 			void setAngle(float ang);
-			void setOfs(float x, float y);
-			void setOfs(const Vec2& ofs);
+			void setOffset(const Vec2& ofs);
 			float getAngle() const;
 			const Vec2& getOffset() const;
 			const Vec2& getScale() const;
@@ -135,15 +133,13 @@ namespace spn {
 			uint32_t getAccum() const;
 			void setAll(const AVec3& ofs, const AQuat& q, const AVec3& sc);
 			// Scaleに変更を加える
-			void setScale(float x, float y, float z);
-			void setScaleVec(const AVec3& s);
+			void setScale(const AVec3& s);
 			// Rotationに変更を加える
 			void setRot(const AQuat& q);
 			void addAxisRot(const AVec3& axis, float radf);
 			// Positionに変更を加える
-			void setOfsVec(const AVec3& v);
-			void setOfs(float x, float y, float z);
-			void addOfsVec(const AVec3& ad);
+			void setOffset(const AVec3& v);
+			void addOffset(const AVec3& ad);
 
 			AVec3 getUp() const;
 			AVec3 getRight() const;
