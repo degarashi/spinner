@@ -8,25 +8,28 @@
 #include "serialization/traits.hpp"
 
 namespace spn {
-	struct alignas(16) Align128 {};
-	struct alignas(32) Align256 {};
-	struct alignas(64) Align512 {};
-	using CTAlign = CType<uint8_t, uint16_t, uint32_t, uint64_t, Align128, Align256, Align512>;
-	template <int NByte, int AByte>
-	struct AlignedBuff {
-		using AlignType = typename CTAlign::template At<CTBit::MSB_N<AByte>::result>::type;
-		union {
-			uint8_t 	_buffer[NByte];
-			AlignType	_align_dummy;
-		};
-	};
-
 	extern none_t none;
+	namespace {
+		namespace optional_tmp {
+			struct alignas(16) Align128 {};
+			struct alignas(32) Align256 {};
+			struct alignas(64) Align512 {};
+			using CTAlign = CType<uint8_t, uint16_t, uint32_t, uint64_t, Align128, Align256, Align512>;
+			template <int NByte, int AByte>
+			struct AlignedBuff {
+				using AlignType = typename CTAlign::template At<CTBit::MSB_N<AByte>::result>::type;
+				union {
+					uint8_t 	_buffer[NByte];
+					AlignType	_align_dummy;
+				};
+			};
+		}
+	}
 	template <class T>
-	struct _OptionalBuff : AlignedBuff<sizeof(T), std::alignment_of<T>::value>,
+	struct _OptionalBuff : optional_tmp::AlignedBuff<sizeof(T), std::alignment_of<T>::value>,
 		boost::serialization::traits<_OptionalBuff<T>, boost::serialization::object_serializable, boost::serialization::track_never, 0>
 	{
-		using base = AlignedBuff<sizeof(T), std::alignment_of<T>::value>;
+		using base = optional_tmp::AlignedBuff<sizeof(T), std::alignment_of<T>::value>;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
 			ar & castT();
@@ -52,7 +55,7 @@ namespace spn {
 		T& castT() { return *reinterpret_cast<T*>(base::_buffer); }
 		const T& castCT() const { return *reinterpret_cast<const T*>(base::_buffer); }
 		void dtor() { castT().~T(); }
-        template <class T2>
+		template <class T2>
 		void default_ctor() { new(base::_buffer) T2(); }
 	};
 
@@ -73,7 +76,7 @@ namespace spn {
 		T& castT() { return *_buffer; }
 		const T& castCT() const { return *_buffer; }
 		void dtor() {}
-        template <class T2>
+		template <class T2>
 		void default_ctor() {}
 	};
 
@@ -91,7 +94,7 @@ namespace spn {
 		T*& castT() { return _buffer; }
 		const T*& castCT() const { return _buffer; }
 		void dtor() {}
-        template <class T2>
+		template <class T2>
 		void default_ctor() {}
 	};
 	template <class... Ts>
@@ -177,10 +180,10 @@ namespace spn {
 			decltype(_buffer.castCT()) operator * () const {
 				return get();
 			}
-			// 暗黙の型変換は不正なので敢えて定義しない
+			// 暗黙の型変換は不正
 			// invalid implicit data convertion
 			template <class TC>
-			operator TC () const;
+			operator TC () const = delete;
 			template <class = void>
 			operator bool () const {
 				return _bInit;
@@ -247,6 +250,8 @@ namespace spn {
 	};
 	template <class T>
 	const typename Optional<T>::_AsInitialized Optional<T>::AsInitialized{};
+
+	namespace optional_tmp {}
 }
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class), spn::Optional, object_serializable)
 

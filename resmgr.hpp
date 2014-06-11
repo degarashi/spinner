@@ -131,7 +131,7 @@ namespace spn {
 	class WHandleT;
 
 	namespace {
-		namespace tmp {
+		namespace resmgr_tmp {
 			template <class HDL>
 			void ReleaseHB(HDL& hdl, std::integral_constant<bool,true>) {
 				hdl.release();
@@ -180,7 +180,7 @@ namespace spn {
 			}
 			void release() {
 				if(_hdl.valid()) {
-					tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
+					resmgr_tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
 					_hdl.setNull();
 				}
 			}
@@ -238,7 +238,7 @@ namespace spn {
 			WHdl weak() const { return _hdl.weak(); }
 			uint32_t count() const { return _hdl.count(); }
 	};
-	namespace tmp {}
+	namespace resmgr_tmp {}
 	//! 強参照スマートハンドル
 	template <class HDL, bool DIRECT>
 	class HdlLock : public HdlLockB<HDL,DIRECT> {
