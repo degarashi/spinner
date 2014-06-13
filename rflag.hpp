@@ -86,6 +86,9 @@ namespace spn {
 			void _setFlag(std::integral_constant<int,0>) {}
 			template <class T, class... TsA, int N>
 			void _setFlag(std::integral_constant<int,N>) {
+				// 自分より下の階層はフラグを下ろす
+				_rflag &= ~OrHL<T>();
+				// 自分の階層より上の変数は全てフラグを立てる
 				_rflag |= OrLH<T>();
 				_setFlag<TsA...>(std::integral_constant<int,N-1>());
 			}
@@ -199,6 +202,26 @@ namespace spn {
 				BOOST_PP_NIL, \
 				seq \
 			) \
+		)
+
+	#define RFLAG_SETMETHOD(name) \
+		template <class TArg> \
+		void BOOST_PP_CAT(set, name(TArg&& t)) { _rflag.set<name>(std::forward<TArg>(t)); }
+	#define RFLAG_FUNC3(z, dummy, seq)	\
+		BOOST_PP_IF( \
+			BOOST_PP_LESS_EQUAL( \
+				BOOST_PP_SEQ_SIZE(seq), \
+				2 \
+			), \
+			RFLAG_SETMETHOD, \
+			NOTHING_ARG \
+		)(BOOST_PP_SEQ_ELEM(0, seq))
+
+	#define RFLAG_SETMETHOD_S(seq) \
+		BOOST_PP_SEQ_FOR_EACH( \
+			RFLAG_FUNC3, \
+			BOOST_PP_NIL, \
+			seq \
 		)
 	/* class MyClass {
 		RFLAG_RVALUE(Value0, Type0)
