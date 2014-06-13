@@ -86,10 +86,10 @@ namespace spn {
 			void _setFlag(std::integral_constant<int,0>) {}
 			template <class T, class... TsA, int N>
 			void _setFlag(std::integral_constant<int,N>) {
-				// 自分より下の階層はフラグを下ろす
+				// 自分以下の階層はフラグを下ろす
 				_rflag &= ~OrHL<T>();
 				// 自分の階層より上の変数は全てフラグを立てる
-				_rflag |= OrLH<T>();
+				_rflag |= OrLH<T>() & ~Get<T>();
 				_setFlag<TsA...>(std::integral_constant<int,N-1>());
 			}
 
