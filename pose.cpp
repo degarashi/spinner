@@ -191,6 +191,13 @@ namespace spn {
 	Pose3D::Pose3D(const TValue& tv): _ofs(tv.ofs), _rot(tv.rot), _scale(tv.scale) {
 		_rflag = PRF_ALL;
 	}
+	Pose3D::Pose3D(const AMat43& m) {
+		auto ap = DecompAffine(m);
+		_ofs = ap.offset;
+		_rot = ap.rotation;
+		_scale = ap.scale;
+		_rflag = PRF_ALL;
+	}
 
 	void Pose3D::identity() {
 		_rflag = 0;
@@ -302,6 +309,9 @@ namespace spn {
 		_scale = t.scale;
 		_rot = t.rot;
 		_setAsChanged();
+	}
+	Pose3D& Pose3D::operator = (const AMat43& m) {
+		return *this = Pose3D(m);
 	}
 	Pose3D& Pose3D::operator = (const Pose3D& ps) {
 		std::memcpy(this, &ps, sizeof(ps));

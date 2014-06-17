@@ -122,6 +122,7 @@ namespace spn {
 			Pose3D(const Pose3D& p);
 			Pose3D(const AVec3& pos, const AQuat& rot, const AVec3& sc);
 			Pose3D(const TValue& tv);
+			Pose3D(const AMat43& m);
 			void identity();
 
 			// 各種変数取得
@@ -151,6 +152,7 @@ namespace spn {
 
 			Pose3D& operator = (const Pose3D& ps);
 			Pose3D& operator = (const TValue& tv);
+			Pose3D& operator = (const AMat43& m);
 			friend std::ostream& operator << (std::ostream&, const Pose3D&);
 	};
 	std::ostream& operator << (std::ostream& os, const Pose3D& ps);
