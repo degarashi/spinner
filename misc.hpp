@@ -227,7 +227,6 @@ namespace spn {
 		using Pair = std::pair<const T*, const T*>;
 		Array		_value;		//! 全要素配列
 		Offset		_offset;	//! 各グループのオフセット(nGroup + 1)
-		T*			_pCur;
 
 		public:
 			OffsetIndex(int nReserveValue=0, int nReserveOffset=0):
@@ -240,14 +239,15 @@ namespace spn {
 				_value.clear();
 				_offset.resize(1);
 				_offset[0] = 0;
-				_pCur = _value.data();
 			}
 			void pushValue(const T& val) {
 				_value.push_back(val);
 			}
 			//! 現在のグループを閉じて次のグループを開始
 			void finishGroup() {
-				_offset.push_back(_value.size());
+				auto sz = _value.size();
+				if(_offset.back() < static_cast<int>(sz))
+					_offset.push_back(sz);
 			}
 			int getNGroup() const { return _offset.size()-1; }
 			int getGroupSize(int n) const { return _offset[n+1]-_offset[n]; }
