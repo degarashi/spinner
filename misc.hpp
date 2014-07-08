@@ -90,12 +90,12 @@ namespace spn {
 		return true;
 	}
 	//! 汎用ツリー構造
-	template <class I, class T>
-	class TreeNode : public I, public std::enable_shared_from_this<T> {
+	/*! Tは必ずTreeNode<T>を継承する前提 */
+	template <class T>
+	class TreeNode : public std::enable_shared_from_this<T> {
 		// 巡回参照を避けるために親ノードはweak_ptrで格納
 		public:
-			using this_t = TreeNode<I,T>;
-			using this_tc = const this_t;
+			using this_t = TreeNode<T>;
 			using pointer = this_t*;
 			using SP = std::shared_ptr<T>;
 			using WP = std::weak_ptr<T>;
@@ -109,18 +109,14 @@ namespace spn {
 			}
 
 		public:
-			using I::operator =;
 			TreeNode() = default;
 			TreeNode(TreeNode&& t) = default;
 			//! copy-ctorに置いてはリンク情報をコピーしない
-			TreeNode(const TreeNode& t): I(t) {}
+			TreeNode(const TreeNode&) {}
 			// コピー禁止
 			TreeNode& operator = (const TreeNode&) = delete;
 			// ムーブは可
 			TreeNode& operator = (TreeNode&& t) = default;
-
-			TreeNode(const I& v): I(v) {}
-			TreeNode(I&& v): I(std::move(v)) {}
 
 			void setParent(const SP& s) {
 				_wpParent = WP(s);
@@ -184,7 +180,7 @@ namespace spn {
 			//! 深さ優先で巡回
 			template <class Callback, bool BConst=false>
 			void iterateDepthFirst(Callback&& cb, int depth=0) {
-				using thistc = std::conditional_t<BConst, this_tc, this_t>;
+				using thistc = std::conditional_t<BConst, const T, T>;
 				cb(static_cast<thistc&>(*this), depth);
 				if(_spChild)
 					_spChild->iterateDepthFirst(cb, depth+1);
@@ -207,12 +203,13 @@ namespace spn {
 			//! 主にデバッグ用
 			void print(std::ostream& os, int indent) const {
 				_PrintIndent(os, indent);
-				I::print(os);
+				// 明示的なダウンキャスト
+				os << *static_cast<const T*>(this);
 			}
 	};
-	template <class I, class T>
-	inline std::ostream& operator << (std::ostream& os, const TreeNode<I,T>& t) {
-		auto& self = const_cast<TreeNode<I,T>&>(t);
+	template <class T>
+	inline std::ostream& operator << (std::ostream& os, const TreeNode<T>& t) {
+		auto& self = const_cast<TreeNode<T>&>(t);
 		self.iterateDepthFirst([&os](auto& s, int indent){
 			s.print(os, indent);
 			os << std::endl;
