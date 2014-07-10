@@ -190,8 +190,8 @@
 				#undef FUNC
 				#undef FUNC2
 
-				#define FUNC3(z,n,func)		STORETHIS(n, func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
-				#define FUNC4(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHISPS(m.ma[n]), LOADTHIS(n)));
+				#define FUNC3(z,n,func)		STORETHIS(n, func(LOADTHIS(n), LOADTHISPS(m.ma[n])));
+				#define FUNC4(z,n,func)		STORETHISPS(ret.ma[n], func(LOADTHIS(n), LOADTHISPS(m.ma[n])));
 				#define DEF_OPM(op, func) MatT& operator BOOST_PP_CAT(op,=) (const MatT& m) { \
 					BOOST_PP_REPEAT(DIM_M, FUNC3, func) \
 					return *this; } \
