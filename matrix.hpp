@@ -823,23 +823,28 @@
 					BOOST_PP_IF( \
 						BOOST_PP_LESS(n,DIM_M), \
 						LOADTHISI(n), \
-						xmm_matI[n]) \
+						xmm_matI[n] \
+					) \
 				);
 			#define ITR_COPY(z,n,data)		ITR_COPY_I(n, BOOST_PP_SEQ_ELEM(0,data), BOOST_PP_SEQ_ELEM(1,data))
-			#define DEF_CONV(n0,n1,align)	MatT<n0,n1,BOOLNIZE(align)> MT::BOOST_PP_CAT( \
+			#define DEF_CONV(n0,n1,align)	\
+				MatT<n0,n1,BOOLNIZE(align)> MT::BOOST_PP_CAT( \
 					BOOST_PP_CAT( \
 						BOOST_PP_CAT(convert, AFLAG(align)), \
-						n0), \
+						n0 \
+					), \
 					n1)() const { \
 				MatT<n0,n1,BOOLNIZE(align)> ret; \
 				BOOST_PP_REPEAT(n0, ITR_COPY, (n1)(align)) \
 				return ret; } \
 				void MT::convert(MatT<n0,n1,BOOLNIZE(align)>& dst) const { \
 					dst = BOOST_PP_CAT( \
-					BOOST_PP_CAT( \
-						BOOST_PP_CAT(convert, AFLAG(align)), \
-						n0), \
-					n1)(); }
+							BOOST_PP_CAT( \
+								BOOST_PP_CAT(convert, AFLAG(align)), \
+								n0 \
+							), \
+							n1 \
+						)(); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_CONV)
 			#undef ITR_COPY_I
 			#undef ITR_COPY
@@ -862,11 +867,11 @@
 					ALIGN16 MatT<DIM_M, n1, ALIGNB> ret;
 					// <Repeat by MUL_OUTER>
 					for(int i=0 ; i<n0 ; i++) {
-						reg128 tm = LOADTHIS(i);
-						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS(m.ma[0]));
+						reg128 tm = LOADTHISI(i);
+						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS_I(m.ma[0], 0));
 						// <Repeat by MUL_INNER>
-						for(int j=0 ; j<DIM_N ; j++)
-							reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(j,j,j,j)), LOADPS(m.ma[j])));
+						for(int j=1 ; j<DIM_N ; j++)
+							reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(j,j,j,j)), LOADPS_I(m.ma[j], j)));
 						STOREPS_(A)4(ret.ma[i], accum);
 					}
 					return ret;
@@ -880,13 +885,42 @@
 				)(n0,n1,align)
 			#define DEF_MUL(n0,n1,align)	MatT<DIM_M, n1, ALIGNB> MT::operator * (const MatT<n0,n1,BOOLNIZE(align)>& m) const {\
 				ALIGN16 MatT<DIM_M, n1, ALIGNB> ret; \
-				BOOST_PP_REPEAT(DIM_M, MUL_OUTER, (BOOST_PP_IF(align, NOTHING, U))(n1)) \
+				BOOST_PP_REPEAT( \
+					DIM_M, \
+					MUL_OUTER, \
+					(BOOST_PP_CAT( \
+						BOOST_PP_IF( \
+							align, \
+							A, \
+							NOTHING \
+						), \
+						n1 \
+					))(n0) \
+				) \
 				return ret; \
 			}
-			#define MUL_INNER(z,n,AU)	accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), LOADPS##AU(m.ma[n])));
-			#define MUL_OUTER(z,n,AU_n1)	{ reg128 tm = LOADTHISZ(n); \
-				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), BOOST_PP_CAT(LOADPS, BOOST_PP_SEQ_ELEM(0,AU_n1))(m.ma[0])); \
-				BOOST_PP_REPEAT_FROM_TO(1,BOOST_PP_SEQ_ELEM(1,AU_n1), MUL_INNER, BOOST_PP_SEQ_ELEM(0,AU_n1)) \
+			#define MUL_INNER(z,n,AU)	accum = reg_add_ps( \
+													accum, \
+													reg_mul_ps( \
+														reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), \
+														LOADPS_I##AU(m.ma[n], n) \
+													) \
+												);
+			#define MUL_OUTER(z,n,AU_n0) { \
+				reg128 tm = LOADTHISI(n); \
+				reg128 accum = reg_mul_ps( \
+								reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), \
+								BOOST_PP_CAT( \
+									LOADPS_I, \
+									BOOST_PP_SEQ_ELEM(0,AU_n0) \
+								)(m.ma[0], 0) \
+							); \
+				BOOST_PP_REPEAT_FROM_TO( \
+					1, \
+					BOOST_PP_SEQ_ELEM(1,AU_n0), \
+					MUL_INNER, \
+					BOOST_PP_SEQ_ELEM(0,AU_n0) \
+				) \
 				STORETHISPS(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
 			#undef DEF_MUL0
