@@ -33,16 +33,19 @@ namespace spn {
 		AffineParts ap;
 		// オフセットは4行目をそのまま抽出
 		ap.offset = m.getRow(3);
-		AVec3 colm[3];
 		for(int i=0 ; i<3 ; i++) {
 			auto r = m.getRow(i);
 			ap.scale.m[i] = r.length();
 			tm.getRow(i) = r * Rcp22Bit(ap.scale.m[i]);
 		}
-		for(int i=0 ; i<3 ; i++)
-			colm[i] = tm.getColumn(i);
+		// 掌性チェックして、左手系でなければX軸を反転
+		auto cv = tm.getRow(1).cross(tm.getRow(2));
+		if(tm.getRow(0).dot(cv) <= 0) {
+			tm.getRow(0) *= -1;
+			ap.scale.x *= -1;
+		}
 
-		ap.rotation = Quat::FromAxis(colm[0], colm[1], colm[2]);
+		ap.rotation = Quat::FromAxis(tm.getRow(0), tm.getRow(1), tm.getRow(2));
 		return ap;
 	}
 	std::string AddLineNumber(const std::string& src, int numOffset, int viewNum, bool bPrevLR, bool bPostLR) {
