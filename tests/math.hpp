@@ -6,5 +6,6 @@ namespace spn {
 		void PoseTest();
 		void BitFieldTest();
 		void GapTest();
+		void QuatTest();
 	}
 }

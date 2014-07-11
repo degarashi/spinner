@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
 	spn::MTRandomMgr rmgr;
 	mgr_random.initEngine(0);
 	MatTest();
+	QuatTest();
 	PoseTest();
 	BitFieldTest();
 	ResourceTest();
