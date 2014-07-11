@@ -50,6 +50,7 @@
 								float f21, float f22, float f23,
 								float f31, float f32, float f33);
 			static QuatT FromAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA);
+			static QuatT FromMatAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA);
 			static QuatT RotationYPR(float yaw, float pitch, float roll);
 			static QuatT RotationX(float ang);
 			static QuatT RotationY(float ang);
@@ -143,8 +144,13 @@
 		reg128 QT::loadPS() const { return LOADTHIS(); }
 		QT QT::FromAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA) {
 			return FromAxisF(xA.x, xA.y, xA.z,
-						yA.x, yA.y, yA.z,
-						zA.x, zA.y, zA.z);
+							yA.x, yA.y, yA.z,
+							zA.x, zA.y, zA.z);
+		}
+		QT QT::FromMatAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA) {
+			return FromAxisF(xA.x, yA.x, zA.x,
+							xA.y, yA.y, zA.y,
+							xA.z, yA.z, zA.z);
 		}
 		QT QT::FromAxisF(float f11, float f12, float f13,
 								float f21, float f22, float f23,
