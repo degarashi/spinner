@@ -13,9 +13,15 @@ namespace spn {
 	}
 	void MTRandomMgr::initWithSeed(ID entID, const std::vector<Value>& rndv) {
 		std::seed_seq seq(rndv.begin(), rndv.end());
-		auto itr = _rndMap.find(entID);
-		Assert(Trap, itr == _rndMap.end())
+		// ユーザーのミスを警告するため、2重初期化はNG
+		Assert(Trap, _rndMap.count(entID)==0)
 		_rndMap.emplace(entID, std::mt19937(seq));
+	}
+	void MTRandomMgr::removeEngine(ID entID) {
+		// 存在しない物を消去するのはNG
+		auto itr = _rndMap.find(entID);
+		Assert(Trap, itr != _rndMap.end())
+		_rndMap.erase(itr);
 	}
 	MTRandom MTRandomMgr::operator()(ID entID) {
 		return get(entID);

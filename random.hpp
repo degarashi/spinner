@@ -56,9 +56,10 @@ namespace spn {
 	#define mgr_random (::spn::MTRandomMgr::_ref())
 	//! MTRandomマネージャ
 	class MTRandomMgr : public Singleton<MTRandomMgr> {
-		private:
+		public:
 			using ID = int32_t;
 			using Value = std::mt19937::result_type;
+		private:
 			using RndMap = std::unordered_map<ID, std::mt19937>;
 			RndMap	_rndMap;
 
