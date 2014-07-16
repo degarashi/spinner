@@ -1,19 +1,17 @@
 #ifdef WIN32
 	#include <intrin.h>
 #endif
-#include "math.hpp"
 #include "../vector.hpp"
 #include "../matrix.hpp"
 #include "../matstack.hpp"
 #include "../pose.hpp"
 #include "../bits.hpp"
 #include "../noseq.hpp"
-#include "test.hpp"
 #include "../random.hpp"
+#include "test.hpp"
 
 namespace spn {
 	namespace test {
-		#define MATRIXCHECK(z, dummy, dim)	MatrixCheck<BOOST_PP_TUPLE_ELEM(0,dim), BOOST_PP_TUPLE_ELEM(1,dim)>();
 		namespace {
 			constexpr float Threshold = 1e-3f,
 							ValueMin = -1e4f,
@@ -93,6 +91,7 @@ namespace spn {
 				constexpr int width{ GetArraySize<AR>::size() },
 							height{ GetArraySize<Type>::size() };
 				static_assert(width == height, "rectangular matrix only");
+				// サイズ違いの行列を掛けあわせる時は存在しない要素を対角線上は1, それ以外を0とする
 				AR tmp;
 				for(int i=0 ; i<width ; i++) {
 					for(int j=0 ; j<width; j++) {
@@ -138,7 +137,7 @@ namespace spn {
 						opA(ar0, ar1, std::forward<std::decay_t<decltype(opM)>>(opM));
 						auto m2 = opM(m0,m1);
 						m0 = opM(m0, m1);
-						Assert(Trap, Compare(ar0, m0))
+						EXPECT_TRUE(Compare(ar0, m0));
 					}
 				};
 				// + mat
@@ -159,12 +158,11 @@ namespace spn {
 				SetRandom(rd, ar1, m1);
 				TransposeArray(ar0, ar1);
 				m0 = m1.transposition();
-				Assert(Trap, Compare(ar0, m0))
+				EXPECT_TRUE(Compare(ar0, m0));
 			}
 			template <int M, int N, bool A>
-			void _MatrixCheck() {
+			void _MatrixCheck(MTRandom& rd) {
 				// 配列を使って計算した結果とMatrixクラスの結果を、誤差含めて比較
-				auto rd = mgr_random.get(0);
 				auto rdF = [&rd](){ return rd.template getUniformRange<float>(ValueMin, ValueMax); };
 
 				using Mat = MatT<M,N,A>;
@@ -177,7 +175,7 @@ namespace spn {
 						float value = rd();
 						Operate(ar0, [value, &op](auto& v){ v = op(v, value); });
 						m0 = op(m0, value);
-						Assert(Trap, Compare(ar0, m0))
+						EXPECT_TRUE(Compare(ar0, m0));
 					}
 				};
 				// += scalar
@@ -195,14 +193,18 @@ namespace spn {
 								std::integral_constant<bool,A>());
 			}
 			template <int M, int N>
-			void MatrixCheck() {
-				_MatrixCheck<M,N,false>();
-				_MatrixCheck<M,N,true>();
+			void MatrixCheck(MTRandom& rd) {
+				_MatrixCheck<M,N,false>(rd);
+				_MatrixCheck<M,N,true>(rd);
 			}
 		}
-		void MatTest() {
+		class MathTest : public RandomTestInitializer {};
+		#define MATRIXCHECK(z, dummy, dim)	MatrixCheck<BOOST_PP_TUPLE_ELEM(0,dim), BOOST_PP_TUPLE_ELEM(1,dim)>(rd);
+		TEST_F(MathTest, Matrix) {
+			auto rd = getRand();
 			BOOST_PP_SEQ_FOR_EACH(MATRIXCHECK, BOOST_PP_IDENTITY, SEQ_MATDEF)
 		}
+		#undef MATRIXCHECK
 
 		namespace {
 			template <int N, bool A, class RD>
@@ -228,72 +230,75 @@ namespace spn {
 			auto GenRQuat(RD& rd) {
 				return QuatT<A>::Rotation(GenRDir<3,A>(rd), rd());
 			}
-			template <bool A>
-			void _QuatTest() {
-				using QT = QuatT<A>;
-				constexpr float RandMin = -1e3f,
-								RandMax = 1e3f;
-				auto rd = mgr_random.get(0);
-				auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
-
-				for(int i=0 ; i<N_Iteration ; i++) {
-					float ang = rdF();
-					Vec3 axis = GenRDir<3,false>(rdF);
-					QT q = QT::Rotation(axis, ang);
-					auto m = AMat33::RotationAxis(axis, ang);
-
-					// クォータニオンでベクトルを変換した結果が行列のそれと一致するか
-					Vec3 v = GenRVec<3,false>(rdF);
-					auto v0 = v * q;
-					auto v1 = v * m;
-					Assert(Trap, IsNear(v0, v1, Threshold))
-					// クォータニオンを行列に変換した結果が一致するか
-					Assert(Trap, Compare(q.asMat33(), m))
-					// Matrix -> Quaternion -> Matrix の順で変換して前と後で一致するか
-					q = QT::FromMat(m);
-					Assert(Trap, Compare(q.asMat33(), m))
-				}
-				// クォータニオンを合成した結果を行列のケースと比較
-				for(int i=0 ; i<N_Iteration ; i++) {
-					float ang[2] = {rdF(), rdF()};
-					Vec3 axis[2] = {GenRDir<3,false>(rdF), GenRDir<3,false>(rdF)};
-					QT		q[3];
-					AMat33	m[3];
-					for(int i=0 ; i<2 ; i++) {
-						q[i] = QT::Rotation(axis[i], ang[i]);
-						m[i] = AMat33::RotationAxis(axis[i], ang[i]);
-					}
-					q[2] = q[1] * q[0];
-					q[2].normalize();
-					m[2] = m[0] * m[1];
-					Assert(Trap, Compare(q[2].asMat33(), m[2]))
-					// operator >> は * と逆の意味
-					q[2] = q[0] >> q[1];
-					q[2].normalize();
-					Assert(Trap, Compare(q[2].asMat33(), m[2]))
-				}
-				// getRight(), getUp(), getDir()が{1,0,0},{0,1,0},{0,0,1}を変換した結果と比較
-				for(int i=0 ; i<N_Iteration ; i++) {
-					float ang = rdF();
-					Vec3 axis = GenRDir<3,false>(rdF);
-					QT q = QT::Rotation(axis, ang);
-					auto m = q.asMat33();
-
-					Assert(Trap, IsNear(AVec3{1,0,0}*m, q.getRight(), Threshold))
-					Assert(Trap, IsNear(AVec3{0,1,0}*m, q.getUp(), Threshold))
-					Assert(Trap, IsNear(AVec3{0,0,1}*m, q.getDir(), Threshold))
-				}
-			}
 		}
-		void QuatTest() {
-			// AlignedとUnAlignedを両方テストする
-			_QuatTest<false>();
-			_QuatTest<true>();
-		}
-		void PoseTest() {
+		// AlignedとUnAlignedを両方テストする
+		template <class T>
+		class QuaternionTest : public RandomTestInitializer {
+			protected:
+				using QuatType = QuatT<T::value>;
+		};
+		using QuaternionTypeList = ::testing::Types<std::integral_constant<bool,false>,
+										std::integral_constant<bool,true>>;
+		TYPED_TEST_CASE(QuaternionTest, QuaternionTypeList);
+		TYPED_TEST(QuaternionTest, Test) {
+			using QT = typename std::decay_t<decltype(*this)>::QuatType;
 			constexpr float RandMin = -1e3f,
 							RandMax = 1e3f;
-			auto rd = mgr_random.get(0);
+			auto rd = this->getRand();
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+
+			for(int i=0 ; i<N_Iteration ; i++) {
+				float ang = rdF();
+				Vec3 axis = GenRDir<3,false>(rdF);
+				QT q = QT::Rotation(axis, ang);
+				auto m = AMat33::RotationAxis(axis, ang);
+
+				// クォータニオンでベクトルを変換した結果が行列のそれと一致するか
+				Vec3 v = GenRVec<3,false>(rdF);
+				auto v0 = v * q;
+				auto v1 = v * m;
+				EXPECT_TRUE(IsNear(v0, v1, Threshold));
+				// クォータニオンを行列に変換した結果が一致するか
+				EXPECT_TRUE(Compare(q.asMat33(), m));
+				// Matrix -> Quaternion -> Matrix の順で変換して前と後で一致するか
+				q = QT::FromMat(m);
+				EXPECT_TRUE(Compare(q.asMat33(), m));
+			}
+			// クォータニオンを合成した結果を行列のケースと比較
+			for(int i=0 ; i<N_Iteration ; i++) {
+				float ang[2] = {rdF(), rdF()};
+				Vec3 axis[2] = {GenRDir<3,false>(rdF), GenRDir<3,false>(rdF)};
+				QT		q[3];
+				AMat33	m[3];
+				for(int i=0 ; i<2 ; i++) {
+					q[i] = QT::Rotation(axis[i], ang[i]);
+					m[i] = AMat33::RotationAxis(axis[i], ang[i]);
+				}
+				q[2] = q[1] * q[0];
+				q[2].normalize();
+				m[2] = m[0] * m[1];
+				EXPECT_TRUE(Compare(q[2].asMat33(), m[2]));
+				// operator >> は * と逆の意味
+				q[2] = q[0] >> q[1];
+				q[2].normalize();
+				EXPECT_TRUE(Compare(q[2].asMat33(), m[2]));
+			}
+			// getRight(), getUp(), getDir()が{1,0,0},{0,1,0},{0,0,1}を変換した結果と比較
+			for(int i=0 ; i<N_Iteration ; i++) {
+				float ang = rdF();
+				Vec3 axis = GenRDir<3,false>(rdF);
+				QT q = QT::Rotation(axis, ang);
+				auto m = q.asMat33();
+
+				EXPECT_TRUE(IsNear(AVec3{1,0,0}*m, q.getRight(), Threshold));
+				EXPECT_TRUE(IsNear(AVec3{0,1,0}*m, q.getUp(), Threshold));
+				EXPECT_TRUE(IsNear(AVec3{0,0,1}*m, q.getDir(), Threshold));
+			}
+		}
+		TEST_F(MathTest, Pose) {
+			constexpr float RandMin = -1e3f,
+							RandMax = 1e3f;
+			auto rd = getRand();
 			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
 
 			// DecompAffineした結果を再度合成して同じかどうかチェック
@@ -306,17 +311,18 @@ namespace spn {
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
 				auto ap = DecompAffine(m);
-				Assert(Trap, IsNear(t, ap.offset, Threshold))
-				Assert(Trap, IsNear(AVec3{1,0,0}*ap.rotation, q.getRight(), Threshold))
-				Assert(Trap, IsNear(AVec3{0,1,0}*ap.rotation, q.getUp(), Threshold))
-				Assert(Trap, IsNear(AVec3{0,0,1}*ap.rotation, q.getDir(), Threshold))
-				Assert(Trap, IsNear(s, ap.scale, Threshold))
+				EXPECT_TRUE(IsNear(t, ap.offset, Threshold));
+				EXPECT_TRUE(IsNear(AVec3{1,0,0}*ap.rotation, q.getRight(), Threshold));
+				EXPECT_TRUE(IsNear(AVec3{0,1,0}*ap.rotation, q.getUp(), Threshold));
+				EXPECT_TRUE(IsNear(AVec3{0,0,1}*ap.rotation, q.getDir(), Threshold));
+				EXPECT_TRUE(IsNear(s, ap.scale, Threshold));
 			}
 		}
 		// TODO: Pose::lerp チェック
 		// TODO: Vec::FromPacked チェック
 		// TODO: noseq チェック
-		void BitFieldTest() {
+		// TODO: Assert文の追加
+		TEST_F(MathTest, Bitfield) {
 			struct MyDef : BitDef<uint32_t, BitF<0,14>, BitF<14,6>, BitF<20,12>> {
 				enum { VAL0, VAL1, VAL2 }; };
 			using Value = BitField<MyDef>;
@@ -324,18 +330,19 @@ namespace spn {
 			value.at<Value::VAL2>() = ~0;
 			auto mask = value.mask<Value::VAL1>();
 			auto raw = value.value();
-			std::cout << std::hex << "raw" << raw
-									<< "mask" << mask << std::endl;
+
+			std::cout << std::hex << "raw:\t" << raw << std::endl
+									<< "mask:\t" << mask << std::endl;
 		}
-		void GapTest() {
-			auto rd = mgr_random.get(0);
+		TEST_F(MathTest, GapStructure) {
+			auto rd = getRand();
 			auto gen = std::bind(&MTRandom::getUniform<float>, std::ref(rd));
 			using F16 = std::array<float,16>;
 			F16 tmp;
 			std::generate(tmp.begin(), tmp.end(), std::ref(gen));
 
 			#define SETAUX(z,n,data)	aux##n = *data++;
-			#define CHECKAUX(z,n,data) Assert(Trap, aux##n==*data++)
+			#define CHECKAUX(z,n,data) EXPECT_FLOAT_EQ(aux##n, *data++);
 			{
 				struct Test {
 					GAP_MATRIX(mat, 4,3,

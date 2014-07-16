@@ -4,7 +4,7 @@
 
 namespace spn {
 	namespace test {
-		void PQueue();
+		class PQueueTest;
 	}
 	struct InsertAfter {
 		template <class T, class Pred>
@@ -22,7 +22,7 @@ namespace spn {
 	template <class T, template<class,class> class Container=std::deque, class Pred=std::less<T>, class Insert=InsertAfter>
 	class pqueue : private Container<T, std::allocator<T>> {
 		using base_type = Container<T, std::allocator<T>>;
-		friend void spn::test::PQueue();
+		friend class spn::test::PQueueTest;
 		template <class TA>
 		void _push(TA&& t, std::bidirectional_iterator_tag) {
 			Pred pred;

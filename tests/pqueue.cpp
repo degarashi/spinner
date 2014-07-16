@@ -1,47 +1,65 @@
 #include "test.hpp"
-#include "pqueue.hpp"
-#include "../random.hpp"
+#include "../pqueue.hpp"
 
 namespace spn {
 	namespace test {
-		void PQueue() {
+		void PrintReg128(std::ostream& os, reg128 r) {
+			float t[4];
+			reg_store_ps(t, r);
+			for(int i=0 ; i<4 ; i++)
+				os << t[i] << std::endl;
+		}
+		namespace {
 			struct MyPair {
 				int a,b;
 				bool operator < (const MyPair& my) const {
 					return a < my.a;
 				}
 			};
-			{
-				spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertBefore> myB;
-				for(int i=0 ; i<20 ; i++)
-					myB.push(MyPair{0, i*100});
+		}
 
-				int check = myB.front().b;
-				for(auto& me : myB) {
-					assert(check >= me.b);
-					check = me.b;
+		class PQueueTest : public RandomTestInitializer {
+			protected:
+				template <class T>
+				static auto getBegin(T& t) {
+					return t.begin();
 				}
-			}
-			{
-				spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertAfter> myA;
-				for(int i=0 ; i<20 ; i++)
-					myA.push(MyPair{0, i*100});
-				int check = myA.front().b;
-				for(auto& me : myA) {
-					assert(check <= me.b);
-					check = me.b;
+				template <class T>
+				static auto getEnd(T& t) {
+					return t.end();
 				}
-			}
+		};
+		TEST_F(PQueueTest, InsertBefore) {
+			spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertBefore> myB;
+			for(int i=0 ; i<20 ; i++)
+				myB.push(MyPair{0, i*100});
 
+			int check = myB.front().b;
+			for(auto itr=getBegin(myB) ; itr!=getEnd(myB) ; ++itr) {
+				EXPECT_GE(check, (*itr).b);
+				check = (*itr).b;
+			}
+		}
+		TEST_F(PQueueTest, InsertAfter) {
+			spn::pqueue<MyPair, std::deque, std::less<MyPair>, InsertAfter> myA;
+			for(int i=0 ; i<20 ; i++)
+				myA.push(MyPair{0, i*100});
+			int check = myA.front().b;
+			for(auto itr=getBegin(myA) ; itr!=getEnd(myA) ; ++itr) {
+				EXPECT_LE(check, (*itr).b);
+				check = (*itr).b;
+			}
+		}
+		TEST_F(PQueueTest, Sequence) {
 			using Data = MoveOnly<MoveOnly<int>>;
-			auto rd = mgr_random.get(0);
+			auto rd = getRand();
 			pqueue<Data, std::deque, std::less<Data>, InsertBefore> q;
 			// 並び順のチェック
 			auto fnCheck = [&q]() {
 				int check = 0;
-				for(auto& a : q) {
-					assert(check <= a.getValue());
-					check = a.getValue();
+				for(auto itr=getBegin(q) ; itr!=getEnd(q) ; ++itr) {
+					EXPECT_LE(check, (*itr).getValue());
+					check = (*itr).getValue();
 				}
 			};
 			// ランダムな値を追加
@@ -58,30 +76,7 @@ namespace spn {
 				q.pop_front();
 			fnAddrand(256);
 			fnCheck();
-			assert(q.size() == 512);
-		}
-
-		void PrintReg(reg128 r) {
-			float t[4];
-			reg_store_ps(t, r);
-			for(int i=0 ; i<4 ; i++)
-				std::cout << t[i] << std::endl;
-		}
-		void Math() {
-			std::cout << "---- math test ----" << std::endl << spn::Rcp22Bit(128) << std::endl;
-			reg128 ra, rb;
-			ra = reg_set_ps(1,2,3,4);
-			rb = reg_set_ps(123,456,789,901);
-			ra = _mmDivPs(ra, rb);
-			ra = reg_div_ps(ra, rb);
-			ra = reg_add_ps(ra, rb);
-			ra = reg_mul_ps(ra, rb);
-			ra = reg_sub_ps(ra, rb);
-			ra = reg_or_ps(ra, ra);
- 			rb = reg_xor_ps(ra, rb);
-
-			PrintReg(ra);
-			PrintReg(rb);
+			EXPECT_EQ(512, q.size());
 		}
 	}
 }

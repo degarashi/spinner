@@ -1,9 +1,15 @@
-#include "resource.hpp"
+#include "test.hpp"
 #include "../resmgr.hpp"
 
 namespace spn {
 	namespace test {
-		void ResourceTest() {
+		namespace {
+			struct MyClass {
+				int first, second;
+			};
+		}
+		//TODO Assert文を追加
+		TEST(Resource, Test) {
 			struct MyDerived : MyClass {
 				MyDerived(int v0, int v1) {
 					first = v0;

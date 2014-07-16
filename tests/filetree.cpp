@@ -1,11 +1,11 @@
 #include "test.hpp"
-#include "filetree.hpp"
-#include <fstream>
-#include "../filetree.hpp"
+#include "dir.hpp"
 #include "watch.hpp"
+#include "../filetree.hpp"
+#include "../random.hpp"
+#include <fstream>
 #include <unordered_set>
 #include <cstdio>
-#include "../random.hpp"
 
 namespace spn {
 	namespace test {
@@ -42,18 +42,31 @@ namespace spn {
 					cb(d);
 			});
 		}
+		PathBlock g_apppath;
+		void RandomTestInitializer::SetUp() {
+			mgr_random.initEngine(cs_rnd);
+		}
+		void RandomTestInitializer::TearDown() {
+			mgr_random.removeEngine(cs_rnd);
+		}
+		MTRandom RandomTestInitializer::getRand() {
+			return mgr_random.get(cs_rnd);
+		}
+
+		class FileTreeTest : public RandomTestInitializer {};
 		constexpr int NTEST = 16,
 					NITER = 256,
 					MAX_NAME = 16,
 					MIN_SIZE = 8,
 					MAX_SIZE = 256;
-		void FileTree_test(ToPathStr initialPath) {
+		TEST_F(FileTreeTest, filetreeTest) {
+			ToPathStr initialPath(g_apppath.plain_utf32());
 			// テスト用にファイル・ディレクトリ構造を作る
 			Dir dir(initialPath.getStringPtr());
 			dir <<= "test_dir";
 			dir.mkdir(FStatus::AllRead);
 
-			auto rd = mgr_random.get(0);
+			auto rd = getRand();
 			// 一度使ったファイル名は使わない
 			std::unordered_set<std::string> nameset;
 			// ランダムな以前の結果と重複しない名前を生成
@@ -254,7 +267,7 @@ namespace spn {
 						Path_Size ps = fnSelectFile(dir);
 						if(!ps.first.empty()) {
 							dir <<= ps.first;
-							Assert(Trap, !dir.isDirectory())
+							EXPECT_FALSE(dir.isDirectory());
 							// 末尾1バイト追加
 							{
 								char ch = 0xfe;
@@ -275,7 +288,7 @@ namespace spn {
 						Path_Size ps = fnSelectFile(dir);
 						if(!ps.first.empty()) {
 							dir <<= ps.first;
-							Assert(Trap, !dir.isDirectory())
+							EXPECT_FALSE(dir.isDirectory());
 							dir.remove();
 
 							// 当該ファイル(Delete)
@@ -371,7 +384,7 @@ namespace spn {
 
 				void check(const UPFEv& e) {
 					auto itr = _hist.find(e);
-					Assert(Trap, itr!=_hist.end())
+					EXPECT_NE(itr, _hist.end());
 					_hist.erase(itr);
 				}
 

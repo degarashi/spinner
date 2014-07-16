@@ -1,11 +1,47 @@
 #include "test.hpp"
-#include "serialization.hpp"
-#include "../random.hpp"
+#include "../resmgr.hpp"
+#include <boost/serialization/access.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 
 namespace spn {
 	namespace test {
-		void SerializeTest_noseq() {
-			auto rd = mgr_random.get(0);
+		namespace {
+			constexpr static int NTEST = 256,
+								NITER = 1024;
+			class TestRM;
+			struct MyEnt;
+			DEF_AHANDLE(test::TestRM, My, test::MyEnt, test::MyEnt)
+
+			// デフォルトコンストラクタ無し、コピー不可能なテスト用構造体
+			struct MyEnt : boost::serialization::traits<MyEnt,
+						boost::serialization::object_serializable,
+						boost::serialization::track_never>
+			{
+				int value0,
+					value1;
+				MyEnt() = default;
+				MyEnt(const MyEnt&) = delete;
+				MyEnt(MyEnt&& e): value0(e.value0), value1(e.value1) {}
+				void operator = (const MyEnt&) = delete;
+
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int) {
+					ar & value0 & value1;
+				}
+				MyEnt(int v0, int v1): value0(v0), value1(v1) {}
+				bool operator == (const MyEnt& e) const {
+					return value0 == e.value0 &&
+							value1 == e.value1;
+				}
+			};
+			class TestRM : public ResMgrA<MyEnt, TestRM> {};
+			class SerializeTest : public RandomTestInitializer {};
+		}
+		TEST_F(SerializeTest, Noseq) {
+			auto rd = getRand();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
 				buffer.str("");
@@ -31,11 +67,11 @@ namespace spn {
 				oa << base;
 				boost::archive::binary_iarchive ia(buffer);
 				ia >> loaded;
-				Assert(Trap, base == loaded)
+				EXPECT_EQ(base, loaded);
 			}
 		}
-		void SerializeTest_resmgr() {
-			auto rd = mgr_random.get(0);
+		TEST_F(SerializeTest, ResMgr) {
+			auto rd = getRand();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
 				Optional<TestRM> op;
@@ -72,7 +108,7 @@ namespace spn {
 				ia >> *op;
 				auto dat1 = op->getNSeq();
 				// ちゃんとデータがセーブできてるか確認
-				Assert(Trap, dat0 == dat1)
+				EXPECT_EQ(dat0, dat1);
 
 				buffer.str("");
 				buffer.clear();

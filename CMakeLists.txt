@@ -34,7 +34,18 @@ if(NOT DEFINED ARCHITECTURE)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-variable")
 	aux_source_directory(tests TEST_SRC)
 	add_executable(spn_test main.cpp ${TEST_SRC})
-	set(LINK_LIBS spinner boost_regex boost_serialization ${LINK_LIBS} z)
+	set(LINK_LIBS
+				spinner
+				boost_regex
+				boost_serialization
+				${LINK_LIBS}
+				gtest
+				pthread
+				z)
 	target_link_libraries(spn_test ${LINK_LIBS})
 	install(TARGETS spn_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
+	add_test(NAME only_test
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+			COMMAND spn_test)
+	enable_testing()
 endif()
