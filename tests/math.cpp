@@ -8,6 +8,7 @@
 #include "../bits.hpp"
 #include "../noseq.hpp"
 #include "../random.hpp"
+#include "../ulps.hpp"
 #include "test.hpp"
 
 namespace spn {
@@ -334,6 +335,24 @@ namespace spn {
 			std::cout << std::hex << "raw:\t" << raw << std::endl
 									<< "mask:\t" << mask << std::endl;
 		}
+
+		namespace {
+			template <class T>
+			void TestAsIntegral(MTRandom rd) {
+				auto fvalue = rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/2,
+														std::numeric_limits<T>::max()/2);
+				auto ivalue0 = AsIntegral(fvalue);
+				auto ivalue1 = *reinterpret_cast<decltype(ivalue0)*>(&fvalue);
+				EXPECT_EQ(ivalue0, ivalue1);
+			}
+		}
+		TEST_F(MathTest, FloatAsIntegral) {
+			TestAsIntegral<float>(getRand());
+		}
+		TEST_F(MathTest, DoubleAsIntegral) {
+			TestAsIntegral<double>(getRand());
+		}
+
 		TEST_F(MathTest, GapStructure) {
 			auto rd = getRand();
 			auto gen = std::bind(&MTRandom::getUniform<float>, std::ref(rd));
