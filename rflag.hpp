@@ -204,25 +204,39 @@ namespace spn {
 			) \
 		)
 
-	#define RFLAG_SETMETHOD(name) \
-		template <class TArg> \
-		void BOOST_PP_CAT(set, name(TArg&& t)) { _rflag.set<name>(std::forward<TArg>(t)); }
-	#define RFLAG_FUNC3(z, dummy, seq)	\
+	#define RFLAG_FUNC3(z, func, seq)	\
 		BOOST_PP_IF( \
 			BOOST_PP_LESS_EQUAL( \
 				BOOST_PP_SEQ_SIZE(seq), \
 				2 \
 			), \
-			RFLAG_SETMETHOD, \
+			func, \
 			NOTHING_ARG \
 		)(BOOST_PP_SEQ_ELEM(0, seq))
 
+	//! キャッシュ変数にset()メソッドを定義
+	#define RFLAG_SETMETHOD(name) \
+		template <class TArg> \
+		void BOOST_PP_CAT(set, name(TArg&& t)) { _rflag.set<name>(std::forward<TArg>(t)); }
+	//! 最下層のキャッシュ変数に一括でset()メソッドを定義
 	#define RFLAG_SETMETHOD_S(seq) \
 		BOOST_PP_SEQ_FOR_EACH( \
 			RFLAG_FUNC3, \
-			BOOST_PP_NIL, \
+			RFLAG_SETMETHOD, \
 			seq \
 		)
+
+	//! キャッシュ変数にref()メソッドを定義
+	#define RFLAG_REFMETHOD(name) \
+		auto& BOOST_PP_CAT(ref, name()) { return _rflag.refF<name>(); }
+	//! 最下層のキャッシュ変数に一括でref()メソッドを定義
+	#define RFLAG_REFMETHOD_S(seq) \
+		BOOST_PP_SEQ_FOR_EACH( \
+			RFLAG_FUNC3, \
+			RFLAG_REFMETHOD, \
+			seq \
+		)
+
 	/* class MyClass {
 		RFLAG_RVALUE(Value0, Type0)
 		RFLAG_RVALUE(Value0, Type0, Depends....) をクラス内に変数分だけ書く
