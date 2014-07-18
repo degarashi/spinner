@@ -146,13 +146,13 @@ namespace spn {
 	template <class T,
 			class I = typename inner::ULPHelper<T>::Integral_t>
 	bool LeULPs(T v0, T v1, I thresholdUlps) {
-		return inner::CmpULPs(v0, v1, thresholdUlps, std::less_equal<I>(), std::plus<I>());
+		return inner::CmpULPs(v0, v1, thresholdUlps, std::less_equal<>(), std::plus<>());
 	}
 	// v0 >= v1 - thresholdUlps
 	template <class T,
 			class I = typename inner::ULPHelper<T>::Integral_t>
 	bool GeULPs(T v0, T v1, I thresholdUlps) {
-		return inner::CmpULPs(v0, v1, thresholdUlps, std::greater_equal<I>(), std::minus<I>());
+		return inner::CmpULPs(v0, v1, thresholdUlps, std::greater_equal<>(), std::minus<>());
 	}
 	namespace inner {}
 }
