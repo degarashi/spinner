@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 
 namespace spn {
 	//! 絶対値(std::absがconstexprでない為)
@@ -7,7 +8,7 @@ namespace spn {
 		return (i0<0) ? -i0 : i0;
 	}
 	namespace { namespace inner {
-		extern void* Enabler;
+		static void* Enabler;
 		template <class T>
 		struct ULPHelper;
 		template <>
@@ -24,7 +25,14 @@ namespace spn {
 								FracBits = 52,
 								ExpZero = 1023;
 		};
+	}}
 
+	template <class T,
+			class Int = typename inner::ULPHelper<T>::Integral_t>
+	Int AsIntegral(T v0) {
+		return *reinterpret_cast<Int*>(&v0);
+	}
+	namespace { namespace inner {
 		//! 内部用関数
 		template <class I>
 		constexpr I t_ULPs2(I i0, I i1) {
@@ -45,9 +53,20 @@ namespace spn {
 								&& std::is_signed<I>::value
 								&& sizeof(T)==sizeof(I) >>
 		auto t_ULPs(T v0, T v1) {
-			auto i0 = *reinterpret_cast<I*>(&v0),
-				i1 = *reinterpret_cast<I*>(&v1);
+			auto i0 = AsIntegral(v0),
+				i1 = AsIntegral(v1);
 			return t_ULPs2(i0, i1);
+		}
+		template <class T, class I, class Cmp, class Op>
+		bool CmpULPs(T v0, T v1, I thresholdUlps, Cmp cmp, Op op) {
+			auto i0 = AsIntegral(v0),
+				i1 = AsIntegral(v1);
+			constexpr I MSB1(I(1) << (sizeof(I)*8 - 1));
+			if(i0 < 0)
+				i0 = MSB1 - i0;
+			if(i1 < 0)
+				i1 = MSB1 - i1;
+			return cmp(i0, op(i1, thresholdUlps));
 		}
 	}}
 
@@ -56,7 +75,7 @@ namespace spn {
 		実行時に読み替えたい場合はreinterpret_castを使う */
 	template <class T,
 			  class Int=typename inner::ULPHelper<T>::Integral_t>
-	constexpr Int AsIntegral(T v0) {
+	constexpr Int AsIntegral_C(T v0) {
 		using Helper = inner::ULPHelper<T>;
 		if(v0 == 0)
 			return 0;
@@ -109,16 +128,31 @@ namespace spn {
 	//! ULPsの計算 (constexprバージョン)
 	template <class T>
 	constexpr auto ULPs_C(T v0, T v1) {
-		return inner::t_ULPs2(AsIntegral(v0), AsIntegral(v1));
+		return inner::t_ULPs2(AsIntegral_C(v0), AsIntegral_C(v1));
 	}
 	//! ULPs(Units in the Last Place)の計算 (実行時バージョン)
 	template <class T,
 			class H = inner::ULPHelper<T>,
 			class I = typename H::Integral_t>
-	bool CompareULPs(T v0, T v1, I maxUlps) {
-		AssertP(Trap, maxUlps > 0						// 負数でない
-					&& maxUlps < (I(1)<<H::FracBits));	// 仮数部の桁を超えない
+	bool EqULPs(T v0, T v1, I maxUlps) {
+		AssertP(Trap, maxUlps > 0)						// 負数でない
 		return ULPs(v0,v1) <= maxUlps;
+	}
+	template <class T, class I>
+	bool NeULPs(T v0, T v1, I maxUlps) {
+		return !EqULPs(v0, v1, maxUlps);
+	}
+	// v0 <= v1 + thresholdUlps
+	template <class T,
+			class I = typename inner::ULPHelper<T>::Integral_t>
+	bool LeULPs(T v0, T v1, I thresholdUlps) {
+		return inner::CmpULPs(v0, v1, thresholdUlps, std::less_equal<I>(), std::plus<I>());
+	}
+	// v0 >= v1 - thresholdUlps
+	template <class T,
+			class I = typename inner::ULPHelper<T>::Integral_t>
+	bool GeULPs(T v0, T v1, I thresholdUlps) {
+		return inner::CmpULPs(v0, v1, thresholdUlps, std::greater_equal<I>(), std::minus<I>());
 	}
 	namespace inner {}
 }

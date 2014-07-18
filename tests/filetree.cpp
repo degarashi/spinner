@@ -59,7 +59,8 @@ namespace spn {
 					MAX_NAME = 16,
 					MIN_SIZE = 8,
 					MAX_SIZE = 256;
-		TEST_F(FileTreeTest, filetreeTest) {
+		using DISABLED_FileTreeTest = FileTreeTest;
+		TEST_F(DISABLED_FileTreeTest, filetreeTest) {
 			ToPathStr initialPath(g_apppath.plain_utf32());
 			// テスト用にファイル・ディレクトリ構造を作る
 			Dir dir(initialPath.getStringPtr());

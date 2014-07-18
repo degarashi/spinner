@@ -341,9 +341,49 @@ namespace spn {
 			void TestAsIntegral(MTRandom rd) {
 				auto fvalue = rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/2,
 														std::numeric_limits<T>::max()/2);
-				auto ivalue0 = AsIntegral(fvalue);
-				auto ivalue1 = *reinterpret_cast<decltype(ivalue0)*>(&fvalue);
-				EXPECT_EQ(ivalue0, ivalue1);
+				auto ivalueC = AsIntegral_C(fvalue);
+				auto ivalue = AsIntegral(fvalue);
+				EXPECT_EQ(ivalueC, ivalue);
+			}
+			template <class T>
+			void TestCompare(MTRandom rd) {
+				auto fnRand = [&rd]() {
+					return rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/1024,
+													std::numeric_limits<T>::max()/1024);
+				};
+				for(int i=0 ; i<N_Iteration ; i++) {
+					auto f0 = fnRand(),
+						f1 = fnRand();
+					// ULPs単位でどの程度離れているか
+					auto ulps = ULPs(f0, f1),
+						ulps_1 = std::max(decltype(ulps)(0), ulps-1);
+					if(ulps < 0) {
+						--i;
+						continue;
+					}
+					// Equal範囲チェック
+					EXPECT_TRUE(EqULPs(f0, f1, ulps));
+					if(ulps > 0)
+						EXPECT_FALSE(EqULPs(f0, f1, ulps_1));
+
+					// LessEqual範囲チェック
+					EXPECT_TRUE(LeULPs(f0, f1, ulps));
+					if(ulps > 0) {
+						if(f0 < f1)
+							EXPECT_TRUE(LeULPs(f0, f1, ulps_1));
+						else
+							EXPECT_FALSE(LeULPs(f0, f1, ulps_1));
+					}
+
+					// GreaterEqual範囲チェック
+					EXPECT_TRUE(GeULPs(f0, f1, ulps));
+					if(ulps > 0) {
+						if(f0 > f1)
+							EXPECT_TRUE(GeULPs(f0, f1, ulps_1));
+						else
+							EXPECT_FALSE(GeULPs(f0, f1, ulps_1));
+					}
+				}
 			}
 		}
 		TEST_F(MathTest, FloatAsIntegral) {
@@ -351,6 +391,12 @@ namespace spn {
 		}
 		TEST_F(MathTest, DoubleAsIntegral) {
 			TestAsIntegral<double>(getRand());
+		}
+		TEST_F(MathTest, FloatCompareULPs) {
+			TestCompare<float>(getRand());
+		}
+		TEST_F(MathTest, DoubleCompareULPs) {
+			TestCompare<double>(getRand());
 		}
 
 		TEST_F(MathTest, GapStructure) {
