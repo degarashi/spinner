@@ -258,7 +258,7 @@ namespace spn {
 				Vec3 v = GenRVec<3,false>(rdF);
 				auto v0 = v * q;
 				auto v1 = v * m;
-				EXPECT_TRUE(IsNear(v0, v1, Threshold));
+				EXPECT_TRUE(EqAbs(v0, v1, Threshold));
 				// クォータニオンを行列に変換した結果が一致するか
 				EXPECT_TRUE(Compare(q.asMat33(), m));
 				// Matrix -> Quaternion -> Matrix の順で変換して前と後で一致するか
@@ -291,9 +291,9 @@ namespace spn {
 				QT q = QT::Rotation(axis, ang);
 				auto m = q.asMat33();
 
-				EXPECT_TRUE(IsNear(AVec3{1,0,0}*m, q.getRight(), Threshold));
-				EXPECT_TRUE(IsNear(AVec3{0,1,0}*m, q.getUp(), Threshold));
-				EXPECT_TRUE(IsNear(AVec3{0,0,1}*m, q.getDir(), Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{1,0,0}*m, q.getRight(), Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{0,1,0}*m, q.getUp(), Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{0,0,1}*m, q.getDir(), Threshold));
 			}
 		}
 		TEST_F(MathTest, Pose) {
@@ -312,11 +312,11 @@ namespace spn {
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
 				auto ap = DecompAffine(m);
-				EXPECT_TRUE(IsNear(t, ap.offset, Threshold));
-				EXPECT_TRUE(IsNear(AVec3{1,0,0}*ap.rotation, q.getRight(), Threshold));
-				EXPECT_TRUE(IsNear(AVec3{0,1,0}*ap.rotation, q.getUp(), Threshold));
-				EXPECT_TRUE(IsNear(AVec3{0,0,1}*ap.rotation, q.getDir(), Threshold));
-				EXPECT_TRUE(IsNear(s, ap.scale, Threshold));
+				EXPECT_TRUE(EqAbs(t, ap.offset, Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{1,0,0}*ap.rotation, q.getRight(), Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{0,1,0}*ap.rotation, q.getUp(), Threshold));
+				EXPECT_TRUE(EqAbs(AVec3{0,0,1}*ap.rotation, q.getDir(), Threshold));
+				EXPECT_TRUE(EqAbs(s, ap.scale, Threshold));
 			}
 		}
 		// TODO: Pose::lerp チェック

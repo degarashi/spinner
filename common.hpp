@@ -90,27 +90,27 @@ namespace spn {
 			return get(0xdeadbeef * 0xdeadbeef, tup, std::integral_constant<int,sizeof...(Ts)-1>());
 		}
 	};
-	//! 値が近いか
+	//! 絶対値の誤差による等値判定
 	/*! \param[in] val value to check
 		\param[in] vExcept target value
 		\param[in] vEps value threshold */
 	template <class T, class T2, typename std::enable_if<std::is_arithmetic<T>::value>::type*& = Enabler>
-	bool IsNear(const T& val, const T& vExcept, T2 vEps = std::numeric_limits<T>::epsilon()) {
+	bool EqAbs(const T& val, const T& vExcept, T2 vEps = std::numeric_limits<T>::epsilon()) {
 		return std::fabs(vExcept-val) <= vEps;
 	}
 	template <class T, class... Ts>
-	bool IsNearT(const std::tuple<Ts...>& /*tup0*/, const std::tuple<Ts...>& /*tup1*/, const T& /*epsilon*/, std::integral_constant<int,-1>*) {
+	bool EqAbsT(const std::tuple<Ts...>& /*tup0*/, const std::tuple<Ts...>& /*tup1*/, const T& /*epsilon*/, std::integral_constant<int,-1>*) {
 		return true;
 	}
-	//! std::tuple全部の要素に対してIsNearを呼ぶ
+	//! std::tuple全部の要素に対してEqAbsを呼ぶ
 	template <class T, int N, class... Ts, typename std::enable_if<(N>=0)>::type*& = Enabler>
-	bool IsNearT(const std::tuple<Ts...>& tup0, const std::tuple<Ts...>& tup1, const T& epsilon, std::integral_constant<int,N>*) {
-		return IsNear(std::get<N>(tup0), std::get<N>(tup1), epsilon)
-				&& IsNearT(tup0, tup1, epsilon, (std::integral_constant<int,N-1>*)nullptr);
+	bool EqAbsT(const std::tuple<Ts...>& tup0, const std::tuple<Ts...>& tup1, const T& epsilon, std::integral_constant<int,N>*) {
+		return EqAbs(std::get<N>(tup0), std::get<N>(tup1), epsilon)
+				&& EqAbsT(tup0, tup1, epsilon, (std::integral_constant<int,N-1>*)nullptr);
 	}
 	template <class... Ts, class T>
-	bool IsNear(const std::tuple<Ts...>& tup0, const std::tuple<Ts...>& tup1, const T& epsilon) {
-		return IsNearT<T>(tup0, tup1, epsilon, (std::integral_constant<int,sizeof...(Ts)-1>*)nullptr);
+	bool EqAbs(const std::tuple<Ts...>& tup0, const std::tuple<Ts...>& tup1, const T& epsilon) {
+		return EqAbsT<T>(tup0, tup1, epsilon, (std::integral_constant<int,sizeof...(Ts)-1>*)nullptr);
 	}
 
 	//! 浮動少数点数の値がNaNになっているか
@@ -123,12 +123,12 @@ namespace spn {
 		auto valA = std::fabs(val);
 		return valA==std::numeric_limits<float>::infinity() || IsNaN(valA); }
 
-	//! std::tupleの要素ごとの距離(IsNear)比較
+	//! std::tupleの要素ごとの距離(EqAbs)比較
 	template <class T, int NPow>
 	struct TupleNear {
 		template <class P>
 		bool operator()(const P& t0, const P& t1) const {
-			return IsNear(t0, t1, spn::ConstantPow10<T,NPow>());
+			return EqAbs(t0, t1, spn::ConstantPow10<T,NPow>());
 		}
 	};
 }

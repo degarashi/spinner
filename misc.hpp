@@ -80,11 +80,11 @@ namespace spn {
 	template <class RT, class OBJ, class... Args>
 	struct ReturnType<RT (OBJ::*)(Args...) const> {
 		using type = RT; };
-	//! ベクトルの差分距離判定(not distance)
+	//! ベクトルの差分距離判定(マンハッタン距離)
 	template <int N, bool A0, bool A1>
-	bool IsNear(const VecT<N,A0>& v0, const VecT<N,A1>& v1, float eps = std::numeric_limits<float>::epsilon()) {
+	bool EqAbs(const VecT<N,A0>& v0, const VecT<N,A1>& v1, float eps = std::numeric_limits<float>::epsilon()) {
 		for(int i=0 ; i<N ; i++) {
-			if(!IsNear(v0.m[i], v1.m[i], eps))
+			if(!EqAbs(v0.m[i], v1.m[i], eps))
 				return false;
 		}
 		return true;
