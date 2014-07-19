@@ -218,17 +218,9 @@ namespace spn {
 				reset(hdl);
 				return *this;
 			}
-			template <class T, class Dummy=void>
-			operator T() const {
-				// this must be failed
-				Dummy do_fail;
-				throw 0;
-			}
-			template <class Pass0=void, class Pass1=void>
-			operator bool () const {
+			explicit operator bool () const {
 				return valid();
 			}
-			template <class Pass0=void, class Pass1=void>
 			operator HDL () const {
 				return get();
 			}
@@ -354,7 +346,7 @@ namespace spn {
 			WHdl weak() const { return WHdl::FromHandle(MGR::_ref().weak(*this)); }
 			uint32_t count() const { return MGR::_ref().count(*this); }
 
-			operator bool () const { return valid(); }
+			explicit operator bool () const { return valid(); }
 			data_type* operator -> () { return &ref(); }
 			const data_type* operator -> () const { return &cref(); }
 	};
