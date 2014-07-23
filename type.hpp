@@ -131,6 +131,39 @@ namespace spn {
 	};
 
 	template <class... TS>
+	class CType;
+
+	//! タイプリストを逆順にした物を返す（ただしCType<CType<A,B>, C> の形になる）
+	/*! CPlainと組み合わせて使う */
+	template <class... Ts>
+	struct CReverse;
+	template <class T>
+	struct CReverse<T> {
+		using type = CType<T>;
+	};
+	template <class T, class... Ts>
+	struct CReverse<T,Ts...> {
+		using type = CType<typename CReverse<Ts...>::type, T>;
+	};
+	//! CType<CType<...>, ...> の入れ子を展開する
+	template <class... Ts>
+	struct CPlain {
+		using type = CType<Ts...>;
+	};
+	template <class T>
+	struct CPlain<T> {
+		using type = T;
+	};
+	template <class... Ts0, class... Ts1>
+	struct CPlain<CType<Ts0...>, Ts1...> {
+		using type = typename CPlain<Ts0..., Ts1...>::type;
+	};
+	template <class... Ts0, class... Ts1>
+	struct CPlain<CType<CType<Ts0...>, Ts1...>> {
+		using type = typename CPlain<Ts0..., Ts1...>::type;
+	};
+
+	template <class... TS>
 	class CType {
 		private:
 			template <class T>
@@ -165,6 +198,18 @@ namespace spn {
 			template <class Dummy=void>
 			struct Another {
 				using result = CType<decltype(TS()())...>;
+			};
+			//! 型リストを逆順にする
+			template <class Dummy=void>
+			struct Reversed {
+				using type = typename CPlain<typename CReverse<TS...>::type>::type;
+			};
+			//! 自身の型
+			using type = CType<TS...>;
+			//! 別の型のテンプレート引数に使う
+			template <template<class...> class T>
+			struct As {
+				using type = T<TS...>;
 			};
 
 			constexpr static int size = sizeof...(TS),					//!< 型リストの要素数
@@ -217,3 +262,5 @@ namespace spn {
 			};
 	};
 }
+
+
