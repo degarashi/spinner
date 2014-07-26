@@ -48,6 +48,8 @@ namespace spn {
 	};
 	//! 要素カウント
 	#define countof(a)	static_cast<int>(sizeof((a))/sizeof((a)[0]))
+	//! 条件式の評価結果がfalseの場合、マクロ定義した箇所には到達しないことを保証
+	#define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0);
 	//! 最大値を取得
 	template <int... N>
 	struct TMax {
