@@ -1,5 +1,6 @@
 #pragma once
 #include <algorithm>
+#include "error.hpp"
 
 namespace spn {
 	//! 絶対値(std::absがconstexprでない為)

@@ -11,11 +11,14 @@
 #include "../ulps.hpp"
 #include "test.hpp"
 
+#define EXPECT_EQULPS_VEC(v0, v1, n) {\
+	for(int i=0 ; i<n ; i++) \
+		EXPECT_TRUE(EqULPs((v0).m[i], (v1).m[i], (ThresholdULPs)));}
 namespace spn {
 	namespace test {
 		namespace {
-			constexpr float Threshold = 1e-3f,
-							ValueMin = -1e4f,
+			constexpr auto ThresholdULPs = ULPs_C(0.f, 1e-4f);
+			constexpr float ValueMin = -1e4f,
 							ValueMax = 1e4f,
 							N_Iteration = 100;
 			auto OpMul = [](auto& v0, auto& v1){ return v0 * v1; };
@@ -39,8 +42,7 @@ namespace spn {
 			bool Compare(const std::array<std::array<float,AN>, AM>& ar, const MatT<M,N,A>& m) {
 				for(int i=0 ; i<M ; i++) {
 					for(int j=0 ; j<N ; j++) {
-						auto diff = std::fabs(ar[i][j] - m.ma[i][j]);
-						if(diff >= Threshold)
+						if(!EqULPs(ar[i][j], m.ma[i][j], ThresholdULPs))
 							return false;
 					}
 				}
@@ -51,8 +53,7 @@ namespace spn {
 			bool Compare(const MatT<M,N,A0>& m0, const MatT<M,N,A1>& m1) {
 				for(int i=0 ; i<M; i++) {
 					for(int j=0 ; j<N; j++) {
-						auto diff = std::fabs(m0.ma[i][j] - m1.ma[i][j]);
-						if(diff >= Threshold)
+						if(!EqULPs(m0.ma[i][j], m1.ma[i][j], ThresholdULPs))
 							return false;
 					}
 				}
@@ -258,7 +259,7 @@ namespace spn {
 				Vec3 v = GenRVec<3,false>(rdF);
 				auto v0 = v * q;
 				auto v1 = v * m;
-				EXPECT_TRUE(EqAbs(v0, v1, Threshold));
+				EXPECT_EQULPS_VEC(v0, v1, 3);
 				// クォータニオンを行列に変換した結果が一致するか
 				EXPECT_TRUE(Compare(q.asMat33(), m));
 				// Matrix -> Quaternion -> Matrix の順で変換して前と後で一致するか
@@ -291,9 +292,9 @@ namespace spn {
 				QT q = QT::Rotation(axis, ang);
 				auto m = q.asMat33();
 
-				EXPECT_TRUE(EqAbs(AVec3{1,0,0}*m, q.getRight(), Threshold));
-				EXPECT_TRUE(EqAbs(AVec3{0,1,0}*m, q.getUp(), Threshold));
-				EXPECT_TRUE(EqAbs(AVec3{0,0,1}*m, q.getDir(), Threshold));
+				EXPECT_EQULPS_VEC((AVec3{1,0,0}*m), q.getRight(), 3);
+				EXPECT_EQULPS_VEC((AVec3{0,1,0}*m), q.getUp(), 3);
+				EXPECT_EQULPS_VEC((AVec3{0,0,1}*m), q.getDir(), 3);
 			}
 		}
 		TEST_F(MathTest, Pose) {
@@ -312,11 +313,11 @@ namespace spn {
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
 				auto ap = DecompAffine(m);
-				EXPECT_TRUE(EqAbs(t, ap.offset, Threshold));
-				EXPECT_TRUE(EqAbs(AVec3{1,0,0}*ap.rotation, q.getRight(), Threshold));
-				EXPECT_TRUE(EqAbs(AVec3{0,1,0}*ap.rotation, q.getUp(), Threshold));
-				EXPECT_TRUE(EqAbs(AVec3{0,0,1}*ap.rotation, q.getDir(), Threshold));
-				EXPECT_TRUE(EqAbs(s, ap.scale, Threshold));
+				EXPECT_EQULPS_VEC(t, ap.offset, 3);
+				EXPECT_EQULPS_VEC((AVec3{1,0,0}*ap.rotation), q.getRight(), 3);
+				EXPECT_EQULPS_VEC((AVec3{0,1,0}*ap.rotation), q.getUp(), 3);
+				EXPECT_EQULPS_VEC((AVec3{0,0,1}*ap.rotation), q.getDir(), 3);
+				EXPECT_EQULPS_VEC(s, ap.scale, 3);
 			}
 		}
 		// TODO: Pose::lerp チェック
@@ -348,8 +349,8 @@ namespace spn {
 			template <class T>
 			void TestCompare(MTRandom rd) {
 				auto fnRand = [&rd]() {
-					return rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/1024,
-													std::numeric_limits<T>::max()/1024);
+					return rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/4096,
+													std::numeric_limits<T>::max()/4096);
 				};
 				for(int i=0 ; i<N_Iteration ; i++) {
 					auto f0 = fnRand(),
