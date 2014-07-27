@@ -54,8 +54,20 @@ namespace spn {
 					TreeNode_t(int v): value(v) {}
 			};
 			using SPTreeNode = std::shared_ptr<TreeNode_t>;
-		}
 
+			void CheckParent(const SPTreeNode& nd) {
+				auto c = nd->getChild();
+				while(c) {
+					// 子ノードの親をチェック
+					auto p = c->getParent();
+					ASSERT_EQ(p.get(), nd.get());
+					// 下層のノードを再帰的にチェック
+					CheckParent(c);
+					// 兄弟ノードをチェック
+					c = c->getSibling();
+				}
+			}
+		}
 		class TreeNodeTest : public RandomTestInitializer {};
 		TEST_F(TreeNodeTest, General) {
 			auto rd = getRand();
@@ -92,7 +104,6 @@ namespace spn {
 				node->getParent()->removeChild(node);
 			};
 			reflAB();
-			// <<<sibling付きのノードを挿入する場合の親付け替え>>>
 			for(int i=1 ; i<N_Manipulation ; i++) {
 				for(;;) {
 					// ノードが1つしか無い時は追加オンリー
@@ -111,7 +122,7 @@ namespace spn {
 							// Tree-B
 							auto& node_b = arB[at];
 							fnAddNode(node_b, std::make_shared<TreeNode_t>(i));
-							std::cout << boost::format("added: %1% value=%2%\n") % at % i;
+							// std::cout << boost::format("added: %1% value=%2%\n") % at % i;
 							break; }
 						// ノードを削除
 						case E_Manip::Remove: {
@@ -122,7 +133,7 @@ namespace spn {
 							fnRemNode(arA[at]);
 							// Tree-B
 							fnRemNode(arB[at]);
-							std::cout << boost::format("removed: %1% value=%2%\n") % at % value;
+							// std::cout << boost::format("removed: %1% value=%2%\n") % at % value;
 							break; }
 						// ノードを別の場所に繋ぎ変え
 						case E_Manip::Recompose: {
@@ -137,13 +148,17 @@ namespace spn {
 							// Tree-B
 							fnRemNode(arB[from]);
 							fnAddNode(arB[to], arB[from]);
-							std::cout << boost::format("moved: %1% to %2% value=%3%\n") % from % to % value;
+							// std::cout << boost::format("moved: %1% to %2% value=%3%\n") % from % to % value;
 							break; }
 						default:
 							__assume(0);
 					}
 					break;
 				}
+				// 親ノードの接続確認
+				CheckParent(rootB);
+				// Cloneしたツリーでも確認
+				CheckParent(rootB->clone());
 				//{	// print out テスト
 				//	std::unordered_set<TreeNode_t*> testset;
 				//	rootB->iterateDepthFirst([&testset](auto& nd, int d){

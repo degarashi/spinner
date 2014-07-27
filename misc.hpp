@@ -221,7 +221,7 @@ namespace spn {
 				if(_spChild)
 					sp->_spChild = _spChild->clone(sp);
 				if(_spSibling)
-					sp->_spSibling = _spSibling->clone(sp);
+					sp->_spSibling = _spSibling->clone(parent);
 				sp->_wpParent = parent;
 				return std::move(sp);
 			}
