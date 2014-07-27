@@ -205,7 +205,7 @@ namespace spn {
 				return iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
 			}
 			template <class Callback>
-			const SP& find(Callback&& cb) const {
+			SP find(Callback&& cb) const {
 				SP ret;
 				iterateDepthFirst([&cb, &ret](auto& nd, int){
 					if(cb(nd)) {
@@ -214,7 +214,7 @@ namespace spn {
 					}
 					return Iterate::StepIn;
 				});
-				return ret;
+				return std::move(ret);
 			}
 			SP clone(const WP& parent=WP()) const {
 				SP sp = std::make_shared<T>(*this->shared_from_this());
