@@ -109,6 +109,13 @@ namespace spn {
 			}
 
 		public:
+			//! iterateDepthFirstの戻り値
+			enum class Iterate {
+				ReturnFromChild,	//!< 内部用
+				StepIn,				//!< 子を巡回
+				Next,				//!< 子を巡回せず兄弟ノードへ進む
+				Quit				//!< 直ちに巡回を終える
+			};
 			TreeNode() = default;
 			TreeNode(TreeNode&& t) = default;
 			//! copy-ctorに置いてはリンク情報をコピーしない
@@ -119,10 +126,10 @@ namespace spn {
 			TreeNode& operator = (TreeNode&& t) = default;
 
 			void setParent(const SP& s) {
-				_wpParent = WP(s);
+				setParent(WP(s));
 			}
 			void setParent(const WP& w) {
-				AssertP(Trap, w.lock.get() != this, "self-reference detected")
+				AssertP(Trap, w.lock().get() != this, "self-reference detected")
 				_wpParent = w;
 			}
 			SP getParent() const {
@@ -134,62 +141,80 @@ namespace spn {
 			const SP& getSibling() const {
 				return _spSibling;
 			}
-			void removeChild(pointer target) {
-				if(pointer pC = _spChild.get()) {
-					if(pC == target) {
-						_spChild->setParent(WP());
-						_spChild = _spChild.getSibling();
-					} else
-						_spChild->removeSibling(nullptr, target);
+			void removeChild(const SP& target) {
+				AssertP(Trap, _spChild)
+				if(_spChild == target) {
+					// 最初の子ノードが削除対象
+					target->setParent(WP());
+					_spChild = target->getSibling();
+					target->_spSibling = nullptr;
+				} else {
+					// 兄弟ノードのどれかが削除対象
+					_spChild->removeSibling(nullptr, target);
 				}
 			}
-			void removeSibling(pointer prev, pointer target) {
-				if(target == this) {
-					if(prev)
-						prev->_spSibling = target;
-					else {
-						if(auto spP = getParent())
-							spP->_spChild = _spSibling;
-					}
-				} else if(_spSibling)
-					_spSibling->removeSibling(this, target);
+			void removeSibling(pointer prev, const SP& target) {
+				if(target.get() == this) {
+					// このノードが削除対象
+					AssertP(Trap, prev)
+					prev->_spSibling = _spSibling;
+					setParent(WP());
+					_spSibling = nullptr;
+					return;
+				}
+				AssertP(Trap, _spSibling)
+				_spSibling->removeSibling(this, target);
 			}
 			void addChild(const SP& s) {
 				AssertP(Trap, s.get() != this, "self-reference detected")
 				if(_spChild)
 					_spChild->addSibling(s);
-				else
+				else {
 					_spChild = s;
-				if(s)
 					s->setParent(this->shared_from_this());
+				}
 			}
 			void addSibling(const SP& s) {
 				AssertP(Trap, s.get() != this, "self-reference detected")
 				if(_spSibling)
 					_spSibling->addSibling(s);
-				else
+				else {
 					_spSibling = s;
-				if(s)
-					s->setParent(this->shared_from_this());
-			}
-			void removeLink() {
-				removeChild();
-				if(auto spP = getParent())
-					spP->removeChild(this);
+					s->setParent(_wpParent);
+				}
 			}
 			//! 深さ優先で巡回
 			template <class Callback, bool BConst=false>
-			void iterateDepthFirst(Callback&& cb, int depth=0) {
+			Iterate iterateDepthFirst(Callback&& cb, int depth=0) {
 				using thistc = std::conditional_t<BConst, const T, T>;
-				cb(static_cast<thistc&>(*this), depth);
-				if(_spChild)
-					_spChild->iterateDepthFirst(cb, depth+1);
+				Iterate t = cb(static_cast<thistc&>(*this), depth);
+				if(t == Iterate::Quit)
+					return Iterate::Quit;
+				if(t == Iterate::StepIn) {
+					if(_spChild) {
+						if(_spChild->iterateDepthFirst(std::forward<Callback>(cb), depth+1) == Iterate::Quit)
+							return Iterate::Quit;
+					}
+				}
 				if(_spSibling)
-					_spSibling->iterateDepthFirst(cb, depth);
+					return _spSibling->iterateDepthFirst(std::forward<Callback>(cb), depth);
+				return Iterate::ReturnFromChild;
 			}
 			template <class Callback>
-			void iterateDepthFirst(Callback&& cb, int depth=0) const {
-				iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
+			Iterate iterateDepthFirst(Callback&& cb, int depth=0) const {
+				return iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
+			}
+			template <class Callback>
+			const SP& find(Callback&& cb) const {
+				SP ret;
+				iterateDepthFirst([&cb, &ret](auto& nd, int){
+					if(cb(nd)) {
+						ret = nd.shared_from_this();
+						return Iterate::Quit;
+					}
+					return Iterate::StepIn;
+				});
+				return ret;
 			}
 			SP clone(const WP& parent=WP()) const {
 				SP sp = std::make_shared<T>(*this->shared_from_this());
