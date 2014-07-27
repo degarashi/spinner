@@ -349,8 +349,8 @@ namespace spn {
 			template <class T>
 			void TestCompare(MTRandom rd) {
 				auto fnRand = [&rd]() {
-					return rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/4096,
-													std::numeric_limits<T>::max()/4096);
+					auto range0 = static_cast<T>(std::pow(T(2), std::numeric_limits<T>::max_exponent/2));
+					return rd.getUniformRange<T>(-range0, range0);
 				};
 				for(int i=0 ; i<N_Iteration ; i++) {
 					auto f0 = fnRand(),
