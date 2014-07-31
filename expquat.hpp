@@ -29,7 +29,9 @@
 		struct ALIGN16 ExpQuatT<ALIGNB> {
 			constexpr static int width = 3;
 			union {
-				float	x,y,z;
+				struct {
+					float	x,y,z;
+				};
 				float	m[3];
 			};
 
@@ -58,8 +60,9 @@
 
 			float len_sq() const;
 			float length() const;
+			const VEC3& asVec3() const;
 
-			std::tuple<float,VEC3> getAngAxis() const;
+			std::pair<float,VEC3> getAngAxis() const;
 		};
 		using BOOST_PP_CAT(ALIGNA, ExpQuat) = EQT;
 	#else
@@ -67,9 +70,14 @@
 		EQT::ExpQuatT(const ExpQuatT<true>& q) { STORETHIS(LOADPS_A4(q.m)); }
 		template <bool A>
 		EQT::ExpQuatT(const QuatT<A>& q) {
-			float ang_d2 = std::acos(q.w);
-			reg128 xm = reg_mul_ps(q.loadPS(), reg_load1_ps(&ang_d2));
-			STORETHIS(xm);
+			if(std::fabs(q.w) >= 1.f-1e-6f) {
+				// 無回転クォータニオンとみなす
+				x = y = z = 0;
+			} else {
+				const float theta = std::acos(q.w);
+				reg128 xm = reg_mul_ps(q.getAxis().loadPS(), reg_load1_ps(&theta));
+				STORETHIS(xm);
+			}
 		}
 		template EQT::ExpQuatT(const QuatT<false>&);
 		template EQT::ExpQuatT(const QuatT<true>&);
@@ -82,7 +90,7 @@
 		}
 		QT EQT::asQuat() const {
 			auto ret = getAngAxis();
-			return QT::Rotation(std::get<1>(ret), std::get<0>(ret));
+			return QT::Rotation(ret.second, ret.first);
 		}
 		#define DEF_OP0(align,op,func)	EQT EQT::operator op (const ExpQuatT<BOOLNIZE(align)>& q) const { \
 			EQT eq; \
@@ -113,22 +121,18 @@
 			(*this) *= spn::Rcp22Bit(s);
 			return *this;
 		}
-		float EQT::len_sq() const {
-			reg128 xm = LOADTHISZ();
-			SUMVEC(xm)
-
-			float ret;
-			reg_store_ss(&ret, xm);
-			return ret;
+		const VEC3& EQT::asVec3() const {
+			return *reinterpret_cast<const VEC3*>(this);
 		}
-		float EQT::length() const {
-			return spn::Sqrt(len_sq());
-		}
-		std::tuple<float,VEC3> EQT::getAngAxis() const {
-			float len = length();
-			VEC3 axis(x,y,z);
-			axis /= len;
-			return std::make_tuple(len*2, axis);
+		std::pair<float,VEC3> EQT::getAngAxis() const {
+			auto axis = asVec3();
+			float theta = axis.length();		// = (angle/2)
+			if(theta < 1e-6f) {
+				// 無回転クォータニオンとする
+				return std::make_pair(0, VEC3(1,0,0));
+			}
+			axis /= theta;
+			return std::make_pair(theta*2, axis);
 		}
 	#endif
 	}
