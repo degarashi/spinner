@@ -15,9 +15,9 @@ namespace spn {
 			HSVColor hsv = rgb0.toHSV();
 			RGBColor rgb1 = hsv.toRGB();
 
-			EXPECT_NEAR(rgb0.x, rgb1.x, 1e-6f);
-			EXPECT_NEAR(rgb0.y, rgb1.y, 1e-6f);
-			EXPECT_NEAR(rgb0.z, rgb1.z, 1e-6f);
+			EXPECT_NEAR(rgb0.x, rgb1.x, 1e-5f);
+			EXPECT_NEAR(rgb0.y, rgb1.y, 1e-5f);
+			EXPECT_NEAR(rgb0.z, rgb1.z, 1e-5f);
 
 			// HSV -> RGBA が HSV -> RGBとAlpha以外一致しているか
 			RGBAColor rgba1 = hsv.toRGBA(1.f);
@@ -36,9 +36,12 @@ namespace spn {
 			RGBColor rgb = hsv0.toRGB();
 			HSVColor hsv1 = rgb.toHSV();
 
-			EXPECT_NEAR(hsv0.x, hsv1.x, 1e-6f);
-			EXPECT_NEAR(hsv0.y, hsv1.y, 1e-6f);
-			EXPECT_NEAR(hsv0.z, hsv1.z, 1e-6f);
+			// 彩度が0の場合は色相が復元できない
+			if(hsv0.y > 1e-5f) {
+				EXPECT_NEAR(hsv0.x, hsv1.x, 1e-5f);
+			}
+			EXPECT_NEAR(hsv0.y, hsv1.y, 1e-5f);
+			EXPECT_NEAR(hsv0.z, hsv1.z, 1e-5f);
 
 			// RGB -> HSVA が RGB -> HSVとAlpha以外一致しているか
 			HSVAColor hsva1 = rgb.toHSVA(1.f);

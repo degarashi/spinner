@@ -9,11 +9,9 @@
 #include "../noseq.hpp"
 #include "../random.hpp"
 #include "../ulps.hpp"
+#include "../expquat.hpp"
 #include "test.hpp"
 
-#define EXPECT_EQULPS_VEC(v0, v1, n) {\
-	for(int i=0 ; i<n ; i++) \
-		EXPECT_TRUE(EqULPs((v0).m[i], (v1).m[i], (ThresholdULPs)));}
 namespace spn {
 	namespace test {
 		namespace {
@@ -209,6 +207,7 @@ namespace spn {
 		#undef MATRIXCHECK
 
 		namespace {
+			//! ランダムなベクトル
 			template <int N, bool A, class RD>
 			auto GenRVec(RD& rd) {
 				VecT<N,A> v;
@@ -216,6 +215,7 @@ namespace spn {
 					v.m[i] = rd();
 				return v;
 			}
+			//! ランダムなベクトル（但しゼロではない）
 			template <int N, bool A, class RD>
 			auto GenRVecNZ(RD& rd, float th) {
 				VecT<N,A> v;
@@ -224,13 +224,19 @@ namespace spn {
 				} while(v.length() < th);
 				return v;
 			}
+			//! ランダムな方向ベクトル
 			template <int N, bool A, class RD>
 			auto GenRDir(RD& rd) {
 				return GenRVecNZ<N,A>(rd, 1e-4f).normalization();
 			}
+			//! ランダムなクォータニオン
 			template <bool A, class RD>
 			auto GenRQuat(RD& rd) {
 				return QuatT<A>::Rotation(GenRDir<3,A>(rd), rd());
+			}
+			template <bool A, class RD>
+			auto GenRExpQuat(RD& rd) {
+				return ExpQuatT<A>(GenRQuat<A>(rd));
 			}
 		}
 		// AlignedとUnAlignedを両方テストする
@@ -238,16 +244,125 @@ namespace spn {
 		class QuaternionTest : public RandomTestInitializer {
 			protected:
 				using QuatType = QuatT<T::value>;
+				constexpr static bool Align = T::value;
+				const static float RandMin,
+									RandMax;
+				Optional<MTRandom>		_rd;
+				std::function<float ()>	_fnRandF,
+										_fnRandF01,
+										_fnRandPI;
+
+				void SetUp() override {
+					RandomTestInitializer::SetUp();
+					_rd = getRand();
+					_fnRandF = [&rd=*_rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+					_fnRandF01 = [&rd=*_rd](){ return rd.template getUniformRange<float>(0,1); };
+					_fnRandPI = [&rd=*_rd](){ return rd.template getUniformRange<float>(-PI,PI); };
+				}
+				void TearDown() override {
+					_rd = none;
+					RandomTestInitializer::TearDown();
+				}
+				MTRandom& refRand() { return _rd; }
+				auto getRandPI() { return _fnRandPI; }
+				auto getRandF() { return _fnRandF; }
+				auto getRandF01() { return _fnRandF01; }
+				QuatType genRandQ() { return GenRQuat<Align>(_fnRandF); }
+				auto genRandDir() { return GenRDir<3,Align>(_fnRandF); }
 		};
+		template <class T>
+		const float QuaternionTest<T>::RandMin = -1e3f;
+		template <class T>
+		const float QuaternionTest<T>::RandMax = 1e3f;
+
 		using QuaternionTypeList = ::testing::Types<std::integral_constant<bool,false>,
 										std::integral_constant<bool,true>>;
 		TYPED_TEST_CASE(QuaternionTest, QuaternionTypeList);
-		TYPED_TEST(QuaternionTest, Test) {
-			using QT = typename std::decay_t<decltype(*this)>::QuatType;
-			constexpr float RandMin = -1e3f,
-							RandMax = 1e3f;
-			auto rd = this->getRand();
-			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+
+		template <class T>
+		class ExpQuaternionTest : public QuaternionTest<T> {
+			protected:
+				using base_t = QuaternionTest<T>;
+				using ExpType = ExpQuatT<T::value>;
+				ExpType genRandEQ() { return GenRExpQuat(base_t::_fnRandF); }
+		};
+		using ExpQuaternionTypeList = QuaternionTypeList;
+		TYPED_TEST_CASE(ExpQuaternionTest, ExpQuaternionTypeList);
+
+		TYPED_TEST(ExpQuaternionTest, QuaternionConvert) {
+			using This_t = std::decay_t<decltype(*this)>;
+			using EQ = typename This_t::ExpType;
+
+			// Quat -> ExpQuat -> Quat の結果比較
+			for(int i=0 ; i<N_Iteration ; i++) {
+				auto q0 = this->genRandQ();
+				EQ eq(q0);
+				auto q1 = eq.asQuat();
+				auto aa0 = eq.getAngAxis();
+				eq = EQ(q1*-1);
+				auto aa1 = eq.getAngAxis();
+				auto q2 = eq.asQuat();
+				// クォータニオンの符号反転した物は同一視 = 方向ベクトルを変換して同じだったらOK
+				auto v0 = this->genRandDir();
+				auto v1 = v0 * q0,
+					v2 = v0 * q1,
+					v3 = v0 * q2;
+				EXPECT_TRUE(EqAbs(v1, v2, 5e-2f));
+				EXPECT_TRUE(EqAbs(v1, v3, 5e-2f));
+			}
+		}
+		TYPED_TEST(ExpQuaternionTest, Lerp) {
+			using This_t = std::decay_t<decltype(*this)>;
+			using EQ = typename This_t::ExpType;
+			auto rdF01 = this->getRandF01();
+
+			// ExpQuatを合成した結果をQuat合成のケースと比較
+			for(int i=0 ; i<N_Iteration ; i++) {
+				using QT = typename This_t::QuatType;
+				auto q0 = this->genRandQ(),
+					q1 = this->genRandQ();
+				// 最短距離で補間するような細工
+				if(q0.dot(q1) < 0)
+					q1 *= -1;
+				EQ eq0(q0),
+					eq1(q1),
+					eq10(q0 * -1),
+					eq11(q1 * -1);
+				auto len0 = eq0.asVec3().length(),
+					len1 = eq1.asVec3().length(),
+					len10 = eq10.asVec3().length(),
+					len11 = eq11.asVec3().length();
+				if(len0+len1 > len10+len11) {
+					eq0 = q0 * -1;
+					eq1 = q1 * -1;
+					eq10 = q0;
+					eq11 = q1;
+				}
+
+				constexpr int NDiv = 32;
+				float err_sum = 0;
+				auto v0 = this->genRandDir();
+				// 0から1まで遷移
+				for(int i=0 ; i<=NDiv ; i++) {
+					float t = i/float(NDiv);
+					// Quatで変換
+					auto v1 = v0 * q0.slerp(q1, t);
+					// ExpQuatで変換
+					auto eq2 = eq0 * (1.f-t) + eq1 * t;
+					auto v2 = v0 * eq2.asQuat();
+
+					auto diff = v2-v1;
+					err_sum += diff.dot(diff);
+				}
+				err_sum /= NDiv+1;
+				EXPECT_LE(err_sum, 0.36f);
+			}
+		}
+		TYPED_TEST(QuaternionTest, ConvertMatrix) {
+			using This_t = std::decay_t<decltype(*this)>;
+			constexpr bool Align = This_t::Align;
+			using QT = typename This_t::QuatType;
+			auto rdF = this->getRandF();
 
 			for(int i=0 ; i<N_Iteration ; i++) {
 				float ang = rdF();
@@ -256,16 +371,22 @@ namespace spn {
 				auto m = AMat33::RotationAxis(axis, ang);
 
 				// クォータニオンでベクトルを変換した結果が行列のそれと一致するか
-				Vec3 v = GenRVec<3,false>(rdF);
+				auto v = GenRVec<3,Align>(rdF);
 				auto v0 = v * q;
 				auto v1 = v * m;
-				EXPECT_EQULPS_VEC(v0, v1, 3);
+				EXPECT_TRUE(EqULPs(v0, v1, ThresholdULPs));
 				// クォータニオンを行列に変換した結果が一致するか
 				EXPECT_TRUE(Compare(q.asMat33(), m));
 				// Matrix -> Quaternion -> Matrix の順で変換して前と後で一致するか
 				q = QT::FromMat(m);
 				EXPECT_TRUE(Compare(q.asMat33(), m));
 			}
+		}
+		TYPED_TEST(QuaternionTest, Multiply) {
+			using This_t = std::decay_t<decltype(*this)>;
+			using QT = typename This_t::QuatType;
+			auto rdF = this->getRandF();
+
 			// クォータニオンを合成した結果を行列のケースと比較
 			for(int i=0 ; i<N_Iteration ; i++) {
 				float ang[2] = {rdF(), rdF()};
@@ -285,6 +406,13 @@ namespace spn {
 				q[2].normalize();
 				EXPECT_TRUE(Compare(q[2].asMat33(), m[2]));
 			}
+		}
+		TYPED_TEST(QuaternionTest, Rotation) {
+			using This_t = std::decay_t<decltype(*this)>;
+			constexpr bool Align = This_t::Align;
+			using QT = typename This_t::QuatType;
+			auto rdF = this->getRandF();
+
 			// getRight(), getUp(), getDir()が{1,0,0},{0,1,0},{0,0,1}を変換した結果と比較
 			for(int i=0 ; i<N_Iteration ; i++) {
 				float ang = rdF();
@@ -292,32 +420,55 @@ namespace spn {
 				QT q = QT::Rotation(axis, ang);
 				auto m = q.asMat33();
 
-				EXPECT_EQULPS_VEC((AVec3{1,0,0}*m), q.getRight(), 3);
-				EXPECT_EQULPS_VEC((AVec3{0,1,0}*m), q.getUp(), 3);
-				EXPECT_EQULPS_VEC((AVec3{0,0,1}*m), q.getDir(), 3);
+				EXPECT_TRUE(EqULPs(VecT<3,Align>(Vec3{1,0,0}*m), q.getRight(), ThresholdULPs));
+				EXPECT_TRUE(EqULPs(VecT<3,Align>(AVec3{0,1,0}*m), q.getUp(), ThresholdULPs));
+				EXPECT_TRUE(EqULPs(VecT<3,Align>(AVec3{0,0,1}*m), q.getDir(), ThresholdULPs));
 			}
 		}
-		TEST_F(MathTest, Pose) {
+		TYPED_TEST(QuaternionTest, SLerp) {
+			using This_t = std::decay_t<decltype(*this)>;
+			using QT = typename This_t::QuatType;
+			auto rdPI = this->getRandPI();
+
+			// クォータニオンの線形補間
+			for(int i=0 ; i<N_Iteration ; i++) {
+				const int div = 32;
+				float tdiv = 1.f/div;
+				auto axis = this->genRandDir();
+				auto ang = rdPI();
+				auto q0 = this->genRandQ();
+				auto q1 = QT::Rotation(axis, ang);
+				q1 = q0 >> q1;
+				Mat33 m0 = q0.asMat33();
+				for(int i=0 ; i<div ; i++) {
+					float t = tdiv * i;
+					Mat33 m1 = m0 * Mat33::RotationAxis(axis, ang*t);
+					auto q2 = q0.slerp(q1, t);
+
+					auto v = this->genRandDir();
+					auto v0 = v * q2;
+					auto v1 = v * m1;
+					EXPECT_TRUE(EqULPs(v0, v1, ThresholdULPs));
+				}
+			}
+		}
+		TEST_F(MathTest, DecompAffine) {
 			constexpr float RandMin = -1e3f,
 							RandMax = 1e3f;
 			auto rd = getRand();
 			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
 
-			// DecompAffineした結果を再度合成して同じかどうかチェック
+			// 行列をDecompAffineした結果を再度合成して同じかどうかチェック
 			for(int i=0 ; i<N_Iteration ; i++) {
-				auto q = GenRQuat<false>(rdF);
-				auto t = GenRVec<3,false>(rdF);
-				auto s = GenRVecNZ<3,false>(rdF, 1e-2f);
-				s = Vec3{-1,1,1};
+				auto q = GenRQuat<true>(rdF);
+				auto t = GenRVec<3,true>(rdF);
+				auto s = GenRVecNZ<3,true>(rdF, 1e-2f);
 
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
 				auto ap = DecompAffine(m);
-				EXPECT_EQULPS_VEC(t, ap.offset, 3);
-				EXPECT_EQULPS_VEC((AVec3{1,0,0}*ap.rotation), q.getRight(), 3);
-				EXPECT_EQULPS_VEC((AVec3{0,1,0}*ap.rotation), q.getUp(), 3);
-				EXPECT_EQULPS_VEC((AVec3{0,0,1}*ap.rotation), q.getDir(), 3);
-				EXPECT_EQULPS_VEC(s, ap.scale, 3);
+				auto m2 = Pose3D(ap.offset, ap.rotation, ap.scale).getToWorld();
+				EXPECT_TRUE(EqULPs(m, m2, ThresholdULPs));
 			}
 		}
 		// TODO: Pose::lerp チェック

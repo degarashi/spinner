@@ -9,7 +9,7 @@
 namespace spn {
 	namespace test {
 		namespace {
-			constexpr static int NTEST = 256,
+			constexpr static int NTEST = 16,
 								NITER = 1024;
 			class TestRM;
 			struct MyEnt;
