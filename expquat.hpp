@@ -27,6 +27,7 @@
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		template <>
 		struct ALIGN16 ExpQuatT<ALIGNB> {
+			constexpr static int width = 3;
 			union {
 				float	x,y,z;
 				float	m[3];

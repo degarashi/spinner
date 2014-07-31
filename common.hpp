@@ -92,13 +92,68 @@ namespace spn {
 			return get(0xdeadbeef * 0xdeadbeef, tup, std::integral_constant<int,sizeof...(Ts)-1>());
 		}
 	};
+
+	//! クラスがwidthフィールドを持っていればintegral_constantでそれを返す
+	template <class T>
+	std::integral_constant<int,T::width> _GetWidthT(decltype(T::width)*);
+	template <class T>
+	std::integral_constant<int,0> _GetWidthT(...);
+	template <class T>
+	decltype(_GetWidthT<T>(nullptr)) GetWidthT();
+	//! クラスがheightフィールドを持っていればintegral_constantでそれを返す
+	template <class T>
+	std::integral_constant<int,T::height> _GetHeightT(decltype(T::height)*);
+	template <class T>
+	std::integral_constant<int,0> _GetHeightT(...);
+	template <class T>
+	decltype(_GetHeightT<T>(nullptr)) GetHeightT();
+	//! クラスがwidthとheightフィールドを持っていればintegral_pairでそれを返す
+	template <class T, T val0, T val1>
+	using integral_pair = std::pair<std::integral_constant<T, val0>,
+									std::integral_constant<T, val1>>;
+	template <class T>
+	integral_pair<int,T::height, T::width> _GetWidthHeightT(decltype(T::width)*, decltype(T::height)*);
+	template <class T>
+	integral_pair<int,0, T::width> _GetWidthHeightT(decltype(T::width)*, ...);
+	template <class T>
+	integral_pair<int,0,0> _GetWidthHeightT(...);
+	template <class T>
+	decltype(_GetWidthHeightT<T>(nullptr,nullptr)) GetWidthHeightT();
+
+	// 値比較(widthメンバ有り)
+	template <class T, class CMP, int N>
+	bool _EqFunc(const T& v0, const T& v1, CMP&& cmp, integral_pair<int,0,N>) {
+		for(int i=0 ; i<N ; i++) {
+			if(!cmp(v0.m[i], v1.m[i]))
+				return false;
+		}
+		return true;
+	}
+	// 値比較(width & heightメンバ有り)
+	template <class T, class CMP, int M, int N>
+	bool _EqFunc(const T& v0, const T& v1, CMP&& cmp, integral_pair<int,M,N>) {
+		for(int i=0 ; i<M ; i++) {
+			for(int j=0 ; j<N ; j++) {
+				if(!cmp(v0.ma[i][j], v1.ma[i][j]))
+					return false;
+			}
+		}
+		return true;
+	}
+	// 値比較(単一値)
+	template <class T, class CMP>
+	bool _EqFunc(const T& v0, const T& v1, CMP&& cmp, integral_pair<int,0,0>) {
+		return cmp(v0, v1);
+	}
+
 	//! 絶対値の誤差による等値判定
 	/*! \param[in] val value to check
 		\param[in] vExcept target value
 		\param[in] vEps value threshold */
-	template <class T, class T2, typename std::enable_if<std::is_arithmetic<T>::value>::type*& = Enabler>
+	template <class T, class T2>
 	bool EqAbs(const T& val, const T& vExcept, T2 vEps = std::numeric_limits<T>::epsilon()) {
-		return std::fabs(vExcept-val) <= vEps;
+		auto fnCmp = [vEps](const auto& val, const auto& except){ return std::fabs(except-val) <= vEps; };
+		return _EqFunc(val, vExcept, fnCmp, decltype(GetWidthHeightT<T>())());
 	}
 	template <class T, class... Ts>
 	bool EqAbsT(const std::tuple<Ts...>& /*tup0*/, const std::tuple<Ts...>& /*tup1*/, const T& /*epsilon*/, std::integral_constant<int,-1>*) {

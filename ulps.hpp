@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include "error.hpp"
+#include "common.hpp"
 
 namespace spn {
 	//! 絶対値(std::absがconstexprでない為)
@@ -30,8 +31,8 @@ namespace spn {
 
 	template <class T,
 			class Int = typename inner::ULPHelper<T>::Integral_t>
-	Int AsIntegral(T v0) {
-		return *reinterpret_cast<Int*>(&v0);
+	Int AsIntegral(const T& v0) {
+		return *reinterpret_cast<const Int*>(&v0);
 	}
 	namespace { namespace inner {
 		//! 内部用関数
@@ -53,13 +54,13 @@ namespace spn {
 								&& std::is_integral<I>::value
 								&& std::is_signed<I>::value
 								&& sizeof(T)==sizeof(I) >>
-		auto t_ULPs(T v0, T v1) {
+		auto t_ULPs(const T& v0, const T& v1) {
 			auto i0 = AsIntegral(v0),
 				i1 = AsIntegral(v1);
 			return t_ULPs2(i0, i1);
 		}
 		template <class T, class I, class Cmp, class Op>
-		bool CmpULPs(T v0, T v1, I thresholdUlps, Cmp cmp, Op op) {
+		bool CmpULPs(const T& v0, const T& v1, I thresholdUlps, Cmp cmp, Op op) {
 			auto i0 = AsIntegral(v0),
 				i1 = AsIntegral(v1);
 			constexpr I MSB1(I(1) << (sizeof(I)*8 - 1));
@@ -117,42 +118,43 @@ namespace spn {
 	//! FloatのULPs
 	template <class T,
 			  typename std::enable_if_t<std::is_floating_point<T>::value>*& = inner::Enabler>
-	auto ULPs(T v0, T v1) {
+	auto ULPs(const T& v0, const T& v1) {
 		return inner::t_ULPs(v0,v1);
 	}
 	//! IntのULPs (=絶対値)
 	template <class T,
 			  typename std::enable_if_t<!std::is_floating_point<T>::value>*& = inner::Enabler>
-	auto ULPs(T v0, T v1) {
+	auto ULPs(const T& v0, const T& v1) {
 		return abs(v0 - v1);
 	}
 	//! ULPsの計算 (constexprバージョン)
 	template <class T>
-	constexpr auto ULPs_C(T v0, T v1) {
+	constexpr auto ULPs_C(const T& v0, const T& v1) {
 		return inner::t_ULPs2(AsIntegral_C(v0), AsIntegral_C(v1));
 	}
 	//! ULPs(Units in the Last Place)の計算 (実行時バージョン)
 	template <class T,
 			class H = inner::ULPHelper<T>,
 			class I = typename H::Integral_t>
-	bool EqULPs(T v0, T v1, I maxUlps) {
-		AssertP(Trap, maxUlps > 0)						// 負数でない
-		return ULPs(v0,v1) <= maxUlps;
+	bool EqULPs(const T& v0, const T& v1, I maxUlps) {
+		AssertP(Trap, maxUlps >= 0)	// 負数でない
+		auto fnCmp = [maxUlps](const auto& v0, const auto& v1){ return ULPs(v0,v1) <= maxUlps; };
+		return _EqFunc(v0, v1, fnCmp, decltype(GetWidthHeightT<T>())());
 	}
 	template <class T, class I>
-	bool NeULPs(T v0, T v1, I maxUlps) {
+	bool NeULPs(const T& v0, const T& v1, I maxUlps) {
 		return !EqULPs(v0, v1, maxUlps);
 	}
 	// v0 <= v1 + thresholdUlps
 	template <class T,
 			class I = typename inner::ULPHelper<T>::Integral_t>
-	bool LeULPs(T v0, T v1, I thresholdUlps) {
+	bool LeULPs(const T& v0, const T& v1, I thresholdUlps) {
 		return inner::CmpULPs(v0, v1, thresholdUlps, std::less_equal<>(), std::plus<>());
 	}
 	// v0 >= v1 - thresholdUlps
 	template <class T,
 			class I = typename inner::ULPHelper<T>::Integral_t>
-	bool GeULPs(T v0, T v1, I thresholdUlps) {
+	bool GeULPs(const T& v0, const T& v1, I thresholdUlps) {
 		return inner::CmpULPs(v0, v1, thresholdUlps, std::greater_equal<>(), std::minus<>());
 	}
 	namespace inner {}

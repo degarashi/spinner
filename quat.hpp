@@ -29,6 +29,7 @@
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		template <>
 		struct ALIGN16 QuatT<ALIGNB> : QuatBase {
+			constexpr static int width = 4;
 			union {
 				struct {
 					float	x,y,z,w;
