@@ -310,7 +310,7 @@
 		QT QT::slerp(const QuatT& q, float t) const {
 			const float theta = std::acos(dot(q)),
 						S = std::sin(theta);
-			if(std::fabs(S) < 1e-6f)
+			if(std::fabs(S) < 1e-4f)
 				return *this;
 			QuatT rq = *this * (std::sin(theta*(1-t)) / S);
 			rq += q * (std::sin(theta * t) / S);

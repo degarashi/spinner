@@ -122,7 +122,9 @@ const static reg128 xmm_matI[4] = {
 	_mmSetPs(0,0,1,0),
 	_mmSetPs(0,0,0,1)
 };
-constexpr float PI = 3.1415926535f,		// std::atan(1.0f)*4;
+template <class T>
+constexpr T Pi = T(3.1415926535);	// std::atan(1.0f)*4
+constexpr float PI = Pi<float>,
 				SIN0 = 0,
 				SIN30 = 1.f/2,
 				SIN45 = 1.f/1.41421356f,
