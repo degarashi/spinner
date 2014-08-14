@@ -7,7 +7,18 @@
 #include "../path.hpp"
 #include <type_traits>
 #include <gtest/gtest.h>
+#include <boost/serialization/serialization.hpp>
 
+namespace boost {
+	namespace archive {
+		class text_oarchive;
+		class text_iarchive;
+		class binary_oarchive;
+		class binary_iarchive;
+		class xml_oarchive;
+		class xml_iarchive;
+	}
+}
 //TODO reg128のテスト
 namespace spn {
 	namespace test {
@@ -79,6 +90,32 @@ namespace spn {
 				EXPECT_FLOAT_EQ(v.m[i], *src++);
 			return src;
 		}
+		template <class OA, class IA, class T>
+		void CheckSerializedData(const T& src) {
+			std::stringstream buffer;
+			OA oa(buffer);
+			oa << BOOST_SERIALIZATION_NVP(src);
+			T loaded;
+			IA ia(buffer);
+			ia >> boost::serialization::make_nvp("src", loaded);
+			EXPECT_EQ(src, loaded);
+		}
+		template <class T>
+		void CheckSerializedDataBin(const T& src) {
+			CheckSerializedData<boost::archive::binary_oarchive,
+								boost::archive::binary_iarchive>(src);
+		}
+		template <class T>
+		void CheckSerializedDataText(const T& src) {
+			CheckSerializedData<boost::archive::text_oarchive,
+								boost::archive::text_iarchive>(src);
+		}
+		template <class T>
+		void CheckSerializedDataXML(const T& src) {
+			CheckSerializedData<boost::archive::xml_oarchive,
+								boost::archive::xml_iarchive>(src);
+		}
+
 		//! non-copyableな値
 		template <class T>
 		struct MoveOnly {

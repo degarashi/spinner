@@ -41,16 +41,6 @@ namespace spn {
 			class TestRM : public ResMgrA<MyEnt, TestRM> {};
 			class SerializeTest : public RandomTestInitializer {};
 		}
-		template <class T>
-		void CheckSerializedData(const T& src) {
-			std::stringstream buffer;
-			boost::archive::binary_oarchive oa(buffer);
-			oa << src;
-			T loaded;
-			boost::archive::binary_iarchive ia(buffer);
-			ia >> loaded;
-			EXPECT_EQ(src, loaded);
-		}
 
 		template <class T>
 		class SerializeVector : public RandomTestInitializer {
@@ -64,7 +54,7 @@ namespace spn {
 			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
 			for(int i=0 ; i<NTEST ; i++) {
 				auto data = GenRVec<TypeParam::width, TypeParam::align>(rdF);
-				CheckSerializedData(data);
+				CheckSerializedDataBin(data);
 			}
 		}
 		
@@ -78,7 +68,7 @@ namespace spn {
 			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
 			for(int i=0 ; i<NTEST ; i++) {
 				auto data = GenRMat<TypeParam::align, TypeParam::height, TypeParam::width>(rdF);
-				CheckSerializedData(data);
+				CheckSerializedDataBin(data);
 			}
 		}
 
@@ -91,7 +81,7 @@ namespace spn {
 				Pose2D ps(GenRVec<2,false>(rdF),
 							rdF(),
 							GenRVec<2,false>(rdF));
-				CheckSerializedData(ps);
+				CheckSerializedDataBin(ps);
 			}
 		}
 		using SerializePose3D = RandomTestInitializer;
@@ -103,7 +93,7 @@ namespace spn {
 				Pose3D ps(GenRVec<3,true>(rdF),
 							GenRQuat<true>(rdF),
 							GenRVec<3,true>(rdF));
-				CheckSerializedData(ps);
+				CheckSerializedDataBin(ps);
 			}
 		}
 
