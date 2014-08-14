@@ -4,6 +4,8 @@
 	#if !defined(MATRIX_H_) || INCLUDE_MATRIX_LEVEL >= 1
 		#define MATRIX_H_
 		#include <boost/preprocessor.hpp>
+		#include <boost/serialization/access.hpp>
+		#include <boost/serialization/level.hpp>
 		#include <cstring>
 		#include <stdexcept>
 		#include <cassert>
@@ -58,17 +60,25 @@
 				using UVec2 = VecT<2,false>;
 				using UVec3 = VecT<3,false>;
 
-				enum { width=DIM_N,
-						height=DIM_M };
-				const static int PaddingedSize = BOOST_PP_IF(ALIGN, 4, DIM_N),
+				constexpr static int width = DIM_N,
+									height = DIM_M,
+								PaddingedSize = BOOST_PP_IF(ALIGN, 4, DIM_N),
 								AlignedSize = DIM_M*4-(4-DIM_N),
 								UnAlignedSize = DIM_M*DIM_N;
+				constexpr static bool align = ALIGNB;
 				union {
 					//! 容量確保用
 					float	data[BOOST_PP_IF(ALIGN, AlignedSize, UnAlignedSize)];
 					//! 2次元配列アクセス用
 					float	ma[0][PaddingedSize];
 				};
+
+				friend class boost::serialization::access;
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int /*ver*/) {
+					for(auto& d : data)
+						ar & d;
+				}
 
 				// -------------------- ctor --------------------
 				MatT() = default;
@@ -357,6 +367,7 @@
 					,DIM_N)
 					= MatT<DIM_M,DIM_N,ALIGNB>;
 		}
+	BOOST_CLASS_IMPLEMENTATION(spn::MT, object_serializable)
 	#elif BOOST_PP_FRAME_FLAGS(1) == 1
 		namespace spn {
 			#define FUNC_OP(z,n,func)	STORETHISPS(ret.ma[n], func(r, LOADTHISPS(m.ma[n])));

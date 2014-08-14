@@ -3,6 +3,8 @@
 		#define QUAT_H_
 		#include "matrix.hpp"
 		#include "error.hpp"
+		#include <boost/serialization/access.hpp>
+		#include <boost/serialization/level.hpp>
 		// 要求された定義レベルを実体化
 		#ifndef INCLUDE_QUAT_LEVEL
 			#define INCLUDE_QUAT_LEVEL 0
@@ -25,8 +27,8 @@
 	#define DIM		4
 	#include "local_macro.hpp"
 
-	namespace spn {
 	#if BOOST_PP_ITERATION_FLAGS() == 0
+	namespace spn {
 		template <>
 		struct ALIGN16 QuatT<ALIGNB> : QuatBase {
 			constexpr static int width = 4;
@@ -36,6 +38,13 @@
 				};
 				float	m[4];
 			};
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
+				for(auto& d : m)
+					ar & d;
+			}
 
 			QuatT() = default;
 			QuatT(const QuatT<false>& q);
@@ -127,7 +136,10 @@
 			friend std::ostream& operator << (std::ostream&, const QuatT&);
 		};
 		using BOOST_PP_CAT(ALIGNA, Quat) = QT;
+	}
+	BOOST_CLASS_IMPLEMENTATION(spn::QT, object_serializable)
 	#elif BOOST_PP_ITERATION_FLAGS() == 1
+	namespace spn {
 		std::ostream& operator << (std::ostream& os, const QT& q) {
 			return os << "Quat: [" << q.x << ", " << q.y << ", " << q.z << ", " << q.w << ']';
 		}
@@ -534,8 +546,8 @@
 			q.rotateY(yaw);
 			return q;
 		}
-	#endif
 	}
+	#endif
 	#include "local_unmacro.hpp"
 	#undef ALIGN
 	#undef ALIGNA

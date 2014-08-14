@@ -1,6 +1,8 @@
 #pragma once
 #include "macro.hpp"
 #include "myintrin.hpp"
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/traits.hpp>
 
 #if !defined(SSE_LEVEL) || SSE_LEVEL <= 2
 	#define SUMVEC(r)	{ reg128 tmp = reg_shuffle_ps(r, r, _REG_SHUFFLE(0,1,2,3)); \
@@ -146,9 +148,14 @@ inline float RADtoDEG(float ang) {
 	return ang * spn::Rcp22Bit(PI) * 180.f;
 }
 
+template <class T>
+struct TrivialWrapperBase : boost::serialization::traits<T,
+							boost::serialization::object_serializable,
+							boost::serialization::track_selectively>
+{};
 //! Tをtrivialなctorでラップ
 template <class T>
-struct TrivialWrapper {
+struct TrivialWrapper : TrivialWrapperBase<TrivialWrapper<T>> {
 	uint8_t _buff[sizeof(T)];
 
 	T& operator * () { return (T&)*this; }
@@ -161,6 +168,13 @@ struct TrivialWrapper {
 		((T&)(*this)) = t;
 		return *this;
 	}
+
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive& ar, const unsigned int /*ver*/) {
+		ar & static_cast<T&>(*this);
+	}
+
 	template <class TA>
 	bool operator == (const TA& t) const {
 		return static_cast<const T&>(*this) == static_cast<const T&>(t);
@@ -171,7 +185,7 @@ struct TrivialWrapper {
 	}
 };
 template <class T, int N>
-struct TrivialWrapper<T[N]> {
+struct TrivialWrapper<T[N]> : TrivialWrapperBase<TrivialWrapper<T[N]>> {
 	T _buff[N];
 	using AR = T (&)[N];
 	using AR_C = const T (&)[N];
@@ -181,6 +195,14 @@ struct TrivialWrapper<T[N]> {
 	operator AR () { return _buff; }
 	T& operator [] (int n) { return _buff[n]; }
 	const T& operator [] (int n) const { return _buff[n]; }
+
+	friend class boost::serialization::access;
+	template <class Archive>
+	void serialize(Archive& ar, const unsigned int /*ver*/) {
+		for(auto& t : _buff)
+			ar & t;
+	}
+
 	template <class TA>
 	bool operator == (const TA& t) const {
 		for(int i=0 ; i<N ; i++) {

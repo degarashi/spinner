@@ -2,6 +2,7 @@
 #include "vector.hpp"
 #include "quat.hpp"
 #include "misc.hpp"
+#include <boost/serialization/access.hpp>
 
 namespace spn {
 	enum POSERF {
@@ -14,11 +15,22 @@ namespace spn {
 	//! 2次元姿勢クラス
 	/*! 変換適用順序は[拡縮][回転][平行移動] */
 	class Pose2D : public CheckAlign<16,Pose2D> {
-		GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
-			(((Vec2, _ofs)))
-			(((Vec2, _scale)))
-			(((mutable, float, _angle), (mutable, uint32_t, _accum)))
-		)
+		private:
+			GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
+				(((Vec2, _ofs)))
+				(((Vec2, _scale)))
+				(((float, _angle), (mutable, uint32_t, _accum)))
+			)
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
+				ar & _ofs & _angle & _scale;
+				if(Archive::is_loading::value) {
+					_accum = std::rand();
+					_rflag = 0;
+				}
+			}
 		protected:
 			mutable uint32_t	_rflag;
 
@@ -73,22 +85,35 @@ namespace spn {
 
 			Pose2D& operator = (const Pose2D& ps);
 			Pose2D& operator = (const TValue& tv);
+			bool operator == (const Pose2D& ps) const;
+			bool operator != (const Pose2D& ps) const;
 			friend std::ostream& operator << (std::ostream&, const Pose2D&);
 	};
 	std::ostream& operator << (std::ostream& os, const Pose2D& ps);
 
 	//! 3次元姿勢クラス
 	class Pose3D : public CheckAlign<16,Pose3D> {
-		AVec3			_ofs;
-		AQuat			_rot;
-		AVec3			_scale;
+		private:
+			AVec3			_ofs;
+			AQuat			_rot;
+			AVec3			_scale;
 
-		GAP_MATRIX_DEF(mutable, _finalMat, 4,3,
-			(((uint32_t, _accum)))
-			(((mutable, uint32_t, _rflag)))
-		)
+			GAP_MATRIX_DEF(mutable, _finalMat, 4,3,
+				(((uint32_t, _accum)))
+				(((mutable, uint32_t, _rflag)))
+			)
 
-		void _refresh() const;
+			void _refresh() const;
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
+				ar & _ofs & _rot & _scale;
+				if(Archive::is_loading::value) {
+					_accum = std::rand();
+					_rflag = 0;
+				}
+			}
 
 		protected:
 			const float* _getPtr() const;

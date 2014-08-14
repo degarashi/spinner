@@ -6,6 +6,8 @@
 		#define VECTOR_H_
 		#include <boost/preprocessor.hpp>
 		#include <boost/operators.hpp>
+		#include <boost/serialization/access.hpp>
+		#include <boost/serialization/level.hpp>
 		#include <cmath>
 		#include "spn_math.hpp"
 
@@ -39,7 +41,8 @@
 		namespace spn {
 			template <>
 			struct Vec : boost::equality_comparable<VT> {
-				enum { width = DIM };
+				constexpr static int width = DIM;
+				constexpr static bool align = ALIGNB;
 				using AVec = VecT<DIM,true>;
 				using UVec = VecT<DIM,false>;
 				union {
@@ -48,6 +51,13 @@
 					};
 					float m[DIM];
 				};
+
+				friend class boost::serialization::access;
+				template <class Archive>
+				void serialize(Archive& ar, const unsigned int /*ver*/) {
+					for(auto& d : m)
+						ar & d;
+				}
 
 				// -------------------- ctor --------------------
 				VecT() = default;
@@ -83,7 +93,6 @@
 				DEF_PRE(/, _mmDivPs)
 
 				friend std::ostream& operator << (std::ostream& os, const VT& v);
-
 				// -------------------- others --------------------
 				static float _sumup(reg128 xm);
 				// ロード関数呼び出しのコストが許容出来るケースではloadPS()を呼び、そうでないケースはオーバーロードで対処
@@ -196,6 +205,7 @@
 			// 使いやすいようにクラスの別名を定義
 			using BOOST_PP_CAT(BOOST_PP_IF(ALIGN,A,NOTHING), BOOST_PP_CAT(Vec,DIM)) = VT;
 		}
+		BOOST_CLASS_IMPLEMENTATION(spn::VT, object_serializable)
 		#elif BOOST_PP_ITERATION_FLAGS() == 1
 		// 同次元ベクトルとの演算を定義
 		namespace spn {
