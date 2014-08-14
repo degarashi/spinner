@@ -30,7 +30,7 @@ namespace spn {
 
 				template <class Archive>
 				void serialize(Archive& ar, const unsigned int) {
-					ar & value0 & value1;
+					ar & BOOST_SERIALIZATION_NVP(value0) & BOOST_SERIALIZATION_NVP(value1);
 				}
 				MyEnt(int v0, int v1): value0(v0), value1(v1) {}
 				bool operator == (const MyEnt& e) const {
@@ -98,6 +98,7 @@ namespace spn {
 		}
 
 		TEST_F(SerializeTest, Noseq) {
+			using boost::serialization::make_nvp;
 			auto rd = getRand();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
@@ -121,13 +122,14 @@ namespace spn {
 					}
 				}
 				boost::archive::binary_oarchive oa(buffer);
-				oa << base;
+				oa << make_nvp("base", base);
 				boost::archive::binary_iarchive ia(buffer);
-				ia >> loaded;
+				ia >> make_nvp("base", loaded);
 				EXPECT_EQ(base, loaded);
 			}
 		}
 		TEST_F(SerializeTest, ResMgr) {
+			using boost::serialization::make_nvp;
 			auto rd = getRand();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
@@ -152,9 +154,9 @@ namespace spn {
 				boost::archive::text_oarchive oa(buffer, boost::archive::no_header);
 				// フル書き出しと差分と交互にチェックする
 				if(i&1)
-					oa << op->asMergeType();
+					oa << make_nvp("data", op->asMergeType());
 				else
-					oa << *op;
+					oa << make_nvp("data", *op);
 
 				// 比較元データを保管
 				auto dat0 = op->getNSeq();
@@ -162,7 +164,7 @@ namespace spn {
 				// 一旦クリアしてから読み出し
 				op = construct();
 				boost::archive::text_iarchive ia(buffer, boost::archive::no_header);
-				ia >> *op;
+				ia >> make_nvp("data", *op);
 				auto dat1 = op->getNSeq();
 				// ちゃんとデータがセーブできてるか確認
 				EXPECT_EQ(dat0, dat1);
