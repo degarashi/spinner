@@ -161,6 +161,14 @@ struct TrivialWrapper {
 		((T&)(*this)) = t;
 		return *this;
 	}
+	template <class TA>
+	bool operator == (const TA& t) const {
+		return static_cast<const T&>(*this) == static_cast<const T&>(t);
+	}
+	template <class TA>
+	bool operator != (const TA& t) const {
+		return static_cast<const T&>(*this) != static_cast<const T&>(t);
+	}
 };
 template <class T, int N>
 struct TrivialWrapper<T[N]> {
@@ -173,8 +181,21 @@ struct TrivialWrapper<T[N]> {
 	operator AR () { return _buff; }
 	T& operator [] (int n) { return _buff[n]; }
 	const T& operator [] (int n) const { return _buff[n]; }
+	template <class TA>
+	bool operator == (const TA& t) const {
+		for(int i=0 ; i<N ; i++) {
+			if(_buff[i] != t[i])
+				return false;
+		}
+		return true;
+	}
+	template <class TA>
+	bool operator != (const TA& t) const {
+		return !(this->operator == (t));
+	}
 };
 }
+
 // 次元毎のロード/ストア関数を定義
 // LOADPS_[ZeroFlag][AlignedFlag][Dim]
 #define LOADPS_A4(ptr)		reg_load_ps(ptr)			// アラインメント済み4次元ベクトル読み込み

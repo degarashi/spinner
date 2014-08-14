@@ -49,7 +49,7 @@
 		namespace spn {
 			// row-major
 			template <>
-			struct ALIGN16 MatT<DIM_M, DIM_N, ALIGNB> : MatBase {
+			struct ALIGN16 MatT<DIM_M, DIM_N, ALIGNB> : MatBase, boost::equality_comparable<MT> {
 				using Row = VecT<DIM_N, ALIGNB>;			//!< 行を表すベクトル型
 				using Column = VecT<DIM_M, false>;			//!< 列を表すベクトル型
 				using RowE = VecT<4, ALIGNB>;				//!< 4要素の行ベクトル型
@@ -112,6 +112,8 @@
 					BOOST_PP_REPEAT_FROM_TO(DMIN, DIM_M, SET_ARGS2, NOTHING)
 				}
 				#undef SET_ARGS2
+				template <bool A>
+				bool operator == (const MatT<DIM_M, DIM_N, A>& m) const;
 
 				// -------------------- query values --------------------
 				#if ALIGN==1 && BOOST_PP_LESS(DIM_N,4)==1
@@ -401,6 +403,17 @@
 				}
 				return os << ']';
 			}
+			template <bool A>
+			bool MT::operator == (const MatT<DIM_M, DIM_N, A>& m) const {
+				for(int i=0 ; i<DIM_M ; i++) {
+					if(getRow(i) != Row(m.getRow(i)))
+						return false;
+				}
+				return true;
+			}
+			template bool MT::operator == (const MatT<DIM_M, DIM_N, false>&) const;
+			template bool MT::operator == (const MatT<DIM_M, DIM_N, true>&) const;
+
 			#define DEF_COPY(z,n,dummy)	STORETHISPS(ma[n], LOADTHISPS(m.ma[n]));
 			MT& MT::operator = (const MT& m) {
 				BOOST_PP_REPEAT(DIM_M, DEF_COPY, NOTHING)

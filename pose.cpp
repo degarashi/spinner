@@ -67,6 +67,14 @@ namespace spn {
 	const Vec2& Pose2D::getScale() const {
 		return _scale;
 	}
+	bool Pose2D::operator == (const Pose2D& ps) const {
+		return _ofs == ps._ofs &&
+				_angle == ps._angle &&
+				_scale == ps._scale;
+	}
+	bool Pose2D::operator != (const Pose2D& ps) const {
+		return !(this->operator == (ps));
+	}
 	Pose2D& Pose2D::operator = (const Pose2D& ps) {
 		std::memcpy(this, &ps, sizeof(ps));
 		return *this;
@@ -155,6 +163,14 @@ namespace spn {
 	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
 	Pose3D::Value::~Value() { _pose._setAsChanged(); }
 	Pose3D::Value::Value(const Value& v): _pose(v._pose), ofs(v.ofs), scale(v.scale), rot(v.rot) {}
+	bool Pose3D::operator == (const Pose3D& ps) const {
+		return _ofs == ps._ofs &&
+				_rot == ps._rot &&
+				_scale == ps._scale;
+	}
+	bool Pose3D::operator != (const Pose3D& ps) const {
+		return !(this->operator == (ps));
+	}
 	Pose3D::Value& Pose3D::Value::operator = (const TValue& tv) {
 		ofs = tv.ofs;
 		scale = tv.scale;

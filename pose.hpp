@@ -153,6 +153,8 @@ namespace spn {
 			Pose3D& operator = (const Pose3D& ps);
 			Pose3D& operator = (const TValue& tv);
 			Pose3D& operator = (const AMat43& m);
+			bool operator == (const Pose3D& ps) const;
+			bool operator != (const Pose3D& ps) const;
 			friend std::ostream& operator << (std::ostream&, const Pose3D&);
 	};
 	std::ostream& operator << (std::ostream& os, const Pose3D& ps);

@@ -101,6 +101,8 @@
 			VEC3 getAxis() const;
 
 			float dot(const QuatT& q) const;
+			bool operator == (const QuatT& q) const;
+			bool operator != (const QuatT& q) const;
 			QuatT operator >> (const QuatT& q) const;
 			QuatT& operator >>= (const QuatT& q);
 			QuatT slerp(const QuatT& q, float t) const;
@@ -299,6 +301,13 @@
 			tq *= q;
 			q = tq;
 			return std::forward<QuatT>(q);
+		}
+		bool QT::operator == (const QuatT& q) const {
+			using VT = VecT<4,ALIGNB>;
+			return reinterpret_cast<const VT&>(*this) == reinterpret_cast<const VT&>(q);
+		}
+		bool QT::operator != (const QuatT& q) const {
+			return !(this->operator == (q));
 		}
 
 		/*
