@@ -1,14 +1,28 @@
 #pragma once
 #include <algorithm>
 #include <vector>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
+#include "serialization/traits.hpp"
 
 namespace spn {
 	//! ソート済みベクタ
 	/*! 内部をソートされた状態に保つため要素の編集は不可 */
 	template <class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<T>>
-	class AssocVec {
-		using Vec = CT<T, AL>;
-		Vec		_vec;
+	class AssocVec : public boost::serialization::traits<AssocVec<T,Pred,CT,AL>,
+								boost::serialization::object_serializable,
+								boost::serialization::track_selectively>
+	{
+		private:
+			using Vec = CT<T, AL>;
+			Vec		_vec;
+
+			friend class boost::serialization::access;
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int /*ver*/) {
+				ar & _vec;
+			}
+
 		protected:
 			using VecItr = typename Vec::iterator;
 			VecItr _begin() { return _vec.begin(); }
@@ -24,6 +38,12 @@ namespace spn {
 				std::sort(_vec.begin(), _vec.end());
 			}
 
+			bool operator == (const AssocVec& av) const {
+				return _vec == av._vec;
+			}
+			bool operator != (const AssocVec& av) const {
+				return _vec != av._vec;
+			}
 			//! 要素を追加
 			/*! \return 挿入されたソート後のインデックス */
 			template <class T2>
@@ -137,3 +157,4 @@ namespace spn {
 			using ASV::end;
 	};
 }
+

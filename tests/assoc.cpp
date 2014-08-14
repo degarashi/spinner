@@ -3,6 +3,8 @@
 #endif
 #include "test.hpp"
 #include "../assoc.hpp"
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 namespace spn {
 	namespace test {
@@ -49,6 +51,19 @@ namespace spn {
 			}
 			fnChkAsc();
 			fnChkDesc();
+		}
+		TEST_F(AssocVector, Serialize) {
+			// ランダムなデータ列を作る
+			auto rd = this->getRand();
+			auto rdF = [&rd](){ return rd.getUniform<int>(); };
+
+			AssocVec<int, std::less<>> data;
+			// 適当な数の要素を追加(最低1回)
+			int nAdd = (rdF() & 0xf00) + 1;
+			for(int i=0 ; i<nAdd ; i++)
+				data.insert(rdF());
+
+			CheckSerializedDataBin(data);
 		}
 	}
 }
