@@ -3,6 +3,7 @@
 #include "myintrin.hpp"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/traits.hpp>
+#include <boost/serialization/nvp.hpp>
 
 #if !defined(SSE_LEVEL) || SSE_LEVEL <= 2
 	#define SUMVEC(r)	{ reg128 tmp = reg_shuffle_ps(r, r, _REG_SHUFFLE(0,1,2,3)); \
@@ -172,7 +173,7 @@ struct TrivialWrapper : TrivialWrapperBase<TrivialWrapper<T>> {
 	friend class boost::serialization::access;
 	template <class Archive>
 	void serialize(Archive& ar, const unsigned int /*ver*/) {
-		ar & static_cast<T&>(*this);
+		ar & boost::serialization::make_nvp("value", static_cast<T&>(*this));
 	}
 
 	template <class TA>
@@ -199,8 +200,7 @@ struct TrivialWrapper<T[N]> : TrivialWrapperBase<TrivialWrapper<T[N]>> {
 	friend class boost::serialization::access;
 	template <class Archive>
 	void serialize(Archive& ar, const unsigned int /*ver*/) {
-		for(auto& t : _buff)
-			ar & t;
+		ar & boost::serialization::make_nvp("value", _buff);
 	}
 
 	template <class TA>

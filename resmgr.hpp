@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iostream>
 #include "serialization/unordered_map.hpp"
+#include "serialization/pair.hpp"
 #include "serialization/traits.hpp"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -39,7 +40,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _value.value();
+				ar & boost::serialization::make_nvp("value", _value.value());
 			}
 		public:
 			//! デフォルト値は無効なハンドルID
@@ -88,7 +89,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _value.value();
+				ar & boost::serialization::make_nvp("value", _value.value());
 			}
 		public:
 			//! デフォルト値は無効なハンドルID
@@ -154,7 +155,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _hdl;
+				ar & BOOST_SERIALIZATION_NVP(_hdl);
 			}
 		public:
 			using handle_type = HDL;
@@ -513,7 +514,7 @@ namespace spn {
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
 			bool bStp = stp!=nullptr;
-			ar & value & bStp;
+			ar & BOOST_SERIALIZATION_NVP(value) & BOOST_SERIALIZATION_NVP(bStp);
 			if(!bStp)
 				stp = nullptr;
 		}
@@ -546,9 +547,9 @@ namespace spn {
 				friend boost::serialization::access;
 				template <class Archive>
 				void serialize(Archive& ar, const unsigned int) {
-					ar & data & count & accessCount & w_magic;
+					ar & BOOST_SERIALIZATION_NVP(data) & BOOST_SERIALIZATION_NVP(count) & BOOST_SERIALIZATION_NVP(accessCount) & BOOST_SERIALIZATION_NVP(w_magic);
 					#ifdef DEBUG
-						ar & magic;
+						ar & BOOST_SERIALIZATION_NVP(magic);
 					#endif
 				}
 
@@ -620,29 +621,29 @@ namespace spn {
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			template <class Archive>
 			void load(Archive& ar, const unsigned int ver) {
+				using boost::serialization::make_nvp;
 				AssertP(Trap, !_bSerializing)
 				_bSerializing = true;
 
 				// 最初にMergeフラグを読む
 				bool bMerge;
-				ar & bMerge;
+				ar & make_nvp("mergeflag", bMerge);
 				normal_serialize(ar, ver);
-				if(bMerge) {
-					size_t nData;
-					ar & nData;
 
+				if(bMerge) {
+					// アクセスカウントとWeakマジックナンバー
+					std::vector<std::pair<uint32_t, typename WHdl::VWord>>	id_list;
+					ar & make_nvp("id_list", id_list);
 					// 統合ロード(既に同じリソースが存在している場合(アクセスカウンタ一致)は読み込まない)
+					auto nData = id_list.size();
 					std::vector<bool> chk(nData);
 					for(size_t i=0 ; i<nData ; i++) {
-						uint32_t ac_count;
-						uint64_t wmagic;
-						ar & ac_count & wmagic;
-
+						auto& idl = id_list[i];
 						bool flag = false;
 						if(_dataVec.has(i)) {
 							Entry& ent = _dataVec.get(i);
-							if(ent.accessCount == ac_count) {
-								if(ent.w_magic == wmagic)
+							if(ent.accessCount == idl.first) {
+								if(ent.w_magic == idl.second)
 									flag = true;
 							}
 						}
@@ -651,50 +652,61 @@ namespace spn {
 					_dataVec._load_partial(ar, chk);
 				}
 				// 全消しして上書き or IDのみ (フラグで判断)
-				ar & _dataVec;
+				ar & BOOST_SERIALIZATION_NVP(_dataVec);
 
 				// シリアライズフラグの解除は自動
 				_bSerializing = false;
 			}
 			template <class Archive>
 			void save(Archive& ar, const unsigned int ver) const {
+				using boost::serialization::make_nvp;
 				AssertP(Trap, !_bSerializing)
 				_bSerializing = true;
 
-				ar & s_bMerge;
+				ar & make_nvp("mergeflag", s_bMerge);
 				auto* ths = const_cast<ThisType*>(this);
 				ths->normal_serialize(ar, ver);
+
 				if(s_bMerge) {
-					s_bMerge = false;
 					// 統合ロードの為にリソースハンドル毎に切り出して保存
+					s_bMerge = false;
 					size_t nData = _dataVec.size();
-					ar & nData;
-
-					std::stringstream ss;
-					for(auto& e : _dataVec) {
-						// アクセスカウントとWeakマジックナンバーの出力
-						ar & e.accessCount & e.w_magic;
+					// アクセスカウントとWeakマジックナンバーの出力
+					{
+						std::vector<std::pair<uint32_t, typename WHdl::VWord>>	tmp(nData);
+						auto* pTmp = tmp.data();
+						for(auto& e : _dataVec) {
+							pTmp->first = e.accessCount;
+							pTmp->second = e.w_magic;
+							++pTmp;
+						}
+						ar & make_nvp("id_list", tmp);
 					}
-					for(size_t i=0 ; i<nData ; i++) {
-						// データ本体の出力
-						// 一旦ローカルに出力してから・・
-						boost::archive::binary_oarchive oa(ss, boost::archive::no_header);
-						oa & _dataVec.getValueOP(i);
-						// 改めて外部に出力
-						auto tmp = ss.str();
-						size_t len = tmp.length();
-						ar & len & boost::serialization::make_binary_object(&tmp[0], len);
 
-						ss.str("");
-						ss.clear();
-						ss << std::dec;
+					// データ本体の出力
+					{
+						std::stringstream			ss;
+						std::vector<ByteArray>		tmp(nData);
+						for(size_t i=0 ; i<nData ; i++) {
+							// 一旦ローカルに出力してから・・
+							boost::archive::binary_oarchive oa(ss, boost::archive::no_header);
+							oa & make_nvp("data", _dataVec.getValueOP(i));
+
+							// 改めて外部に出力
+							tmp[i] = ss.str();
+
+							ss.str("");
+							ss.clear();
+							ss << std::dec;
+						}
+						ar & make_nvp("data", tmp);
 					}
 					// DataVecのIDSだけ出力
-					ar & _dataVec.asIDSType();
+					ar & make_nvp("ids_list", _dataVec.asIDSType());
 					s_bMerge = true;
 				} else {
 					// 普通に出力
-					ar & _dataVec;
+					ar & BOOST_SERIALIZATION_NVP(_dataVec);
 				}
 
 				// シリアライズフラグの解除はマニュアル
@@ -702,9 +714,9 @@ namespace spn {
 			template <class Archive>
 			void normal_serialize(Archive& ar, const unsigned int /*ver*/) {
 				#ifdef DEBUG
-					ar & _sMagicIndex;
+					ar & BOOST_SERIALIZATION_NVP(_sMagicIndex);
 				#endif
-				ar & _wMagicIndex & _resID;
+				ar & BOOST_SERIALIZATION_NVP(_wMagicIndex) & BOOST_SERIALIZATION_NVP(_resID);
 			}
 			//! シリアライズの時の分岐
 			static bool s_bMerge;
@@ -979,7 +991,7 @@ namespace spn {
 		friend class boost::serialization::access;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & static_cast<T&>(*this);
+			ar & boost::serialization::make_nvp("string", static_cast<T&>(*this));
 		}
 		public:
 			String() = default;
@@ -1042,7 +1054,7 @@ namespace spn {
 			friend boost::serialization::access;
 			template <class Archive>
 			void load(Archive& ar, const unsigned int /*ver*/) {
-				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
+				ar & BOOST_SERIALIZATION_NVP(_nameMap) & BOOST_SERIALIZATION_BASE_OBJECT_NVP(base_type);
 				// ポインタの振りなおし
 				for(auto& p : _nameMap) {
 					auto& data = base_type::_refSH(p.second).data;
@@ -1051,7 +1063,7 @@ namespace spn {
 			}
 			template <class Archive>
 			void save(Archive& ar, const unsigned int /*ver*/) const {
-				ar & _nameMap & boost::serialization::base_object<base_type>(*this);
+				ar & BOOST_SERIALIZATION_NVP(_nameMap) & BOOST_SERIALIZATION_BASE_OBJECT_NVP(base_type);
 			}
 
 		public:

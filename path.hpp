@@ -86,7 +86,7 @@ namespace spn {
             friend class boost::serialization::access;
             template <class Archive>
             void serialize(Archive& ar, const unsigned int) {
-                ar & _path & _segment & _bAbsolute;
+                ar & BOOST_SERIALIZATION_NVP(_path) & BOOST_SERIALIZATION_NVP(_segment) & BOOST_SERIALIZATION_NVP(_bAbsolute);
             }
 
 		public:
@@ -161,7 +161,7 @@ namespace spn {
         friend class boost::serialization::access;
         template <class Archive>
         void serialize(Archive& ar, const unsigned int) {
-            ar & _type & boost::serialization::base_object<PathBlock>(*this);
+            ar & BOOST_SERIALIZATION_NVP(_type) & BOOST_SERIALIZATION_BASE_OBJECT_NVP(PathBlock);
         }
 
 		public:

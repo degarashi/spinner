@@ -42,8 +42,7 @@
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				for(auto& d : m)
-					ar & d;
+				ar & BOOST_SERIALIZATION_NVP(m);
 			}
 
 			QuatT() = default;

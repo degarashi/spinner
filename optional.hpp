@@ -4,6 +4,7 @@
 #include "error.hpp"
 #include "bits.hpp"
 #include <boost/serialization/access.hpp>
+#include <boost/serialization/nvp.hpp>
 #include "serialization/chars.hpp"
 #include "serialization/traits.hpp"
 
@@ -32,7 +33,7 @@ namespace spn {
 		using base = optional_tmp::AlignedBuff<sizeof(T), std::alignment_of<T>::value>;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & castT();
+			ar & boost::serialization::make_nvp("_buffer", castT());
 		}
 
 		_OptionalBuff() = default;
@@ -64,7 +65,7 @@ namespace spn {
 		T*		_buffer;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & _buffer;
+			ar & BOOST_SERIALIZATION_NVP(_buffer);
 		}
 
 		_OptionalBuff() = default;
@@ -85,7 +86,7 @@ namespace spn {
 		T*		_buffer;
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & _buffer;
+			ar & BOOST_SERIALIZATION_NVP(_buffer);
 		}
 
 		_OptionalBuff() = default;
@@ -130,11 +131,11 @@ namespace spn {
 			void serialize(Archive& ar, const unsigned int) {
 				if(typename Archive::is_loading())
 					_release();
-				ar & _bInit;
+				ar & BOOST_SERIALIZATION_NVP(_bInit);
 				if(_bInit) {
 					if(typename Archive::is_loading())
 						_buffer.template default_ctor<T>();
-					ar & _buffer;
+					ar & boost::serialization::make_nvp("buffer", _buffer.castT());
 				}
 			}
 

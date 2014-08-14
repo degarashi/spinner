@@ -49,7 +49,7 @@ namespace spn {
 
 		template <class Archive>
 		void serialize(Archive& ar, const unsigned int) {
-			ar & value;
+			ar & BOOST_SERIALIZATION_NVP(value);
 		}
 
 		TypeWrap() = default;
@@ -108,22 +108,31 @@ namespace spn {
 		using RT = typename std::remove_reference<T>::type;
 		using OPValue = Optional<T>;
 		//! ユーザーの要素を格納
-		struct UData {
+		struct UData : boost::serialization::traits<UData,
+						boost::serialization::object_serializable,
+						boost::serialization::track_never>
+		{
 			OPValue		value;
 			ID			uid;		//!< ユニークID。要素の配列内移動をする際に使用
 
-			UData(UData&& rp): value(std::forward<OPValue>(rp.value)), uid(rp.uid) {}
+			UData() = default;
+			UData(UData&&) = default;
 			template <class T2>
 			UData(T2&& t, ID id): value(std::forward<T2>(t)), uid(id) {}
 
-			UData& operator = (UData&& r) {
-				std::swap(value, r.value);
-				std::swap(uid, r.uid);
-				return *this;
-			}
 			bool operator == (const UData& ud) const {
 				return value == ud.value &&
 						uid == ud.uid;
+			}
+			UData& operator = (UData&& ud) {
+				value = std::move(ud.value);
+				uid = ud.uid;
+				return *this;
+			}
+
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int) {
+				ar & BOOST_SERIALIZATION_NVP(value) & BOOST_SERIALIZATION_NVP(uid);
 			}
 		};
 		struct FreeID : TypeWrap<ID,0> {using TypeWrap<ID,0>::TypeWrap;};
@@ -132,10 +141,15 @@ namespace spn {
 			FreeID = 次の空きインデックス */
 		using IDS = boost::variant<boost::blank, ObjID, FreeID>;
 
-		struct Entry {
+		struct Entry : boost::serialization::traits<Entry,
+						boost::serialization::object_serializable,
+						boost::serialization::track_never>
+		{
 			UData	udata;
 			IDS		ids;
 
+			Entry() = default;
+			Entry(Entry&&) = default;
 			template <class T2>
 			Entry(T2&& t, ID idx): udata(std::forward<T2>(t),idx), ids(ObjID(idx)) {}
 			//! deserialize用
@@ -143,9 +157,19 @@ namespace spn {
 			operator typename TheType<T>::type () { return *udata.value; }
 			operator typename TheType<T>::ctype () const { return *udata.value; }
 
+			Entry& operator = (Entry&& e) {
+				udata = std::move(e.udata);
+				ids = e.ids;
+				return *this;
+			}
 			bool operator == (const Entry& e) const {
 				return udata == e.udata &&
 						ids == e.ids;
+			}
+
+			template <class Archive>
+			void serialize(Archive& ar, const unsigned int) {
+				ar & BOOST_SERIALIZATION_NVP(udata) & BOOST_SERIALIZATION_NVP(ids);
 			}
 		};
 		using Array = std::vector<Entry, Allocator<Entry>>;
@@ -164,7 +188,7 @@ namespace spn {
 			AssertP(Trap, !_bRemoving && _remList.empty())
 			bool bIDS;
 			size_t nEnt;
-			ar & bIDS & nEnt & _nFree & _firstFree;
+			ar & BOOST_SERIALIZATION_NVP(bIDS) & BOOST_SERIALIZATION_NVP(nEnt) & BOOST_SERIALIZATION_NVP(_nFree) & BOOST_SERIALIZATION_NVP(_firstFree);
 
 			ID uid;
 			IDS ids;
@@ -177,53 +201,58 @@ namespace spn {
 					while(_array.size() < nEnt)
 						_array.emplace_back(OPValue(), 0, boost::blank());
 				}
+				// NVPの都合上、一旦配列に分離
+				std::vector<ID> arID(nEnt);
+				std::vector<IDS> arIDS(nEnt);
+				ar & BOOST_SERIALIZATION_NVP(arID) & BOOST_SERIALIZATION_NVP(arIDS);
 				for(size_t i=0 ; i<nEnt ; i++) {
-					ar & uid & ids;
-
 					auto& ent = _array[i];
-					ent.udata.uid = uid;
-					ent.ids = ids;
+					ent.udata.uid = arID[i];
+					ent.ids = arIDS[i];
 				}
 			} else {
 				_array.clear();
-				_array.reserve(nEnt);
-				OPValue value;
-				for(size_t i=0 ; i<nEnt ; i++) {
-					// Entryの復元
-					ar & value & uid & ids;
-					_array.emplace_back(std::move(value), uid, ids);
-				}
+				_array.resize(nEnt);
+				boost::serialization::array<Entry>	ary(_array.data(), nEnt);
+				ar & boost::serialization::make_nvp("_array", ary);
 			}
 		}
 		template <class Archive>
 		void save(Archive& ar, const unsigned int /*ver*/) const {
 			AssertP(Trap, !_bRemoving && _remList.empty())
 			size_t nEnt = _array.size();
-			ar & s_bIDS & nEnt & _nFree & _firstFree;
+			ar & BOOST_SERIALIZATION_NVP(s_bIDS) & BOOST_SERIALIZATION_NVP(nEnt) & BOOST_SERIALIZATION_NVP(_nFree) & BOOST_SERIALIZATION_NVP(_firstFree);
 			if(s_bIDS) {
 				// IDのみの出力
-				for(auto& p : _array)
-					ar & p.udata.uid & p.ids;
+				// NVPの都合上、一旦配列に分離
+				int nAr = _array.size();
+				std::vector<ID> arID(nAr);
+				std::vector<IDS> arIDS(nAr);
+				for(int i=0 ; i<nAr ; i++) {
+					arID[i] = _array[i].udata.uid;
+					arIDS[i] = _array[i].ids;
+				}
+				ar & BOOST_SERIALIZATION_NVP(arID) & BOOST_SERIALIZATION_NVP(arIDS);
 			} else {
 				// 通常の出力
-				for(auto& p : _array)
-					ar & p.udata.value & p.udata.uid & p.ids;
+				boost::serialization::array<const Entry>	ary(&_array[0], size_t(_array.size()));
+				ar & boost::serialization::make_nvp("_array", ary);
 			}
 		}
 		//! IDだけ出力するフラグ
 		static bool s_bIDS;
-		struct IDSType : boost::serialization::traits<IDSType,
-			boost::serialization::object_serializable,
-			boost::serialization::track_never>
+		struct IDSType : boost::serialization::traits<ThisType,
+			boost::serialization::object_class_info,
+			boost::serialization::track_selectively>
 		{
 			const ThisType* _ths;
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			// セーブ関数しか用意しない
 			template <class Archive>
-			void save(Archive& ar, const unsigned int) const {
+			void save(Archive& ar, const unsigned int ver) const {
 				bool tmp = s_bIDS;
 				s_bIDS = true;
-				ar & (*_ths);
+				_ths->save(ar, ver);
 				s_bIDS = tmp;
 			}
 		};
@@ -232,24 +261,21 @@ namespace spn {
 		public:
 			template <class Archive>
 			void _load_partial(Archive& ar, const std::vector<bool>& chk) {
+				using boost::serialization::make_nvp;
 				size_t nEnt = chk.size();
 				// スペース確保
 				while(_array.size() < nEnt)
 					_array.emplace_back(OPValue(), 0, boost::blank());
 
-				size_t len;
-				std::string buff;
+				std::vector<ByteArray>	data;
+				ar & make_nvp("data", data);
 				std::istringstream ss;
 				for(size_t i=0 ; i<nEnt ; i++) {
-					ar & len;
-					buff.resize(len);
-					ar.load_binary(&buff[0], len);
-
 					if(!chk[i]) {
-						ss.str(buff);
+						ss.str(data[i].toString());
 						OPValue value;
 						boost::archive::binary_iarchive ia(ss, boost::archive::no_header);
-						ia >> value;
+						ia >> make_nvp("data", value);
 						_array[i].udata.value = std::move(value);
 					}
 				}

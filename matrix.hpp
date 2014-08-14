@@ -76,8 +76,7 @@
 				friend class boost::serialization::access;
 				template <class Archive>
 				void serialize(Archive& ar, const unsigned int /*ver*/) {
-					for(auto& d : data)
-						ar & d;
+					ar & BOOST_SERIALIZATION_NVP(data);
 				}
 
 				// -------------------- ctor --------------------

@@ -25,7 +25,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _ofs & _angle & _scale;
+				ar & BOOST_SERIALIZATION_NVP(_ofs) & BOOST_SERIALIZATION_NVP(_angle) & BOOST_SERIALIZATION_NVP(_scale);
 				if(Archive::is_loading::value) {
 					_accum = std::rand();
 					_rflag = 0;
@@ -108,7 +108,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _ofs & _rot & _scale;
+				ar & BOOST_SERIALIZATION_NVP(_ofs) & BOOST_SERIALIZATION_NVP(_rot) & BOOST_SERIALIZATION_NVP(_scale);
 				if(Archive::is_loading::value) {
 					_accum = std::rand();
 					_rflag = 0;

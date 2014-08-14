@@ -20,7 +20,7 @@ namespace spn {
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
-				ar & _vec;
+				ar & BOOST_SERIALIZATION_NVP(_vec);
 			}
 
 		protected:

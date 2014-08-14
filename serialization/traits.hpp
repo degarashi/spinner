@@ -66,4 +66,4 @@
 		friend class boost::serialization::access; \
 		template <class Archive> \
 		void serialize(Archive& ar, const unsigned int) { \
-			ar & boost::serialization::base_object<base>(*this);}
+			ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(base);}
