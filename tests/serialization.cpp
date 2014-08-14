@@ -1,5 +1,6 @@
 #include "test.hpp"
 #include "../resmgr.hpp"
+#include "../pose.hpp"
 #include <boost/serialization/access.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -40,6 +41,72 @@ namespace spn {
 			class TestRM : public ResMgrA<MyEnt, TestRM> {};
 			class SerializeTest : public RandomTestInitializer {};
 		}
+		template <class T>
+		void CheckSerializedData(const T& src) {
+			std::stringstream buffer;
+			boost::archive::binary_oarchive oa(buffer);
+			oa << src;
+			T loaded;
+			boost::archive::binary_iarchive ia(buffer);
+			ia >> loaded;
+			EXPECT_EQ(src, loaded);
+		}
+
+		template <class T>
+		class SerializeVector : public RandomTestInitializer {
+			protected:
+				using base_t = RandomTestInitializer;
+		};
+		TYPED_TEST_CASE(SerializeVector, VecTP);
+		TYPED_TEST(SerializeVector, Test) {
+			using This_t = std::decay_t<decltype(*this)>;
+			auto rd = This_t::base_t::getRand();
+			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			for(int i=0 ; i<NTEST ; i++) {
+				auto data = GenRVec<TypeParam::width, TypeParam::align>(rdF);
+				CheckSerializedData(data);
+			}
+		}
+		
+
+		template <class T>
+		using SerializeMatrix = SerializeVector<T>;
+		TYPED_TEST_CASE(SerializeMatrix, MatTP);
+		TYPED_TEST(SerializeMatrix, Test) {
+			using This_t = std::decay_t<decltype(*this)>;
+			auto rd = This_t::base_t::getRand();
+			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			for(int i=0 ; i<NTEST ; i++) {
+				auto data = GenRMat<TypeParam::align, TypeParam::height, TypeParam::width>(rdF);
+				CheckSerializedData(data);
+			}
+		}
+
+		using SerializePose2D = RandomTestInitializer;
+		TEST_F(SerializePose2D, Test) {
+			using This_t = std::decay_t<decltype(*this)>;
+			auto rd = This_t::getRand();
+			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			for(int i=0 ; i<NTEST ; i++) {
+				Pose2D ps(GenRVec<2,false>(rdF),
+							rdF(),
+							GenRVec<2,false>(rdF));
+				CheckSerializedData(ps);
+			}
+		}
+		using SerializePose3D = RandomTestInitializer;
+		TEST_F(SerializePose3D, Test) {
+			using This_t = std::decay_t<decltype(*this)>;
+			auto rd = This_t::getRand();
+			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			for(int i=0 ; i<NTEST ; i++) {
+				Pose3D ps(GenRVec<3,true>(rdF),
+							GenRQuat<true>(rdF),
+							GenRVec<3,true>(rdF));
+				CheckSerializedData(ps);
+			}
+		}
+
 		TEST_F(SerializeTest, Noseq) {
 			auto rd = getRand();
 			std::stringstream buffer;

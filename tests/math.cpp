@@ -206,39 +206,6 @@ namespace spn {
 		}
 		#undef MATRIXCHECK
 
-		namespace {
-			//! ランダムなベクトル
-			template <int N, bool A, class RD>
-			auto GenRVec(RD& rd) {
-				VecT<N,A> v;
-				for(int i=0 ; i<N ; i++)
-					v.m[i] = rd();
-				return v;
-			}
-			//! ランダムなベクトル（但しゼロではない）
-			template <int N, bool A, class RD>
-			auto GenRVecNZ(RD& rd, float th) {
-				VecT<N,A> v;
-				do {
-					v = GenRVec<N,A>(rd);
-				} while(v.length() < th);
-				return v;
-			}
-			//! ランダムな方向ベクトル
-			template <int N, bool A, class RD>
-			auto GenRDir(RD& rd) {
-				return GenRVecNZ<N,A>(rd, 1e-4f).normalization();
-			}
-			//! ランダムなクォータニオン
-			template <bool A, class RD>
-			auto GenRQuat(RD& rd) {
-				return QuatT<A>::Rotation(GenRDir<3,A>(rd), rd());
-			}
-			template <bool A, class RD>
-			auto GenRExpQuat(RD& rd) {
-				return ExpQuatT<A>(GenRQuat<A>(rd));
-			}
-		}
 		// AlignedとUnAlignedを両方テストする
 		template <class T>
 		class QuaternionTest : public RandomTestInitializer {
@@ -275,8 +242,7 @@ namespace spn {
 		template <class T>
 		const float QuaternionTest<T>::RandMax = 1e3f;
 
-		using QuaternionTypeList = ::testing::Types<std::integral_constant<bool,false>,
-										std::integral_constant<bool,true>>;
+		using QuaternionTypeList = ::testing::Types<std::false_type, std::true_type>;
 		TYPED_TEST_CASE(QuaternionTest, QuaternionTypeList);
 
 		template <class T>
