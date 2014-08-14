@@ -5,7 +5,7 @@
 namespace spn {
 	//! ソート済みベクタ
 	/*! 内部をソートされた状態に保つため要素の編集は不可 */
-	template <class T, class Pred=std::less<T>, template<class,class> class CT=std::vector, class AL=std::allocator<T>>
+	template <class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<T>>
 	class AssocVec {
 		using Vec = CT<T, AL>;
 		Vec		_vec;
@@ -101,7 +101,7 @@ namespace spn {
 	};
 	//! キー付きソート済みベクタ
 	/*! キーは固定のため、値の編集が可能 */
-	template <class K, class T, class Pred=std::less<K>, template<class,class> class CT=std::vector, class AL=std::allocator<std::pair<K,T>>>
+	template <class K, class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<std::pair<K,T>>>
 	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst, CT, AL> {
 		using Entry = std::pair<K,T>;
 		public:
