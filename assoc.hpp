@@ -24,13 +24,16 @@ namespace spn {
 			}
 
 		protected:
-			using VecItr = typename Vec::iterator;
-			VecItr _begin() { return _vec.begin(); }
-			VecItr _end() { return _vec.end(); }
+			using VecItrC = typename Vec::const_iterator;
+			VecItrC _cbegin() const { return _vec.cbegin(); }
+			VecItrC _cend() const { return _vec.cend(); }
 
 		public:
+			using value_type = T;
+			using cmp_type = Pred;
+
 			AssocVec() = default;
-			AssocVec(AssocVec&& v): _vec(std::forward<Vec>(v._vec)) {}
+			AssocVec(AssocVec&&) = default;
 			AssocVec(const Vec& src): _vec(src) {
 				std::sort(_vec.begin(), _vec.end());
 			}
@@ -93,12 +96,6 @@ namespace spn {
 			const T& operator [](int n) const {
 				return _vec[n];
 			}
-			typename Vec::const_iterator begin() const {
-				return _vec.cbegin();
-			}
-			typename Vec::const_iterator end() const {
-				return _vec.cend();
-			}
 			typename Vec::const_iterator cbegin() const {
 				return _vec.cbegin();
 			}
@@ -113,24 +110,27 @@ namespace spn {
 			}
 	};
 	//! std::pairのfirstをless比較
+	template <class CMP>
 	struct CmpFirst {
 		template <class K, class T>
 		bool operator()(const std::pair<K,T>& t0, const std::pair<K,T>& t1) const {
-			return t0.first < t1.first;
+			return CMP()(t0.first, t1.first);
 		}
 	};
 	//! キー付きソート済みベクタ
 	/*! キーは固定のため、値の編集が可能 */
 	template <class K, class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<std::pair<K,T>>>
-	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst, CT, AL> {
+	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst<Pred>, CT, AL> {
 		using Entry = std::pair<K,T>;
 		public:
-			using ASV = AssocVec<std::pair<K,T>, CmpFirst, CT, AL>;
+			using value_type = std::pair<K,T>;
+			using cmp_type = Pred;
+			using ASV = AssocVec<value_type, CmpFirst<Pred>, CT, AL>;
 			using typename ASV::AssocVec;
 
 			template <class K2, class T2>
 			int insert(K2&& k, T2&& t) {
-				return ASV::insert(Entry(k,t));
+				return ASV::insert(Entry(std::forward<K2>(k), std::forward<T2>(t)));
 			}
 			T& back() {
 				const Entry& ent = const_cast<ASV*>(this)->back();
@@ -144,17 +144,16 @@ namespace spn {
 				const Entry& ent = (*const_cast<ASV*>(this))[n];
 				return const_cast<Entry&>(ent).second;
 			}
-			using ASV::operator [];
-
-			typename ASV::VecItr begin() {
-				return ASV::_begin();
+			const K& getKey(int n) const {
+				return ASV::operator [](n).first;
 			}
-			using ASV::begin;
 
-			typename ASV::VecItr end() {
-				return ASV::_end();
+			typename ASV::VecItrC cbegin() const {
+				return ASV::_cbegin();
 			}
-			using ASV::end;
+			typename ASV::VecItrC cend() const {
+				return ASV::_cend();
+			}
 	};
 }
 
