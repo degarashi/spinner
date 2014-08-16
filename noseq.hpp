@@ -191,8 +191,6 @@ namespace spn {
 			size_t nEnt;
 			ar & BOOST_SERIALIZATION_NVP(bIDS) & BOOST_SERIALIZATION_NVP(nEnt) & BOOST_SERIALIZATION_NVP(_nFree) & BOOST_SERIALIZATION_NVP(_firstFree);
 
-			ID uid;
-			IDS ids;
 			if(bIDS) {
 				// IDだけを上書き
 				if(_array.size() > nEnt)
