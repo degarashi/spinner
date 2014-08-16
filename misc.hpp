@@ -597,11 +597,6 @@ namespace spn {
 	T Saturate(const T& val, const T& range) {
 		return Saturate(val, -range, range);
 	}
-	//! 値補間
-	template <class T>
-	T Lerp(const T& v0, const T& v1, float r) {
-		return (v1-v0)*r + v0;
-	}
 	//! 値が範囲内に入っているか
 	template <class T>
 	bool IsInRange(const T& val, const T& vMin, const T& vMax) {
