@@ -5,6 +5,9 @@
 #include "../matrix.hpp"
 #include "../random.hpp"
 #include "../path.hpp"
+#include "../ulps.hpp"
+#include "../check_macro.hpp"
+#include "../pose.hpp"
 #include <type_traits>
 #include <gtest/gtest.h>
 #include <boost/serialization/serialization.hpp>
@@ -90,6 +93,42 @@ namespace spn {
 				EXPECT_FLOAT_EQ(v.m[i], *src++);
 			return src;
 		}
+		namespace {
+			#pragma GCC diagnostic push
+			#pragma GCC diagnostic ignored "-Wunused-function"
+			namespace test_i {
+				DEF_HASTYPE(width)
+				template <class T, std::enable_if_t<!std::is_floating_point<T>::value>*& = Enabler>
+				void _CheckIt(const T& v0, const T& v1, std::false_type) {
+					EXPECT_EQ(v0, v1);
+				}
+				constexpr float c_ulps(ULPs_C(1.0f, 1.0f+1e-6f));
+				// (テキストにfloating pointを保存する場合は細かい値が変動する場合がある為)
+				template <class T, std::enable_if_t<std::is_floating_point<T>::value>*& = Enabler>
+				void _CheckIt(const T& v0, const T& v1, std::false_type) {
+					EXPECT_TRUE(EqULPs(v0, v1, c_ulps));
+				}
+				template <class T>
+				void _CheckIt(const T& v0, const T& v1, std::true_type) {
+					EXPECT_TRUE(EqULPs(v0, v1, c_ulps));
+				}
+				template <class T>
+				void CheckIt(const T& v0, const T& v1) {
+					_CheckIt(v0, v1, HasType_width<T>(nullptr));
+				}
+				void CheckIt(const Pose3D& v0, const Pose3D& v1) {
+					CheckIt(v0.getOffset(), v1.getOffset());
+					CheckIt(v0.getRot(), v1.getRot());
+					CheckIt(v0.getScale(), v1.getScale());
+				}
+				void CheckIt(const Pose2D& v0, const Pose2D& v1) {
+					CheckIt(v0.getOffset(), v1.getOffset());
+					CheckIt(v0.getAngle(), v1.getAngle());
+					CheckIt(v0.getScale(), v1.getScale());
+				}
+			}
+			#pragma GCC diagnostic pop
+		}
 		template <class OA, class IA, class T>
 		void CheckSerializedData(const T& src) {
 			std::stringstream buffer;
@@ -98,8 +137,10 @@ namespace spn {
 			T loaded;
 			IA ia(buffer);
 			ia >> boost::serialization::make_nvp("src", loaded);
-			EXPECT_EQ(src, loaded);
+			test_i::CheckIt(src, loaded);
 		}
+		namespace test_i {}
+
 		template <class T>
 		void CheckSerializedDataBin(const T& src) {
 			CheckSerializedData<boost::archive::binary_oarchive,

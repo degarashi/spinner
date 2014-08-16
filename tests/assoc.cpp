@@ -85,7 +85,7 @@ namespace spn {
 			AddRandom(data, (rdF() & 0xf00) + 1, rdF);
 			CheckSerializedDataBin(data);
 		}
-		TEST_F(AssocVectorSerialize, DISABLED_WithKey) {
+		TEST_F(AssocVectorSerialize, WithKey) {
 			// ランダムなデータ列を作る
 			auto rd = this->getRand();
 			auto rdF = [&rd](){ return rd.getUniform<int>(); };
