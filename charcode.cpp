@@ -1,4 +1,9 @@
-#include "misc.hpp"
+#include "abstbuff.hpp"
+#include "text.hpp"
+#include "bits.hpp"
+#include "chunk.hpp"
+#include "error.hpp"
+#include <cstring>
 #include <locale>
 namespace spn {
 	StrLen GetLength(const char32_t* str) {
@@ -65,7 +70,8 @@ namespace spn {
 		assert(str == strE);
 		return StrLen(len, count);
 	}
-
+	long Text::MakeChunk(const char* str) {
+		return ::spn::MakeChunk(str[0], str[1], str[2], str[3]); }
 	bool Text::sjis_isMBChar(char c) {
 		uint32_t subset = c & 0xff;
 		if((subset >= 0x81 && subset <= 0x9F) || (subset >= 0xe0))

@@ -1,7 +1,7 @@
 #pragma once
 #include "vector.hpp"
 #include "quat.hpp"
-#include "misc.hpp"
+#include "alignedalloc.hpp"
 #include <boost/serialization/access.hpp>
 
 namespace spn {

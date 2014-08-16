@@ -15,6 +15,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/binary_object.hpp>
 #include "adaptstream.hpp"
+#include "singleton.hpp"
 
 namespace spn {
 	class WHandle;

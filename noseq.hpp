@@ -12,6 +12,7 @@
 #include "serialization/traits.hpp"
 #include "type.hpp"
 #include "optional.hpp"
+#include "structure/bytearray.hpp"
 
 namespace boost {
 	namespace serialization {

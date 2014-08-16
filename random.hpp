@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <random>
 #include <limits>
-#include "misc.hpp"
+#include "singleton.hpp"
 
 namespace spn {
 	//! Mersenne Twister(32bit)を用いた乱数生成

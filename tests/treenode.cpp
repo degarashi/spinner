@@ -2,7 +2,7 @@
 	#include <intrin.h>
 #endif
 #include "test.hpp"
-#include "misc.hpp"
+#include "structure/treenode.hpp"
 #include <unordered_set>
 
 namespace spn {
