@@ -38,7 +38,7 @@ namespace spn {
 			template <class T>
 			static T* _GetNull() { return reinterpret_cast<T*>(0); }
 
-			mutable FlagValue _rflag = All();
+			mutable FlagValue _rflag;
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
 			template <class T0>
 			static constexpr FlagValue _Add_If(std::integral_constant<bool,false>) { return 0; }
@@ -94,6 +94,13 @@ namespace spn {
 			}
 
 		public:
+			RFlag() {
+				resetAll();
+			}
+			//! 全てのキャッシュを無効化
+			void resetAll() {
+				_rflag = All();
+			}
 			template <class... TsA>
 			static constexpr FlagValue Get() {
 				return _Sum<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
