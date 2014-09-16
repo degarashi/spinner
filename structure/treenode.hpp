@@ -190,7 +190,7 @@ namespace spn {
 			}
 			template <class Callback>
 			Iterate iterateDepthFirst(Callback&& cb, int depth=0) const {
-				return iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
+				return const_cast<this_t*>(this)->iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
 			}
 			template <class Callback>
 			SP find(Callback&& cb) const {
