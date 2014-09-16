@@ -28,7 +28,7 @@ namespace boost {
 		void load(Archive& ar, std::shared_ptr<T>& p, const unsigned int) {
 			T* ptr;
 			ar & BOOST_SERIALIZATION_NVP(ptr);
-			p = ptr;
+			p = std::shared_ptr<T>(ptr);
 		}
 		template <class Archive, class T>
 		void save(Archive& ar, const std::shared_ptr<T>& p, const unsigned int) {
