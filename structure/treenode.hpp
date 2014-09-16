@@ -2,19 +2,29 @@
 #include <memory>
 #include <iostream>
 #include "error.hpp"
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/vector.hpp>
 
 namespace spn {
 	//! 汎用ツリー構造
 	/*! Tは必ずTreeNode<T>を継承する前提 */
 	template <class T>
 	class TreeNode : public std::enable_shared_from_this<T> {
+		private:
+			friend class boost::serialization::access;
+			template <class Ar>
+			void serialize(Ar& ar, const unsigned int) {
+				// データの出力は上位クラスがする
+				// ツリー構造はSerializerクラスが担当
+			}
+
 		// 巡回参照を避けるために親ノードはweak_ptrで格納
 		public:
 			using this_t = TreeNode<T>;
 			using pointer = this_t*;
 			using SP = std::shared_ptr<T>;
 			using WP = std::weak_ptr<T>;
-		private:
+
 			SP	_spChild,
 				_spSibling;
 			WP	_wpParent;
@@ -22,6 +32,69 @@ namespace spn {
 				while(--n >= 0)
 					os << '\t';
 			}
+
+			class Serializer {
+				private:
+					using SPC = std::shared_ptr<const T>;
+					SP		_spRoot;
+
+					using SPArray = std::vector<SP>;
+					using SPCArray = std::vector<SPC>;
+					using IDXArray = std::vector<int>;
+					friend class boost::serialization::access;
+					BOOST_SERIALIZATION_SPLIT_MEMBER();
+					template <class Ar>
+					void save(Ar& ar, const unsigned int) const {
+						// 配列化して出力
+						SPCArray		spArray;
+						_spRoot->iterateDepthFirst([&spArray](const T& node, int){
+							SPC ss = node.shared_from_this();
+							spArray.push_back(ss);
+							return Iterate::StepIn;
+						});
+						// 親ノードの、配列中でのインデックス値を出力
+						int nA = spArray.size();
+						IDXArray	 idxArray(nA);
+						for(int i=0 ; i<nA ; i++) {
+							if(auto sp = spArray[i]->getParent()) {
+								auto itr = std::find_if(spArray.begin(), spArray.end(), [&sp](auto& s){
+									return s == sp;
+								});
+								idxArray[i] = itr - spArray.begin();
+							} else
+								idxArray[i] = -1;
+						}
+
+						ar	& BOOST_SERIALIZATION_NVP(spArray)
+							& BOOST_SERIALIZATION_NVP(idxArray);
+					}
+					template <class Ar>
+					void load(Ar& ar, const unsigned int) {
+						// 配列を読み込んでツリー構築
+						SPArray			spArray;
+						IDXArray		idxArray;
+						ar	& BOOST_SERIALIZATION_NVP(spArray)
+							& BOOST_SERIALIZATION_NVP(idxArray);
+
+						if(!spArray.empty()) {
+							int nA = spArray.size();
+							for(int i=0 ; i<nA ; i++) {
+								auto idx = idxArray[i];
+								if(idx >= 0)
+									spArray[idx]->addChild(spArray[i]);
+							}
+							_spRoot = spArray[0];
+						} else
+						    _spRoot = SP();
+					}
+
+				public:
+					Serializer() = default;
+					Serializer(const SP& sp): _spRoot(sp) {}
+					const SP& getNode() const {
+					    return _spRoot;
+					}
+			};
 
 		public:
 			//! iterateDepthFirstの戻り値
