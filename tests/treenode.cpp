@@ -4,6 +4,9 @@
 #include "test.hpp"
 #include "structure/treenode.hpp"
 #include <unordered_set>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include "../serialization/smart_ptr.hpp"
 
 namespace spn {
 	namespace test {
@@ -54,6 +57,13 @@ namespace spn {
 			};
 
 			class TreeNode_t : public TreeNode<TreeNode_t> {
+				using base_t = TreeNode<TreeNode_t>;
+				private:
+					friend class boost::serialization::access;
+					template <class Ar>
+					void serialize(Ar& ar, const unsigned int) {
+						ar	& BOOST_SERIALIZATION_BASE_OBJECT_NVP(base_t);
+					}
 				public:
 					int		value;
 					TreeNode_t(int v): value(v) {}
@@ -73,7 +83,6 @@ namespace spn {
 				}
 			}
 		}
-		class TreeNodeTest : public RandomTestInitializer {};
 		template <class A, class B>
 		void CheckEqual(const A& a, const B& b) {
 			ASSERT_EQ(a.size(), b.size());
@@ -122,8 +131,11 @@ namespace spn {
 
 				//! 深度優先で配列展開
 				VEC plain() const {
+					return Plain(_spRoot);
+				}
+				static VEC Plain(const SP& sp) {
 					VEC ret;
-					_spRoot->iterateDepthFirst([&ret](auto& nd, int){
+					sp->iterateDepthFirst([&ret](auto& nd, int){
 						ret.emplace_back(nd.shared_from_this());
 						return std::decay_t<decltype(nd)>::Iterate::StepIn;
 					});
@@ -201,11 +213,11 @@ namespace spn {
 		}
 
 		//! print out テスト
-		template <class TR>
-		void PrintOut(TR& tree) {
-			using T = typename TR::Type;
-			std::unordered_set<T*> testset;
-			tree.getRoot()->iterateDepthFirst([&testset](auto& nd, int d){
+		template <class SP>
+		void PrintOut(SP& root) {
+			using T = typename SP::element_type;
+			std::unordered_set<const T*> testset;
+			root->iterateDepthFirst([&testset](auto& nd, int d){
 				using Ret = typename std::decay_t<decltype(nd)>::Iterate;
 				while(d-- > 0)
 					std::cout << '\t';
@@ -230,6 +242,7 @@ namespace spn {
 				return std::decay_t<decltype(nd)>::Iterate::StepIn;
 			});
 		}
+		class TreeNodeTest : public RandomTestInitializer {};
 		TEST_F(TreeNodeTest, General) {
 			auto rd = getRand();
 			// TreeNodeと、子を配列で持つノードでそれぞれツリーを作成
@@ -248,6 +261,46 @@ namespace spn {
 			// 2種類のツリーで比較
 			// (深度優先で巡回した時に同じ順番でノードが取り出せる筈)
 			CheckEqual(treeA.getArray(), treeB.getArray());
+		}
+
+		using SerializeTest = TreeNodeTest;
+		TEST_F(TreeNodeTest, TreeNode) {
+			auto rd = getRand();
+			// ランダムなツリーを作る
+			TestTree<TreeNode_t>	tree(0);
+			constexpr int N_Manipulation = 100;
+			for(int i=1 ; i<N_Manipulation ; i++)
+				RandomManipulate(rd, i, tree);
+
+			// シリアライズ
+			TreeNode_t::Serializer sl(tree.getRoot());
+			auto ar0 = TestTree<TreeNode_t>::Plain(sl.getNode());
+			std::stringstream ss;
+			boost::archive::xml_oarchive oa(ss, boost::archive::no_header);
+			oa << boost::serialization::make_nvp("test", sl);
+			std::cout << ss.str() << std::endl;
+
+			// デシリアライズ
+			boost::archive::xml_iarchive ia(ss, boost::archive::no_header);
+			ia >> boost::serialization::make_nvp("test", sl);
+			auto ar1 = TestTree<TreeNode_t>::Plain(sl.getNode());
+
+			// シリアライズ前後でデータを比べる
+			CheckEqual(ar0, ar1);
+		}
+	}
+}
+namespace boost {
+	namespace serialization {
+		template <class Ar>
+		void load_construct_data(Ar& ar, spn::test::TreeNode_t* node, const unsigned int) {
+			int value;
+			ar & make_nvp("value", value);
+			new(node) spn::test::TreeNode_t(value);
+		}
+		template <class Ar>
+		void save_construct_data(Ar& ar, const spn::test::TreeNode_t* node, const unsigned int) {
+			ar & make_nvp("value", node->value);
 		}
 	}
 }
