@@ -12,6 +12,7 @@
 #include "../expquat.hpp"
 #include "test.hpp"
 
+#pragma GCC diagnostic ignored "-Wunused-variable"
 namespace spn {
 	namespace test {
 		namespace {

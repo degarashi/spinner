@@ -30,8 +30,6 @@ message(STATUS "CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 message(STATUS "CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
 if(NOT DEFINED ARCHITECTURE)
-	# テストルーチンについては幾つかの警告を抑制する
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wno-unused-variable")
 	aux_source_directory(tests TEST_SRC)
 	add_executable(spn_test main.cpp ${TEST_SRC})
 	set(LINK_LIBS

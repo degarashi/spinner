@@ -54,9 +54,7 @@ namespace spn {
 		}
 
 		class FileTreeTest : public RandomTestInitializer {};
-		constexpr int NTEST = 16,
-					NITER = 256,
-					MAX_NAME = 16,
+		constexpr int MAX_NAME = 16,
 					MIN_SIZE = 8,
 					MAX_SIZE = 256;
 		using DISABLED_FileTreeTest = FileTreeTest;
