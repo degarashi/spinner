@@ -13,7 +13,7 @@ namespace spn {
 		private:
 			friend class boost::serialization::access;
 			template <class Ar>
-			void serialize(Ar& ar, const unsigned int) {
+			void serialize(Ar&, const unsigned int) {
 				// データの出力は上位クラスがする
 				// ツリー構造はSerializerクラスが担当
 			}
