@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
-#include "../serialization/smart_ptr.hpp"
 
 namespace spn {
 	namespace test {

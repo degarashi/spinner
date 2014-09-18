@@ -5,6 +5,12 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
 
+// clangでshared_ptrが定義されない問題への一時的な対処
+#include <boost/serialization/singleton.hpp>
+#include <boost/serialization/extended_type_info.hpp>
+#undef BOOST_NO_CXX11_SMART_PTR
+#include <boost/serialization/shared_ptr.hpp>
+
 namespace spn {
 	//! 汎用ツリー構造
 	/*! Tは必ずTreeNode<T>を継承する前提 */
