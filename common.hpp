@@ -46,8 +46,6 @@ namespace spn {
 		using t_xor = TFCond<I0^I1>;
 		using t_nand = TFCond<(I0&I1) ^ 0x01>;
 	};
-	//! 要素カウント
-	#define countof(a)	static_cast<int>(sizeof((a))/sizeof((a)[0]))
 	//! 条件式の評価結果がfalseの場合、マクロ定義した箇所には到達しないことを保証
 	#define __assume(cond) do { if (!(cond)) __builtin_unreachable(); } while (0);
 	//! 最大値を取得
@@ -188,5 +186,21 @@ namespace spn {
 			return EqAbs(t0, t1, spn::ConstantPow10<T,NPow>());
 		}
 	};
+
+	template <size_t N>
+	struct GetCountOf_helper {
+		using type = char [N];
+	};
+	template <class T, size_t N>
+	typename GetCountOf_helper<N>::type& GetCountOf(T (&)[N]);
+	//! 配列の要素数を取得する (配列でない場合はエラー)
+	#define countof(e)		sizeof(::spn::GetCountOf(e))
+
+	template <class T>
+	char GetCountOfNA(T);
+	template <class T, size_t N>
+	typename GetCountOf_helper<N>::type& GetCountOfNA(T (&)[N]);
+	//! 配列の要素数を取得する (配列でない場合は1が返る)
+	#define countof_na(e)	sizeof(::spn::GetCountOfNA(e))
 }
 
