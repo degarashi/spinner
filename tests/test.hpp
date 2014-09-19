@@ -196,9 +196,15 @@ namespace spn {
 			public:
 				constexpr static MTRandomMgr::ID cs_rnd = 0xff;
 			protected:
-				void SetUp() override;
-				void TearDown() override;
-				MTRandom getRand();
+				void SetUp() override {
+					mgr_random.initEngine(cs_rnd);
+				}
+				void TearDown() override {
+					mgr_random.removeEngine(cs_rnd);
+				}
+				MTRandom getRand() {
+					return mgr_random.get(cs_rnd);
+				}
 		};
 
 		#define SEQ_VECTOR (2)(3)(4)

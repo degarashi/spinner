@@ -43,15 +43,6 @@ namespace spn {
 			});
 		}
 		PathBlock g_apppath;
-		void RandomTestInitializer::SetUp() {
-			mgr_random.initEngine(cs_rnd);
-		}
-		void RandomTestInitializer::TearDown() {
-			mgr_random.removeEngine(cs_rnd);
-		}
-		MTRandom RandomTestInitializer::getRand() {
-			return mgr_random.get(cs_rnd);
-		}
 
 		class FileTreeTest : public RandomTestInitializer {};
 		constexpr int MAX_NAME = 16,
