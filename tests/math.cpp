@@ -454,6 +454,22 @@ namespace spn {
 			std::cout << std::hex << "raw:\t" << raw << std::endl
 									<< "mask:\t" << mask << std::endl;
 		}
+		TEST_F(MathTest, YawPitchDist) {
+			constexpr float RandMin = -1e3f,
+							RandMax = 1e3f;
+			auto rd = getRand();
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+			// YawPitchDistで計算した値を再度合成して結果を比較
+			auto nzv = GenRVecNZ<3,false>(rdF, 1e-2f);
+			auto ypd = YawPitchDist::FromPos(nzv);
+			auto ofsRot = ypd.toOffsetRot();
+			auto nzv2 = -ofsRot.second.getDir() * ypd.distance;
+
+			constexpr auto ThULPs = ULPs_C(100.f, 0.3f);
+			EXPECT_TRUE(EqULPs(ofsRot.first, nzv, ThULPs));
+			// rotation + distanceから復元した元座標ベクトル
+			EXPECT_TRUE(EqULPs(nzv2, nzv, ThULPs));
+		}
 
 		namespace {
 			template <class T>

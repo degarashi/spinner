@@ -166,6 +166,16 @@ namespace spn {
 	Vec2 CramersRule(const Vec2& v0, const Vec2& v1, const Vec2& a0, float detInv);
 	//! グラム・シュミットの正規直交化法
 	void GramSchmidtOrth(Vec3& v0, Vec3& v1, Vec3& v2);
+
+	struct YawPitchDist {
+		float yaw, pitch, distance;
+		//! 方向ベクトルをYaw,Pitch,Distanceに分解
+		static YawPitchDist FromPos(const spn::Vec3& pos);
+		//! YawPitchDistの位置から座標原点を見る姿勢
+		std::pair<spn::Vec3, spn::Quat> toOffsetRot() const;
+	};
+	std::ostream& operator << (std::ostream& os, const YawPitchDist& ypd);
+
 	struct AffineParts {
 		AVec3 offset,
 				scale;
