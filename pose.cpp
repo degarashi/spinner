@@ -208,7 +208,7 @@ namespace spn {
 		_rflag = PRF_ALL;
 	}
 	Pose3D::Pose3D(const AMat43& m) {
-		auto ap = DecompAffine(m);
+		auto ap = AffineParts::Decomp(m);
 		_ofs = ap.offset;
 		_rot = ap.rotation;
 		_scale = ap.scale;

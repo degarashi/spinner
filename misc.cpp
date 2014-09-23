@@ -28,7 +28,8 @@ namespace spn {
 		v2 -= v0*v0.dot(v2) + v1*v1.dot(v2);
 		Assert(Throw, v2.normalize() >= 1e-6f)
 	}
-	AffineParts DecompAffine(const AMat43& m) {
+	// ------------ AffineParts ------------
+	AffineParts AffineParts::Decomp(const AMat43& m) {
 		AMat33 tm;
 		AffineParts ap;
 		// オフセットは4行目をそのまま抽出

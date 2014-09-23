@@ -170,9 +170,9 @@ namespace spn {
 		AVec3 offset,
 				scale;
 		AQuat rotation;
+		//! アフィン成分分解
+		static AffineParts Decomp(const AMat43& m);
 	};
-	//! アフィン成分分解
-	AffineParts DecompAffine(const AMat43& m);
 	//! ソースコード文字列に行番号を付ける
 	/*! \param[in] src 元のソースコード
 		\param[in] numOffset 最初の数値(0や負数だとその分は番号を振らない)

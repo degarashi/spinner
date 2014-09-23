@@ -433,7 +433,7 @@ namespace spn {
 
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
-				auto ap = DecompAffine(m);
+				auto ap = AffineParts::Decomp(m);
 				auto m2 = Pose3D(ap.offset, ap.rotation, ap.scale).getToWorld();
 				EXPECT_TRUE(EqULPs(m, m2, ThresholdULPs));
 			}
