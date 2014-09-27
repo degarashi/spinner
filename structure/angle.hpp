@@ -35,16 +35,20 @@ namespace spn {
 	};
 
 	template <class TAG>
-	struct OneLoop;
+	struct AngleInfo;
 	template <>
-	struct OneLoop<Degree_t> {
+	struct AngleInfo<Degree_t> {
 		template <class T>
-		constexpr static T value = T(360);
+		constexpr static T oneloop = T(360);
+		const static char *name,
+							*name_short;
 	};
 	template <>
-	struct OneLoop<Radian_t> {
+	struct AngleInfo<Radian_t> {
 		template <class T>
-		constexpr static T value = T(2*Pi<T>);
+		constexpr static T oneloop = T(2*Pi<T>);
+		const static char *name,
+							*name_short;
 	};
 
 	//! 角度クラス
@@ -56,7 +60,7 @@ namespace spn {
 			using tag_type = TAG;
 			using value_type = V;
 			value_type	_angle;
-			constexpr static value_type Oneloop = OneLoop<tag_type>::template value<value_type>;
+			constexpr static value_type Oneloop = AngleInfo<tag_type>::template oneloop<value_type>;
 		public:
 			Angle() = default;
 			//! Degreeで角度指定
@@ -158,5 +162,10 @@ namespace spn {
 	using Radian = Angle<Radian_t, T>;
 	using RadF = Radian<float>;
 	using RadD = Radian<double>;
+
+	template <class TAG, class V>
+	std::ostream& operator << (std::ostream& os, const Angle<TAG,V>& ang) {
+		return os << ang.get() << "(" << AngleInfo<TAG>::name_short << ")";
+	}
 }
 

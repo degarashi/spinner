@@ -497,7 +497,7 @@ namespace spn {
 		TYPED_TEST(AngleTest, Loop) {
 			constexpr int N_Iterations = 100;
 			constexpr auto ThULPs = ULPs_C(TypeParam(1.0), TypeParam(0.0001));
-			constexpr auto oneloop = OneLoop<Degree_t>::value<TypeParam>;
+			constexpr auto oneloop = AngleInfo<Degree_t>::oneloop<TypeParam>;
 			// singleテスト
 			// ループ毎にsingleした値と独自にwhileで求めた値を比べる
 			auto angle = this->_rdF();
@@ -552,8 +552,8 @@ namespace spn {
 			auto deg = this->_rdF();
 			Degree<TypeParam> degf(deg);
 			Radian<TypeParam> radf(degf);
-			auto r0 = degf.get() / OneLoop<Degree_t>::value<TypeParam>;
-			auto r1 = radf.get() / OneLoop<Radian_t>::value<TypeParam>;
+			auto r0 = degf.get() / AngleInfo<Degree_t>::oneloop<TypeParam>;
+			auto r1 = radf.get() / AngleInfo<Radian_t>::oneloop<TypeParam>;
 			EXPECT_NEAR(r0, r1, TypeParam(1e-4));
 		}
 		TYPED_TEST(AngleTest, Arithmetic) {

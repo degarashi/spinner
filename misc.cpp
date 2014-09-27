@@ -5,6 +5,11 @@
 #pragma GCC diagnostic pop
 
 namespace spn {
+	const char* AngleInfo<Degree_t>::name = "degree";
+	const char* AngleInfo<Degree_t>::name_short = "deg";
+	const char* AngleInfo<Radian_t>::name = "radian";
+	const char* AngleInfo<Radian_t>::name_short = "rad";
+
 	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2) {
 		return v0.cross(v1).dot(v2);
 	}
