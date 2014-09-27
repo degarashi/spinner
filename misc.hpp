@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstring>
 #include <boost/regex_fwd.hpp>
+#include "structure/angle.hpp"
 
 namespace spn {
 	//! Y軸を上とした時のZベクトルに対するXベクトルを算出, またはベクトルに垂直なベクトルを得る
@@ -168,7 +169,8 @@ namespace spn {
 	void GramSchmidtOrth(Vec3& v0, Vec3& v1, Vec3& v2);
 
 	struct YawPitchDist {
-		float yaw, pitch, distance;
+		RadF	yaw, pitch;
+		float	distance;
 		//! 方向ベクトルをYaw,Pitch,Distanceに分解
 		static YawPitchDist FromPos(const spn::Vec3& pos);
 		//! YawPitchDistの位置から座標原点を見る姿勢

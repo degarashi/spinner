@@ -46,30 +46,30 @@ namespace spn {
 		// Yaw
 		spn::Vec3 xzvec(v.x, 0, v.z);
 		if(xzvec.len_sq() < 1e-6f)
-			ypd.yaw = 0;
+			ypd.yaw.set(0);
 		else {
 			xzvec.normalize();
 			float ac = std::acos(xzvec.z);
 			if(xzvec.x < 0)
 				ac = 2*spn::Pi<float> - ac;
-			ypd.yaw = ac;
+			ypd.yaw.set(ac);
 		}
 
 		// Pitch
 		spn::Vec3 xyvec(v.x, v.y, 0);
 		if(xyvec.len_sq() < 1e-6f)
-			ypd.pitch = 0;
+			ypd.pitch.set(0);
 		else {
 			xyvec.normalize();
 			float ac = std::asin(xyvec.y);
-			ypd.pitch = ac;
+			ypd.pitch.set(ac);
 		}
 		return ypd;
 	}
 	std::pair<spn::Vec3, spn::Quat> YawPitchDist::toOffsetRot() const {
 		// Z軸をYaw/Pitch/Roll傾けた方向に対してDist距離進んだ場所がカメラの位置
 		// カメラの方向は変換済みZ軸と逆
-		spn::AQuat q = spn::AQuat::RotationYPR(yaw, pitch, 0);
+		spn::AQuat q = spn::AQuat::RotationYPR(yaw.get(), pitch.get(), 0);
 		spn::AVec3 z = q.getDir();
 		spn::Vec3 pos(z*distance);
 		spn::Vec3 vd = -(z*distance).normalization();
