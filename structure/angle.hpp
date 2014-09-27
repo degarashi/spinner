@@ -147,6 +147,20 @@ namespace spn {
 				_angle /= r;
 				return *this;
 			}
+
+			// ---- 比較演算子の定義 ----
+			#define DEF_ANGLE_OPERATOR(op) \
+				template <class TAG2, class V2> \
+				bool operator op (const Angle<TAG2,V2>& ang) const { \
+					return _angle op Angle(ang).get(); \
+				}
+			DEF_ANGLE_OPERATOR(==)
+			DEF_ANGLE_OPERATOR(!=)
+			DEF_ANGLE_OPERATOR(<)
+			DEF_ANGLE_OPERATOR(<=)
+			DEF_ANGLE_OPERATOR(>)
+			DEF_ANGLE_OPERATOR(>=)
+			#undef DEF_ANGLE_OPERATOR
 	};
 
 	template <class T>
