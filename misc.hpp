@@ -136,14 +136,14 @@ namespace spn {
 	/*! \param[in] dir 値を算出したい単位ベクトル
 		\param[in] dirA 基準の単位ベクトル
 		\return 角度に応じた0〜4の値(一様ではない) */
-	inline float AngleValue(const Vec2& dir, const Vec2& dirA) {
+	inline float AngleValueNL(const Vec2& dir, const Vec2& dirA) {
 		float d0 = dir.dot(dirA);
 		if(dirA.cw(dir) <= -1e-6f)
 			return d0+1 + 2;
 		return 2.f-(d0+1);
 	}
 	//! 上方向を基準としたdirの角度を返す
-	inline float Angle(const Vec2& dir) {
+	inline float AngleValue(const Vec2& dir) {
 		float ac0 = std::acos(dir.y);
 		if(dir.x >= 1e-6f)
 			return 2*spn::PI - ac0;

@@ -142,9 +142,11 @@ template <class T>
 T Square(const T& t0) { return t0*t0; }
 template <class T>
 T Cubic(const T& t0) { return t0*t0*t0; }
+// 代わりにDegree::ToRadian(ang)を使う
 inline float DEGtoRAD(float ang) {
 	return ang * spn::Rcp22Bit(180.f) * PI;
 }
+// 代わりにRadian::ToDegree(ang)を使う
 inline float RADtoDEG(float ang) {
 	return ang * spn::Rcp22Bit(PI) * 180.f;
 }

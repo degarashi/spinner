@@ -10,6 +10,7 @@
 #include "../random.hpp"
 #include "../ulps.hpp"
 #include "../expquat.hpp"
+#include "../structure/angle.hpp"
 #include "test.hpp"
 
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -469,6 +470,108 @@ namespace spn {
 			EXPECT_TRUE(EqULPs(ofsRot.first, nzv, ThULPs));
 			// rotation + distanceから復元した元座標ベクトル
 			EXPECT_TRUE(EqULPs(nzv2, nzv, ThULPs));
+		}
+
+		template <class T>
+		class AngleTest : public RandomTestInitializer {
+			protected:
+				spn::Optional<MTRandom>	_rd;
+				std::function<T ()>		_rdF;
+
+				void SetUp() override {
+					RandomTestInitializer::SetUp();
+					_rd = getRand();
+					constexpr T RandMin = T(-1e2),
+								RandMax = T(1e2);
+					_rdF = [this, RandMin, RandMax](){ return _rd->template getUniformRange<T>(RandMin, RandMax); };
+				}
+				void TearDown() override {
+					_rd = none;
+					RandomTestInitializer::TearDown();
+				}
+			public:
+		};
+		using AngleTypeList = ::testing::Types<float, double>;
+		TYPED_TEST_CASE(AngleTest, AngleTypeList);
+
+		TYPED_TEST(AngleTest, Loop) {
+			constexpr int N_Iterations = 100;
+			constexpr auto ThULPs = ULPs_C(TypeParam(1.0), TypeParam(0.0001));
+			constexpr auto oneloop = OneLoop<Degree_t>::value<TypeParam>;
+			// singleテスト
+			// ループ毎にsingleした値と独自にwhileで求めた値を比べる
+			auto angle = this->_rdF();
+			Degree<TypeParam> degf(angle);
+			for(int i=0 ; i<N_Iterations ; i++) {
+				degf.single();
+				{
+					auto val = angle;
+					while(val > oneloop)
+						val -= oneloop;
+					while(val < 0)
+						val += oneloop;
+					EXPECT_TRUE(EqULPs(degf.get(), val, ThULPs));
+				}
+
+				auto a = this->_rdF();
+				angle += a;
+				degf.set(degf.get() + a);
+			}
+		}
+		TYPED_TEST(AngleTest, Range) {
+			// rangeテスト
+			Degree<TypeParam> degf;
+			auto fnRange = [this]() {
+				auto rmin = this->_rdF(),
+					 rmax = this->_rdF();
+				if(rmin > rmax)
+					std::swap(rmin, rmax);
+				return std::make_pair(rmin, rmax);
+			};
+			auto r = fnRange();
+			auto val = Saturate(degf.get(), r.first, r.second);
+			degf.range(Degree<TypeParam>(r.first), Degree<TypeParam>(r.second));
+			EXPECT_EQ(degf.get(), val);
+
+			// rangeValueテスト
+			degf.set(this->_rdF());
+			r = fnRange();
+			val = Saturate(degf.get(), r.first, r.second);
+			degf.rangeValue(r.first, r.second);
+			EXPECT_EQ(degf.get(), val);
+		}
+		TYPED_TEST(AngleTest, Degree_Radian_Degree) {
+			constexpr auto ThULPs = ULPs_C(TypeParam(1000.0), TypeParam(0.1));
+			// Degree -> Radian -> Degree で値の比較
+			Degree<TypeParam> degf(this->_rdF());
+			auto radf = degf.template convert<Radian_t>();
+			auto degf2 = radf.template convert<Degree_t>();
+			EXPECT_TRUE(EqULPs(degf.get(), degf2.get(), ThULPs));
+		}
+		TYPED_TEST(AngleTest, Degree_Radian_Convert) {
+			auto deg = this->_rdF();
+			Degree<TypeParam> degf(deg);
+			Radian<TypeParam> radf(degf);
+			auto r0 = degf.get() / OneLoop<Degree_t>::value<TypeParam>;
+			auto r1 = radf.get() / OneLoop<Radian_t>::value<TypeParam>;
+			EXPECT_NEAR(r0, r1, TypeParam(1e-4));
+		}
+		TYPED_TEST(AngleTest, Arithmetic) {
+			Degree<TypeParam> degf(this->_rdF()),
+								degf2(this->_rdF());
+			EXPECT_EQ((degf + degf2).get(), degf.get() + degf2.get());
+			EXPECT_EQ((degf - degf2).get(), degf.get() - degf2.get());
+			EXPECT_EQ((degf * 2).get(), degf.get() * 2);
+			EXPECT_EQ((degf / 2).get(), degf.get() / 2);
+
+			auto val = static_cast<TypeParam>(degf) + static_cast<TypeParam>(degf2);
+			EXPECT_EQ((degf += degf2).get(), val);
+			val = static_cast<TypeParam>(degf) - static_cast<TypeParam>(degf2);
+			EXPECT_EQ((degf -= degf2).get(), val);
+			val = static_cast<TypeParam>(degf) * 2;
+			EXPECT_EQ((degf *= 2).get(), val);
+			val = static_cast<TypeParam>(degf) / 2;
+			EXPECT_EQ((degf /= 2).get(), val);
 		}
 
 		namespace {
