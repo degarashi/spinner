@@ -192,20 +192,29 @@ namespace spn {
 		};
 
 		void PrintReg128(std::ostream& os, reg128 r);
-		class RandomTestInitializer : public ::testing::Test {
-			public:
-				constexpr static MTRandomMgr::ID cs_rnd = 0xff;
-			protected:
-				void SetUp() override {
-					mgr_random.initEngine(cs_rnd);
-				}
-				void TearDown() override {
-					mgr_random.removeEngine(cs_rnd);
-				}
-				MTRandom getRand() {
-					return mgr_random.get(cs_rnd);
-				}
-		};
+		namespace {
+			namespace test_i2 {
+				template <class BASE>
+				class RandomTestInitializer : public BASE {
+					public:
+						constexpr static MTRandomMgr::ID cs_rnd = 0xff;
+					protected:
+						void SetUp() override {
+							mgr_random.initEngine(cs_rnd);
+						}
+						void TearDown() override {
+							mgr_random.removeEngine(cs_rnd);
+						}
+						MTRandom getRand() {
+							return mgr_random.get(cs_rnd);
+						}
+				};
+			}
+		}
+		template <class T>
+		class RandomTestInitializerP : public test_i2::RandomTestInitializer<::testing::TestWithParam<T>> {};
+		class RandomTestInitializer : public test_i2::RandomTestInitializer<::testing::Test> {};
+		namespace test_i2 {}
 
 		#define SEQ_VECTOR (2)(3)(4)
 		#define VECTOR_TYPES(z, align, elem) \

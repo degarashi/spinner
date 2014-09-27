@@ -56,14 +56,8 @@ namespace spn {
 		}
 
 		// Pitch
-		spn::Vec3 xyvec(v.x, v.y, 0);
-		if(xyvec.len_sq() < 1e-6f)
-			ypd.pitch.set(0);
-		else {
-			xyvec.normalize();
-			float ac = std::asin(xyvec.y);
-			ypd.pitch.set(ac);
-		}
+		constexpr float h = AngleInfo<Radian_t>::oneloop<float> / 2.f;
+		ypd.pitch.set(Saturate(std::asin(v.y), -h, h));
 		return ypd;
 	}
 	std::pair<spn::Vec3, spn::Quat> YawPitchDist::toOffsetRot() const {

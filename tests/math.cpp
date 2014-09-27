@@ -455,7 +455,24 @@ namespace spn {
 			std::cout << std::hex << "raw:\t" << raw << std::endl
 									<< "mask:\t" << mask << std::endl;
 		}
-		TEST_F(MathTest, YawPitchDist) {
+
+		class YPDTest : public RandomTestInitializerP<int> {};
+		// XZ -> YawAngle
+		struct Yaw_Angle {
+			Vec3	dir;
+			DegF	angle;
+		};
+		const Yaw_Angle c_yawAngle[] = {
+			{{0,0,1}, DegF(0)},
+			{{1,0,1}, DegF(45)},
+			{{1,0,0}, DegF(90)},
+			{{1,0,-1}, DegF(135)},
+			{{0,0,-1}, DegF(180)},
+			{{-1,0,-1}, DegF(225)},
+			{{-1,0,0}, DegF(270)},
+			{{-1,0,1}, DegF(315)}
+		};
+		TEST_F(YPDTest, FromPos_Random) {
 			constexpr float RandMin = -1e3f,
 							RandMax = 1e3f;
 			auto rd = getRand();
@@ -470,6 +487,43 @@ namespace spn {
 			EXPECT_TRUE(EqULPs(ofsRot.first, nzv, ThULPs));
 			// rotation + distanceから復元した元座標ベクトル
 			EXPECT_TRUE(EqULPs(nzv2, nzv, ThULPs));
+		}
+
+		TEST_P(YPDTest, FromPos_Fixed) {
+			auto rd = getRand();
+			auto rdF = [&rd](){
+				return rd.template getUniformRange<float>(-1.f, 1.f);
+			};
+
+			// 予め答えが用意されたパターンと照らし合わせ
+			auto& ya = c_yawAngle[GetParam()];
+			auto pos = ya.dir;
+			pos.y = rdF();	// Pitchはランダムな値
+			auto ypd = YawPitchDist::FromPos(pos);
+			EXPECT_NEAR(DegF(ya.angle).get(), DegF(ypd.yaw).get(), 0.05f);
+		}
+		INSTANTIATE_TEST_CASE_P(FromPos_Fixed,
+								YPDTest,
+								::testing::Range(0, int(countof(c_yawAngle))));
+
+		TEST_F(YPDTest, Direction) {
+			// Quat::RotateYPRの結果と比較
+			constexpr float RandMin = -1e2f,
+							RandMax = 1e2f;
+			auto rd = getRand();
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+			auto yaw = rdF(),
+				pitch = rdF();
+
+			YawPitchDist ypd{RadF(yaw), RadF(pitch), 1.f};
+			auto ofsRot = ypd.toOffsetRot();
+			Vec3 v(0,0,1);
+			auto q = AQuat::RotationYPR(yaw, pitch, 0);
+			v *= q;
+			EXPECT_TRUE(EqAbs(ofsRot.first, v, 1e-5f));
+
+			auto ori = ofsRot.first + ofsRot.second.getDir();
+			EXPECT_TRUE(EqAbs(ori, Vec3(0,0,0), 1e-5f));
 		}
 
 		template <class T>
