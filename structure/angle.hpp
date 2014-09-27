@@ -75,7 +75,7 @@ namespace spn {
 			Angle& operator = (const Angle& ang) = default;
 			template <class TAG2, class V2>
 			Angle& operator = (const Angle<TAG2,V2>& ang) {
-				_angle = Angle(ang);
+				_angle = Angle(ang).get();
 				return *this;
 			}
 
@@ -83,11 +83,6 @@ namespace spn {
 			template <class T2, class=std::enable_if_t<std::is_floating_point<T2>::value>>
 			explicit operator T2() const {
 				return _angle;
-			}
-			// 他のAngle形式へは暗黙的に変換できる
-			template <class TAG2, class V2>
-			operator Angle<TAG2,V2>() const {
-				return Angle<TAG2,V2>(*this);
 			}
 			template <class TAG2, class V2=value_type>
 			Angle<TAG2,V2> convert() const {
