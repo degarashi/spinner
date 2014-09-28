@@ -49,7 +49,7 @@ namespace spn {
 			ypd.yaw.set(0);
 		else {
 			xzvec.normalize();
-			float ac = std::acos(xzvec.z);
+			float ac = std::acos(Saturate(xzvec.z, 1.f));
 			if(xzvec.x < 0)
 				ac = 2*spn::Pi<float> - ac;
 			ypd.yaw.set(ac);
