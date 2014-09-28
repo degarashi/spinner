@@ -62,7 +62,7 @@
 			float length() const;
 			const VEC3& asVec3() const;
 
-			std::pair<float,VEC3> getAngAxis() const;
+			std::pair<RadF,VEC3> getAngAxis() const;
 		};
 		using BOOST_PP_CAT(ALIGNA, ExpQuat) = EQT;
 	#else
@@ -124,15 +124,15 @@
 		const VEC3& EQT::asVec3() const {
 			return *reinterpret_cast<const VEC3*>(this);
 		}
-		std::pair<float,VEC3> EQT::getAngAxis() const {
+		std::pair<RadF,VEC3> EQT::getAngAxis() const {
 			auto axis = asVec3();
 			float theta = axis.length();		// = (angle/2)
 			if(theta < 1e-6f) {
 				// 無回転クォータニオンとする
-				return std::make_pair(0, VEC3(1,0,0));
+				return std::make_pair(RadF(0), VEC3(1,0,0));
 			}
 			axis /= theta;
-			return std::make_pair(theta*2, axis);
+			return std::make_pair(RadF(theta*2), axis);
 		}
 	#endif
 	}

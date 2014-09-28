@@ -50,7 +50,7 @@ namespace spn {
 		//! ランダムなクォータニオン
 		template <bool A, class RD>
 		auto GenRQuat(RD& rd) {
-			return QuatT<A>::Rotation(GenRDir<3,A>(rd), rd());
+			return QuatT<A>::Rotation(GenRDir<3,A>(rd), RadF(rd()));
 		}
 		template <bool A, class RD>
 		auto GenRExpQuat(RD& rd) {

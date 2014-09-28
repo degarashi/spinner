@@ -333,7 +333,7 @@ namespace spn {
 			auto rdF = this->getRandF();
 
 			for(int i=0 ; i<N_Iteration ; i++) {
-				float ang = rdF();
+				RadF ang(rdF());
 				Vec3 axis = GenRDir<3,false>(rdF);
 				QT q = QT::Rotation(axis, ang);
 				auto m = AMat33::RotationAxis(axis, ang);
@@ -357,7 +357,7 @@ namespace spn {
 
 			// クォータニオンを合成した結果を行列のケースと比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-				float ang[2] = {rdF(), rdF()};
+				RadF ang[2] = {RadF(rdF()), RadF(rdF())};
 				Vec3 axis[2] = {GenRDir<3,false>(rdF), GenRDir<3,false>(rdF)};
 				QT		q[3];
 				AMat33	m[3];
@@ -383,7 +383,7 @@ namespace spn {
 
 			// getRight(), getUp(), getDir()が{1,0,0},{0,1,0},{0,0,1}を変換した結果と比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-				float ang = rdF();
+				RadF ang(rdF());
 				Vec3 axis = GenRDir<3,false>(rdF);
 				QT q = QT::Rotation(axis, ang);
 				auto m = q.asMat33();
@@ -403,7 +403,7 @@ namespace spn {
 				const int div = 32;
 				float tdiv = 1.f/div;
 				auto axis = this->genRandDir();
-				auto ang = rdPI();
+				RadF ang(rdPI());
 				auto q0 = this->genRandQ();
 				auto q1 = QT::Rotation(axis, ang);
 				q1 = q0 >> q1;
@@ -512,13 +512,13 @@ namespace spn {
 							RandMax = 1e2f;
 			auto rd = getRand();
 			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
-			auto yaw = rdF(),
-				pitch = rdF();
+			RadF yaw(rdF()),
+				pitch(rdF());
 
-			YawPitchDist ypd{RadF(yaw), RadF(pitch), 1.f};
+			YawPitchDist ypd{yaw, pitch, 1.f};
 			auto ofsRot = ypd.toOffsetRot();
 			Vec3 v(0,0,1);
-			auto q = AQuat::RotationYPR(yaw, pitch, 0);
+			auto q = AQuat::RotationYPR(yaw, pitch, RadF(0));
 			v *= q;
 			EXPECT_TRUE(EqAbs(ofsRot.first, v, 1e-5f));
 

@@ -10,6 +10,7 @@
 		#include <stdexcept>
 		#include <cassert>
 		#include "vector.hpp"
+		#include "structure/angle.hpp"
 
 		// 定義する行列の次元(M,N)
 		#define SEQ_MATDEF	((2,2))((2,3))((2,4))((4,2))((3,2))((3,3))((3,4))((4,3))((4,4))
@@ -234,21 +235,21 @@
 				#endif
 				#if DMIN == 2
 					//! 2D回転
-					static MatT Rotation(float ang);
+					static MatT Rotation(RadF ang);
 				#elif DMIN >= 3
 						//! X軸周りの回転
-						static MatT RotationX(float ang);
+						static MatT RotationX(RadF ang);
 						//! Y軸周りの回転
-						static MatT RotationY(float ang);
+						static MatT RotationY(RadF ang);
 						//! Z軸周りの回転
-						static MatT RotationZ(float ang);
+						static MatT RotationZ(RadF ang);
 						//! 任意軸周りの回転
-						static MatT RotationAxis(const UVec3& axis, float ang);
+						static MatT RotationAxis(const UVec3& axis, RadF ang);
 					#if DMIN == 4
 						//! 透視変換行列
-						static MatT PerspectiveFovLH(float fov, float aspect, float nz, float fz);
-						static MatT PerspectiveFovRH(float fov, float aspect, float nz, float fz);
-						static MatT _PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff);
+						static MatT PerspectiveFovLH(RadF fov, float aspect, float nz, float fz);
+						static MatT PerspectiveFovRH(RadF fov, float aspect, float nz, float fz);
+						static MatT _PerspectiveFov(RadF fov, float aspect, float nz, float fz, float coeff);
 					#endif
 				#endif
 
@@ -476,9 +477,9 @@
 				}
 			#endif
 			#if DMIN == 2
-				MT MT::Rotation(float ang) {
-					const float S = std::sin(ang),
-								C = std::cos(ang);
+				MT MT::Rotation(RadF ang) {
+					const float S = std::sin(ang.get()),
+								C = std::cos(ang.get());
 					MatT mt(TagIdentity);
 					mt.ma[0][0] = C;
 					mt.ma[0][1] = S;
@@ -487,9 +488,9 @@
 					return mt;
 				}
 			#elif DMIN >= 3
-					MT MT::RotationX(float ang) {
-						const float C = std::cos(ang),
-									S = std::sin(ang);
+					MT MT::RotationX(RadF ang) {
+						const float C = std::cos(ang.get()),
+									S = std::sin(ang.get());
 						MatT mt;
 						STORETHISPS(mt.ma[0], reg_setr_ps(1,	0,	0,	0));
 						STORETHISPS(mt.ma[1], reg_setr_ps(0,	C,	S,	0));
@@ -499,9 +500,9 @@
 						#endif
 						return mt;
 					}
-					MT MT::RotationY(float ang) {
-						const float C = std::cos(ang),
-									S = std::sin(ang);
+					MT MT::RotationY(RadF ang) {
+						const float C = std::cos(ang.get()),
+									S = std::sin(ang.get());
 						MatT mt;
 						STORETHISPS(mt.ma[0], reg_setr_ps(C,	0,	-S,	0));
 						STORETHISPS(mt.ma[1], reg_setr_ps(0,	1,	0,	0));
@@ -511,9 +512,9 @@
 						#endif
 						return mt;
 					}
-					MT MT::RotationZ(float ang) {
-						const float C = std::cos(ang),
-									S = std::sin(ang);
+					MT MT::RotationZ(RadF ang) {
+						const float C = std::cos(ang.get()),
+									S = std::sin(ang.get());
 						MatT mt;
 						STORETHISPS(mt.ma[0], reg_setr_ps(C,	S,	0,	0));
 						STORETHISPS(mt.ma[1], reg_setr_ps(-S,	C,	0,	0));
@@ -523,9 +524,9 @@
 						#endif
 						return mt;
 					}
-					MT MT::RotationAxis(const UVec3& axis, float ang) {
-						const float C = std::cos(ang),
-									S = std::sin(ang),
+					MT MT::RotationAxis(const UVec3& axis, RadF ang) {
+						const float C = std::cos(ang.get()),
+									S = std::sin(ang.get()),
 									RC = 1-C;
 						MatT mt;
 						const float M00 = C + Square(axis.x) * RC,
@@ -546,8 +547,8 @@
 						return mt;
 					}
 				#if DMIN == 4
-					MT MT::_PerspectiveFov(float fov, float aspect, float nz, float fz, float coeff) {
-						float h = 1.0f / std::tan(fov/2),
+					MT MT::_PerspectiveFov(RadF fov, float aspect, float nz, float fz, float coeff) {
+						float h = 1.0f / std::tan(fov.get()/2),
 								w = h / aspect,
 								f0 = fz/(fz-nz),
 								f1 = -nz*fz/(fz-nz);
@@ -558,10 +559,10 @@
 						STORETHISPS(ret.ma[3], reg_setr_ps(0,0,f1*coeff,0));
 						return ret;
 					}
-					MT MT::PerspectiveFovLH(float fov, float aspect, float nz, float fz) {
+					MT MT::PerspectiveFovLH(RadF fov, float aspect, float nz, float fz) {
 						return _PerspectiveFov(fov, aspect, nz, fz, 1);
 					}
-					MT MT::PerspectiveFovRH(float fov, float aspect, float nz, float fz) {
+					MT MT::PerspectiveFovRH(RadF fov, float aspect, float nz, float fz) {
 						return _PerspectiveFov(fov, aspect, nz, fz, -1);
 					}
 				#endif

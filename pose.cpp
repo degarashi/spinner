@@ -34,7 +34,7 @@ namespace spn {
 		// trivialなctorばかりなのでmemcpyで済ませる
 		std::memcpy(this, &p, sizeof(p));
 	}
-	Pose2D::Pose2D(const Vec2& pos, float ang, const Vec2& sc): Pose2D() {
+	Pose2D::Pose2D(const Vec2& pos, RadF ang, const Vec2& sc): Pose2D() {
 		_ofs = pos;
 		_angle = ang;
 		_scale = sc;
@@ -50,7 +50,8 @@ namespace spn {
 	void Pose2D::identity() {
 		_finalMat.identity();
 		_accum = std::rand();
-		_angle = _rflag = 0;
+		_angle->set(0);
+		_rflag = 0;
 		_ofs = Vec2(0);
 		_scale = Vec2(1);
 	}
@@ -61,7 +62,7 @@ namespace spn {
 	const Vec2& Pose2D::getOffset() const {
 		return _ofs;
 	}
-	float Pose2D::getAngle() const {
+	RadF Pose2D::getAngle() const {
 		return _angle;
 	}
 	const Vec2& Pose2D::getScale() const {
@@ -106,7 +107,7 @@ namespace spn {
 		// AMat32とAMat33の使用メモリ領域は同じ
 		return reinterpret_cast<const AMat32&>(m);
 	}
-	void Pose2D::setAll(const Vec2& ofs, float ang, const Vec2& sc) {
+	void Pose2D::setAll(const Vec2& ofs, RadF ang, const Vec2& sc) {
 		_rflag = PRF_ALL;
 		_ofs = ofs;
 		_scale = sc;
@@ -128,7 +129,7 @@ namespace spn {
 		_rflag |= PRF_OFFSET;
 		++_accum;
 	}
-	void Pose2D::setAngle(float ang) {
+	void Pose2D::setAngle(RadF ang) {
 		_angle = ang;
 		_rflag |= PRF_ROTATE;
 		++_accum;
@@ -140,7 +141,7 @@ namespace spn {
 		Pose2D ret;
 		ret._accum = _accum-1;
 		ret._ofs = _ofs->l_intp((const Vec2&)p1._ofs, t);
-		ret._angle = (p1._angle - _angle) * t + _angle;
+		ret._angle = (*p1._angle - *_angle) * t + (*_angle);
 		ret._scale = _scale->l_intp((const Vec2&)p1._scale, t);
 		return ret;
 	}
@@ -155,8 +156,8 @@ namespace spn {
 	}
 	std::ostream& operator << (std::ostream& os, const Pose2D& ps) {
 		return os << "Pose2D [ offset: " << ps._ofs << std::endl
-				<< "angle: " << ps._angle << std::endl
-				<< "scale: " << ps._scale << ']';
+				<< "angle: " << *ps._angle << std::endl
+				<< "scale: " << *ps._scale << ']';
 	}
 
 	// ------------------------------ Pose3D ------------------------------
@@ -293,7 +294,7 @@ namespace spn {
 		_rot = q;
 		_scale = sc;
 	}
-	void Pose3D::addAxisRot(const AVec3& axis, float radf) {
+	void Pose3D::addAxisRot(const AVec3& axis, RadF radf) {
 		setRot(getRot().rotation(axis, radf));
 	}
 	void Pose3D::addOffset(const AVec3& ad) {

@@ -3,6 +3,7 @@
 		#define QUAT_H_
 		#include "matrix.hpp"
 		#include "error.hpp"
+		#include "structure/angle.hpp"
 		#include <boost/serialization/access.hpp>
 		#include <boost/serialization/level.hpp>
 		// 要求された定義レベルを実体化
@@ -60,20 +61,20 @@
 								float f31, float f32, float f33);
 			static QuatT FromAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA);
 			static QuatT FromMatAxis(const VEC3& xA, const VEC3& yA, const VEC3& zA);
-			static QuatT RotationYPR(float yaw, float pitch, float roll);
-			static QuatT RotationX(float ang);
-			static QuatT RotationY(float ang);
-			static QuatT RotationZ(float ang);
-			static QuatT Rotation(const VEC3& axis, float ang);
+			static QuatT RotationYPR(RadF yaw, RadF pitch, RadF roll);
+			static QuatT RotationX(RadF ang);
+			static QuatT RotationY(RadF ang);
+			static QuatT RotationZ(RadF ang);
+			static QuatT Rotation(const VEC3& axis, RadF ang);
 			static QuatT LookAt(const VEC3& dir, const VEC3& up);
 			static QuatT Rotation(const VEC3& from, const VEC3& to);
 			static QuatT SetLookAt(AXIS_FLAG targetAxis, AXIS_FLAG baseAxis, const VEC3& baseVec, const VEC3& at, const VEC3& pos);
 
 			// This *= Quat::rotateX(ang)
-			void rotateX(float ang);
-			void rotateY(float ang);
-			void rotateZ(float ang);
-			void rotate(const VEC3& axis, float ang);
+			void rotateX(RadF ang);
+			void rotateY(RadF ang);
+			void rotateZ(RadF ang);
+			void rotate(const VEC3& axis, RadF ang);
 			void identity();
 			void normalize();
 			void conjugate();
@@ -95,16 +96,16 @@
 			#undef DEF_OP0
 
 			// return This * Quat::rotateX(ang)
-			QuatT rotationX(float ang) const;
-			QuatT rotationY(float ang) const;
-			QuatT rotationZ(float ang) const;
-			QuatT rotation(const VEC3& axis, float ang) const;
+			QuatT rotationX(RadF ang) const;
+			QuatT rotationY(RadF ang) const;
+			QuatT rotationZ(RadF ang) const;
+			QuatT rotation(const VEC3& axis, RadF ang) const;
 			QuatT normalization() const;
 			QuatT conjugation() const;
 			QuatT inverse() const;
 			float len_sq() const;
 			float length() const;
-			float angle() const;
+			RadF angle() const;
 			VEC3 getVector() const;
 			VEC3 getAxis() const;
 
@@ -336,27 +337,27 @@
 			rq += q * (std::sin(theta * t) / S);
 			return rq;
 		}
-		QT QT::Rotation(const VEC3& axis, float ang) {
-			float C=std::cos(ang/2),
-				S=std::sin(ang/2);
+		QT QT::Rotation(const VEC3& axis, RadF ang) {
+			float C=std::cos(ang.get()/2),
+				S=std::sin(ang.get()/2);
 			auto taxis = axis * S;
 			return QT(taxis.x, taxis.y, taxis.z, C);
 		}
-		QT QT::RotationX(float ang) {
+		QT QT::RotationX(RadF ang) {
 			ang *= 0.5f;
-			return QuatT(std::sin(ang), 0, 0, std::cos(ang));
+			return QuatT(std::sin(ang.get()), 0, 0, std::cos(ang.get()));
 		}
-		QT QT::RotationY(float ang) {
+		QT QT::RotationY(RadF ang) {
 			ang *= 0.5f;
-			return QuatT(0, std::sin(ang), 0, std::cos(ang));
+			return QuatT(0, std::sin(ang.get()), 0, std::cos(ang.get()));
 		}
-		QT QT::RotationZ(float ang) {
+		QT QT::RotationZ(RadF ang) {
 			ang *= 0.5f;
-			return QuatT(0, 0, std::sin(ang), std::cos(ang));
+			return QuatT(0, 0, std::sin(ang.get()), std::cos(ang.get()));
 		}
 
 		namespace {
-			spn::Optional<std::pair<VEC3, float>> GetRotAxis(const VEC3& from, const VEC3& to) {
+			spn::Optional<std::pair<VEC3, RadF>> GetRotAxis(const VEC3& from, const VEC3& to) {
 				float d = from.dot(to);
 				if(d > 1.0f - 1e-4f)
 					return spn::none;
@@ -364,11 +365,11 @@
 					VEC3 axis(1,0,0);
 					if(std::fabs(axis.dot(from)) > 1.0f-1e-3f)
 						axis = VEC3(0,1,0);
-					return std::make_pair(axis, PI);
+					return std::make_pair(axis, RadF(PI));
 				}
 				VEC3 axis = from.cross(to);
 				axis.normalize();
-				float ang = std::acos(d);
+				RadF ang(std::acos(d));
 				return std::make_pair(axis, ang);
 			}
 		}
@@ -430,32 +431,32 @@
 			rAxis.normalize();
 			float d = from.dot(to);
 			d = std::acos(d);
-			return Rotation(rAxis, d);
+			return Rotation(rAxis, RadF(d));
 		}
 
-		void QT::rotateX(float ang) {
+		void QT::rotateX(RadF ang) {
 			*this = RotationX(ang) * *this;
 		}
-		void QT::rotateY(float ang) {
+		void QT::rotateY(RadF ang) {
 			*this = RotationY(ang) * *this;
 		}
-		void QT::rotateZ(float ang) {
+		void QT::rotateZ(RadF ang) {
 			*this = RotationZ(ang) * *this;
 		}
-		void QT::rotate(const VEC3& axis, float ang) {
+		void QT::rotate(const VEC3& axis, RadF ang) {
 			*this = Rotation(axis, ang) * *this;
 		}
 
-		QT QT::rotationX(float ang) const {
+		QT QT::rotationX(RadF ang) const {
 			return RotationX(ang) * *this;
 		}
-		QT QT::rotationY(float ang) const {
+		QT QT::rotationY(RadF ang) const {
 			return RotationY(ang) * *this;
 		}
-		QT QT::rotationZ(float ang) const {
+		QT QT::rotationZ(RadF ang) const {
 			return RotationZ(ang) * *this;
 		}
-		QT QT::rotation(const VEC3& axis, float ang) const {
+		QT QT::rotation(const VEC3& axis, RadF ang) const {
 			return Rotation(axis, ang) * *this;
 		}
 		QT QT::operator >> (const QuatT& q) const {
@@ -478,8 +479,8 @@
 				sum += std::fabs(f[i]);
 			return sum;
 		}
-		float QT::angle() const {
-			return std::acos(w)*2;
+		RadF QT::angle() const {
+			return RadF(std::acos(w)*2);
 		}
 		VEC3 QT::getVector() const {
 			return VEC3(x,y,z);
@@ -535,12 +536,12 @@
 			return VEC3(ELEM10, ELEM11, ELEM12); }
 		VEC3 QT::getDir() const {
 			return VEC3(ELEM20, ELEM21, ELEM22); }
-		QT QT::RotationYPR(float yaw, float pitch, float roll) {
+		QT QT::RotationYPR(RadF yaw, RadF pitch, RadF roll) {
 			QuatT q(0,0,0,1);
 			// roll
 			q.rotateZ(roll);
 			// pitch
-			q.rotateX(pitch);
+			q.rotateX(-pitch);
 			// yaw
 			q.rotateY(yaw);
 			return q;

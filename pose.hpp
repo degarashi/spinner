@@ -19,7 +19,7 @@ namespace spn {
 			GAP_MATRIX_DEF(mutable, _finalMat, 3,2,
 				(((Vec2, _ofs)))
 				(((Vec2, _scale)))
-				(((float, _angle), (mutable, uint32_t, _accum)))
+				(((RadF, _angle), (mutable, uint32_t, _accum)))
 			)
 
 			friend class boost::serialization::access;
@@ -41,7 +41,7 @@ namespace spn {
 			struct Value;
 			struct TValue {
 				Vec2	ofs, scale;
-				float	ang;
+				RadF	ang;
 
 				TValue() = default;
 				TValue(const Value& v);
@@ -53,7 +53,7 @@ namespace spn {
 			struct Value {
 				Pose2D	&_pose;
 				Vec2	&ofs, &scale;
-				float	&ang;
+				RadF	&ang;
 
 				Value(Pose2D& p);
 				~Value();
@@ -64,15 +64,15 @@ namespace spn {
 
 			Pose2D();
 			Pose2D(const Pose2D& p);
-			Pose2D(const Vec2& pos, float ang, const Vec2& sc);
+			Pose2D(const Vec2& pos, RadF ang, const Vec2& sc);
 			Pose2D(const TValue& tv);
 			void identity();
 
-			void setAll(const Vec2& ofs, float ang, const Vec2& sc);
+			void setAll(const Vec2& ofs, RadF ang, const Vec2& sc);
 			void setScale(const Vec2& ofs);
-			void setAngle(float ang);
+			void setAngle(RadF ang);
 			void setOffset(const Vec2& ofs);
-			float getAngle() const;
+			RadF getAngle() const;
 			const Vec2& getOffset() const;
 			const Vec2& getScale() const;
 
@@ -162,7 +162,7 @@ namespace spn {
 			void setScale(const AVec3& s);
 			// Rotationに変更を加える
 			void setRot(const AQuat& q);
-			void addAxisRot(const AVec3& axis, float radf);
+			void addAxisRot(const AVec3& axis, RadF radf);
 			// Positionに変更を加える
 			void setOffset(const AVec3& v);
 			void addOffset(const AVec3& ad);

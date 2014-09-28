@@ -79,7 +79,7 @@ namespace spn {
 			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
 			for(int i=0 ; i<NTEST ; i++) {
 				Pose2D ps(GenRVec<2,false>(rdF),
-							rdF(),
+							RadF(rdF()),
 							GenRVec<2,false>(rdF));
 				CheckSerializedDataBin(ps);
 			}
