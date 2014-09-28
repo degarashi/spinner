@@ -1,6 +1,9 @@
 #pragma once
 #include "spn_math.hpp"
 #include <type_traits>
+#include <boost/serialization/access.hpp>
+#include <boost/serialization/nvp.hpp>
+#include "serialization/traits.hpp"
 
 namespace spn {
 	// Degree角度を示すタグ構造体
@@ -61,6 +64,12 @@ namespace spn {
 			using value_type = V;
 			value_type	_angle;
 			constexpr static value_type Oneloop = AngleInfo<tag_type>::template oneloop<value_type>;
+
+			friend class boost::serialization::access;
+			template <class Ar>
+			void serialize(Ar& ar, const unsigned int /*ver*/) {
+				ar & BOOST_SERIALIZATION_NVP(_angle);
+			}
 		public:
 			Angle() = default;
 			//! Degreeで角度指定
@@ -147,6 +156,9 @@ namespace spn {
 				_angle /= r;
 				return *this;
 			}
+			Angle operator -() const {
+				return Angle(-_angle);
+			}
 
 			// ---- 比較演算子の定義 ----
 			#define DEF_ANGLE_OPERATOR(op) \
@@ -177,4 +189,6 @@ namespace spn {
 		return os << ang.get() << "(" << AngleInfo<TAG>::name_short << ")";
 	}
 }
+BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(class), spn::Angle, object_serializable)
+BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::Angle, track_never)
 
