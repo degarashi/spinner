@@ -68,17 +68,23 @@ namespace spn {
 			Pose2D(const TValue& tv);
 			void identity();
 
+			// ---- getter method ----
+			const Vec2& getOffset() const;
+			const Vec2& getScale() const;
+			const AMat32& getToWorld() const;
+			AMat32 getToLocal() const;
+			uint32_t getAccum() const;
+			RadF getAngle() const;
+			// ---- setter method ----
 			void setAll(const Vec2& ofs, RadF ang, const Vec2& sc);
 			void setScale(const Vec2& ofs);
 			void setAngle(RadF ang);
 			void setOffset(const Vec2& ofs);
-			RadF getAngle() const;
-			const Vec2& getOffset() const;
-			const Vec2& getScale() const;
+			// ---- reference method ----
+			Vec2& refOffset();
+			Vec2& refScale();
+			RadF& refAngle();
 
-			const AMat32& getToWorld() const;
-			AMat32 getToLocal() const;
-			uint32_t getAccum() const;
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();
 			void apply(const TValue& t);
@@ -105,6 +111,7 @@ namespace spn {
 
 			void _refresh() const;
 
+			constexpr static float TURN_THRESHOLD = 1e-5f;
 			friend class boost::serialization::access;
 			template <class Archive>
 			void serialize(Archive& ar, const unsigned int /*ver*/) {
@@ -150,13 +157,41 @@ namespace spn {
 			Pose3D(const AMat43& m);
 			void identity();
 
-			// 各種変数取得
+			// ---- helper function ----
+			//! 前方への移動(XZ平面限定)
+			void moveFwd2D(float speed);
+			//! サイド移動(XZ平面限定)
+			void moveSide2D(float speed);
+			//! 前方への移動(軸フリー)
+			void moveFwd3D(float speed);
+			//! サイド移動(軸フリー)
+			void moveSide3D(float speed);
+
+			//! 方向転換(軸指定)
+			void turnAxis(const AVec3& axis, spn::RadF rad);
+			//! Yaw Pitch Roll指定の回転
+			void turnYPR(spn::RadF yaw, spn::RadF pitch, spn::RadF roll);
+			//! 差分入力
+			void addRot(const AQuat& q);
+			//! 補間付き回転
+			/*! 3軸の目標距離を合計した物が閾値以下ならtrueを返す */
+			bool lerpTurn(const AQuat& q_tgt, float t, float threshold=TURN_THRESHOLD);
+			//! Upベクトルをrollが0になるよう補正
+			void adjustNoRoll();
+
+			// ---- getter method ----
 			const AVec3& getOffset() const;
 			const AQuat& getRot() const;
 			const AVec3& getScale() const;
 			const AMat43& getToWorld() const;
 			AMat43 getToLocal() const;
 			uint32_t getAccum() const;
+
+			AVec3 getUp() const;
+			AVec3 getRight() const;
+			AVec3 getDir() const;
+
+			// ---- setter method ----
 			void setAll(const AVec3& ofs, const AQuat& q, const AVec3& sc);
 			// Scaleに変更を加える
 			void setScale(const AVec3& s);
@@ -167,9 +202,10 @@ namespace spn {
 			void setOffset(const AVec3& v);
 			void addOffset(const AVec3& ad);
 
-			AVec3 getUp() const;
-			AVec3 getRight() const;
-			AVec3 getDir() const;
+			// ---- reference method ----
+			AVec3& refOffset();
+			AQuat& refRot();
+			AVec3& refScale();
 
 			Pose3D lerp(const Pose3D& p1, float t) const;
 			Value refValue();
@@ -178,6 +214,7 @@ namespace spn {
 			Pose3D& operator = (const Pose3D& ps);
 			Pose3D& operator = (const TValue& tv);
 			Pose3D& operator = (const AMat43& m);
+			// ---- compare method ----
 			bool operator == (const Pose3D& ps) const;
 			bool operator != (const Pose3D& ps) const;
 			friend std::ostream& operator << (std::ostream&, const Pose3D&);
