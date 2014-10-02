@@ -272,8 +272,8 @@ namespace spn {
 				RandomManipulate(rd, i, tree);
 
 			// シリアライズ
-			TreeNode_t::Serializer sl(tree.getRoot());
-			auto ar0 = TestTree<TreeNode_t>::Plain(sl.getNode());
+			auto sl = tree.getRoot();
+			auto ar0 = TestTree<TreeNode_t>::Plain(sl);
 			std::stringstream ss;
 			boost::archive::xml_oarchive oa(ss, boost::archive::no_header);
 			oa << boost::serialization::make_nvp("test", sl);
@@ -282,7 +282,7 @@ namespace spn {
 			// デシリアライズ
 			boost::archive::xml_iarchive ia(ss, boost::archive::no_header);
 			ia >> boost::serialization::make_nvp("test", sl);
-			auto ar1 = TestTree<TreeNode_t>::Plain(sl.getNode());
+			auto ar1 = TestTree<TreeNode_t>::Plain(sl);
 
 			// シリアライズ前後でデータを比べる
 			CheckEqual(ar0, ar1);
