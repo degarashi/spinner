@@ -28,7 +28,7 @@ namespace spn {
 				ar & BOOST_SERIALIZATION_NVP(_ofs) & BOOST_SERIALIZATION_NVP(_angle) & BOOST_SERIALIZATION_NVP(_scale);
 				if(Archive::is_loading::value) {
 					_accum = std::rand();
-					_rflag = 0;
+					_rflag = PRF_ALL;
 				}
 			}
 		protected:
@@ -118,7 +118,7 @@ namespace spn {
 				ar & BOOST_SERIALIZATION_NVP(_ofs) & BOOST_SERIALIZATION_NVP(_rot) & BOOST_SERIALIZATION_NVP(_scale);
 				if(Archive::is_loading::value) {
 					_accum = std::rand();
-					_rflag = 0;
+					_rflag = PRF_ALL;
 				}
 			}
 
