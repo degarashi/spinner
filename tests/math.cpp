@@ -18,6 +18,7 @@ namespace spn {
 	namespace test {
 		namespace {
 			constexpr auto ThresholdULPs = ULPs_C(0.f, 1e-4f);
+			constexpr auto ThresholdULPs_Quat = ULPs_C(0.f, 1e-3f);
 			constexpr float ValueMin = -1e4f,
 							ValueMax = 1e4f,
 							N_Iteration = 100;
@@ -275,8 +276,8 @@ namespace spn {
 				auto v1 = v0 * q0,
 					v2 = v0 * q1,
 					v3 = v0 * q2;
-				EXPECT_TRUE(EqAbs(v1, v2, 5e-2f));
-				EXPECT_TRUE(EqAbs(v1, v3, 5e-2f));
+				EXPECT_TRUE(EqAbs(v1, v2, 8e-2f));
+				EXPECT_TRUE(EqAbs(v1, v3, 8e-2f));
 			}
 		}
 		TYPED_TEST(ExpQuaternionTest, Lerp) {
@@ -323,7 +324,7 @@ namespace spn {
 					err_sum += diff.dot(diff);
 				}
 				err_sum /= NDiv+1;
-				EXPECT_LE(err_sum, 0.36f);
+				EXPECT_LE(err_sum, 0.4f);
 			}
 		}
 		TYPED_TEST(QuaternionTest, ConvertMatrix) {
@@ -416,7 +417,7 @@ namespace spn {
 					auto v = this->genRandDir();
 					auto v0 = v * q2;
 					auto v1 = v * m1;
-					EXPECT_TRUE(EqULPs(v0, v1, ThresholdULPs));
+					EXPECT_TRUE(EqULPs(v0, v1, ThresholdULPs_Quat));
 				}
 			}
 		}
