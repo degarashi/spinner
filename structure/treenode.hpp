@@ -31,7 +31,10 @@ namespace spn {
 			using this_t = TreeNode<T>;
 			using pointer = this_t*;
 			using SP = std::shared_ptr<T>;
+			using SPC = std::shared_ptr<const T>;
 			using WP = std::weak_ptr<T>;
+			using SPVector = std::vector<SP>;
+			using SPCVector = std::vector<SPC>;
 
 			SP	_spChild,
 				_spSibling;
@@ -164,7 +167,58 @@ namespace spn {
 				// 明示的なダウンキャスト
 				os << *static_cast<const T*>(this);
 			}
+			//! ツリー構造を配列化
+			template <class T_SP>
+			std::vector<T_SP> _plain() const {
+				auto* self = const_cast<this_t*>(this);
+				std::vector<T_SP> spv;
+				self->iterateDepthFirst([&spv, self](auto& nd, int){
+					spv.emplace_back(nd.shared_from_this());
+					return Iterate::StepIn;
+				});
+				return std::move(spv);
+			}
+			SPVector plain() {
+				return _plain<SP>();
+			}
+			SPCVector plain() const {
+				return _plain<SPC>();
+			}
 	};
+	template <class T0, class T1, class CMP>
+	bool _CompareTree(const TreeNode<T0>& t0, const TreeNode<T1>& t1, CMP&& cmp) {
+		auto fnParentIndex = [](const auto& ar, const auto& p){
+			auto itr = std::find(ar.begin(), ar.end(), p);
+			return itr - ar.begin();
+		};
+		// 配列化して親ノード番号をチェック
+		auto ar0 = t0.plain();
+		auto ar1 = t1.plain();
+		if(ar0.size() != ar1.size())
+			return false;
+		auto sz = ar0.size();
+		for(size_t i=0 ; i<sz ; i++) {
+			// 親ノード番号
+			int idx0 = fnParentIndex(ar0, ar0[i]->getParent()),
+				idx1 = fnParentIndex(ar1, ar1[i]->getParent());
+			if(idx0!=idx1 || !cmp(ar0[i], ar1[i]))
+				return false;
+		}
+		return true;
+	}
+	// ツリー構造のみを比較する
+	template <class T0, class T1>
+	bool CompareTreeStructure(const TreeNode<T0>& t0, const TreeNode<T1>& t1) {
+		return _CompareTree(t0, t1, [](auto&,auto&){ return true; });
+	}
+	//! データも含めて比較
+	template <class T0, class T1>
+	bool CompareTree(const TreeNode<T0>& t0, const TreeNode<T1>& t1) {
+		auto cmp = [](auto& sp0, auto& sp1){
+			return *sp0 == *sp1;
+		};
+		return _CompareTree(t0, t1, cmp);
+	}
 	template <class T>
 	inline std::ostream& operator << (std::ostream& os, const TreeNode<T>& t) {
 		auto& self = const_cast<TreeNode<T>&>(t);

@@ -66,6 +66,9 @@ namespace spn {
 				public:
 					int		value;
 					TreeNode_t(int v): value(v) {}
+					bool operator == (const TreeNode_t& t) const {
+						return value == t.value;
+					}
 			};
 			using SPTreeNode = std::shared_ptr<TreeNode_t>;
 
@@ -76,7 +79,7 @@ namespace spn {
 					auto p = c->getParent();
 					ASSERT_EQ(p.get(), nd.get());
 					// 下層のノードを再帰的にチェック
-					CheckParent(c);
+					ASSERT_NO_FATAL_FAILURE(CheckParent(c));
 					// 兄弟ノードをチェック
 					c = c->getSibling();
 				}
@@ -101,12 +104,13 @@ namespace spn {
 			}
 			public:
 				using Type = T;
+				TestTree(const SP& sp): _spRoot(sp) {}
 				TestTree(int value): _spRoot(std::make_shared<T>(value)) {
 					_reflArray();
 				}
 				//! 要素の追加
 				void add(int n, const SP& node) {
-					_spArray.at(n)->addChild(node);
+					ASSERT_NO_FATAL_FAILURE(_spArray.at(n)->addChild(node));
 					_reflArray();
 				}
 				//! 要素の削除
@@ -114,6 +118,8 @@ namespace spn {
 					SP sp = _spArray.at(n);
 					if(auto pr = sp->getParent()) {
 						pr->removeChild(sp);
+						if(::testing::Test::HasFatalFailure())
+							return SP();
 					} else {
 						_spRoot = sp->getChild();
 						EXPECT_NE(static_cast<T*>(nullptr), _spRoot.get());
@@ -253,16 +259,62 @@ namespace spn {
 				RandomManipulate(rd, i, treeA, treeB);
 
 			// 親ノードの接続確認
-			CheckParent(treeB.getRoot());
+			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()));
 			// Cloneしたツリーでも確認
-			CheckParent(treeB.getRoot()->clone());
+			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()->clone()));
 			ASSERT_EQ(treeA.size(), treeB.size());
 			// 2種類のツリーで比較
 			// (深度優先で巡回した時に同じ順番でノードが取り出せる筈)
-			CheckEqual(treeA.getArray(), treeB.getArray());
+			ASSERT_NO_FATAL_FAILURE(CheckEqual(treeA.getArray(), treeB.getArray()));
 		}
+		template <class T>
+		void CheckPlain(const T& ar, int idx) {
+			if(idx == 0)
+				return;
 
-		using SerializeTest = TreeNodeTest;
+			auto sp = ar[idx]->getParent();
+			ASSERT_TRUE(static_cast<bool>(sp));
+			auto itr = std::find(ar.begin(), ar.end(), sp);
+			int idx1(itr - ar.begin());
+			ASSERT_LT(idx1, idx);
+			ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, idx1));
+		}
+		TEST_F(TreeNodeTest, Plain) {
+			// ランダムなツリーを生成
+			auto rd = getRand();
+			TestTree<TreeNode_t>	tree(0);
+			// ランダムにノード操作
+			constexpr int N_Manipulation = 100;
+			for(int i=1 ; i<N_Manipulation ; i++)
+				RandomManipulate(rd, i, tree);
+			// 配列化
+			auto spRoot = tree.getRoot();
+			auto ar = spRoot->plain();
+			for(size_t i=0 ; i<ar.size() ; i++)
+				ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, i));
+		}
+		TEST_F(TreeNodeTest, CompareTree) {
+			// ランダムなツリーを生成
+			auto rd = getRand();
+			TestTree<TreeNode_t>	treeA(0);
+			// ランダムにノード操作
+			constexpr int N_Manipulation = 100;
+			for(int i=1 ; i<N_Manipulation ; i++)
+				RandomManipulate(rd, i, treeA);
+			TestTree<TreeNode_t>	treeB(treeA.getRoot()->clone());
+
+			// ツリー構造比較はtrue
+			ASSERT_TRUE(CompareTreeStructure(*treeA.getRoot(), *treeB.getRoot()));
+			// データ比較もtrue
+			ASSERT_TRUE(CompareTree(*treeA.getRoot(), *treeB.getRoot()));
+			// 値を適当に変更
+			auto ar = treeA.plain();
+			ar[rd.template getUniformRange<int>(0, ar.size()-1)]->value += 100;
+			// ツリー構造比較はtrue
+			ASSERT_TRUE(CompareTreeStructure(*treeA.getRoot(), *treeB.getRoot()));
+			// データ比較はfalse
+			ASSERT_FALSE(CompareTree(*treeA.getRoot(), *treeB.getRoot()));
+		}
 		TEST_F(TreeNodeTest, TreeNode) {
 			auto rd = getRand();
 			// ランダムなツリーを作る
@@ -285,7 +337,7 @@ namespace spn {
 			auto ar1 = TestTree<TreeNode_t>::Plain(sl);
 
 			// シリアライズ前後でデータを比べる
-			CheckEqual(ar0, ar1);
+			ASSERT_NO_FATAL_FAILURE(CheckEqual(ar0, ar1));
 		}
 	}
 }
