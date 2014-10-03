@@ -43,6 +43,30 @@ namespace spn {
 				while(--n >= 0)
 					os << '\t';
 			}
+			template <class CB>
+			void _iterateAll(CB&& cb) const {
+				auto* self = const_cast<this_t*>(this);
+				self->iterateDepthFirst([&cb](auto& nd, int){
+					cb(nd);
+					return Iterate::StepIn;
+				});
+			}
+			template <class T_SP>
+			std::vector<T_SP> _plain() const {
+				std::vector<T_SP> spv;
+				_iterateAll([&spv](auto& nd){
+					spv.emplace_back(nd.shared_from_this());
+				});
+				return std::move(spv);
+			}
+			template <class T_PTR>
+			std::vector<T_PTR> _plainPtr() const {
+				std::vector<T_PTR> pv;
+				_iterateAll([&pv](auto& nd){
+					pv.emplace_back(&nd);
+				});
+				return std::move(pv);
+			}
 
 		public:
 			//! iterateDepthFirstの戻り値
@@ -168,32 +192,30 @@ namespace spn {
 				os << *static_cast<const T*>(this);
 			}
 			//! ツリー構造を配列化
-			template <class T_SP>
-			std::vector<T_SP> _plain() const {
-				auto* self = const_cast<this_t*>(this);
-				std::vector<T_SP> spv;
-				self->iterateDepthFirst([&spv, self](auto& nd, int){
-					spv.emplace_back(nd.shared_from_this());
-					return Iterate::StepIn;
-				});
-				return std::move(spv);
-			}
 			SPVector plain() {
 				return _plain<SP>();
 			}
 			SPCVector plain() const {
 				return _plain<SPC>();
 			}
+			std::vector<T*> plainPtr() {
+				return _plainPtr<T*>();
+			}
+			std::vector<const T*> plainPtr() const {
+				return _plainPtr<const T*>();
+			}
 	};
 	template <class T0, class T1, class CMP>
 	bool _CompareTree(const TreeNode<T0>& t0, const TreeNode<T1>& t1, CMP&& cmp) {
 		auto fnParentIndex = [](const auto& ar, const auto& p){
-			auto itr = std::find(ar.begin(), ar.end(), p);
+			if(!p)
+				return ar.end() - ar.begin();
+			auto itr = std::find_if(ar.begin(), ar.end(), [&p](auto& r){ return *r == *p; });
 			return itr - ar.begin();
 		};
 		// 配列化して親ノード番号をチェック
-		auto ar0 = t0.plain();
-		auto ar1 = t1.plain();
+		auto ar0 = t0.plainPtr();
+		auto ar1 = t1.plainPtr();
 		if(ar0.size() != ar1.size())
 			return false;
 		auto sz = ar0.size();

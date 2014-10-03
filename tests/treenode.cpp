@@ -267,17 +267,29 @@ namespace spn {
 			// (深度優先で巡回した時に同じ順番でノードが取り出せる筈)
 			ASSERT_NO_FATAL_FAILURE(CheckEqual(treeA.getArray(), treeB.getArray()));
 		}
-		template <class T>
-		void CheckPlain(const T& ar, int idx) {
-			if(idx == 0)
-				return;
+		namespace {
+			template <class T>
+			T* GetPointer(T* p) {
+				return p;
+			}
+			template <class T>
+			T* GetPointer(const std::shared_ptr<T>& sp) {
+				return sp.get();
+			}
+			template <class T>
+			void CheckPlain(const T& ar, int idx) {
+				if(idx == 0)
+					return;
 
-			auto sp = ar[idx]->getParent();
-			ASSERT_TRUE(static_cast<bool>(sp));
-			auto itr = std::find(ar.begin(), ar.end(), sp);
-			int idx1(itr - ar.begin());
-			ASSERT_LT(idx1, idx);
-			ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, idx1));
+				auto ptr = GetPointer(ar[idx]->getParent());
+				ASSERT_TRUE(static_cast<bool>(ptr));
+				auto itr = std::find_if(ar.begin(), ar.end(), [ptr](auto& p){
+					return GetPointer(p) == ptr;
+				});
+				int idx1(itr - ar.begin());
+				ASSERT_LT(idx1, idx);
+				ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, idx1));
+			}
 		}
 		TEST_F(TreeNodeTest, Plain) {
 			// ランダムなツリーを生成
@@ -287,11 +299,19 @@ namespace spn {
 			constexpr int N_Manipulation = 100;
 			for(int i=1 ; i<N_Manipulation ; i++)
 				RandomManipulate(rd, i, tree);
-			// 配列化
 			auto spRoot = tree.getRoot();
-			auto ar = spRoot->plain();
-			for(size_t i=0 ; i<ar.size() ; i++)
-				ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, i));
+			{
+				// 配列化(smart pointer)
+				auto ar = spRoot->plain();
+				for(size_t i=0 ; i<ar.size() ; i++)
+					ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, i));
+			}
+			{
+				// 配列化(pointer)
+				auto ar = spRoot->plainPtr();
+				for(size_t i=0 ; i<ar.size() ; i++)
+					ASSERT_NO_FATAL_FAILURE(CheckPlain(ar, i));
+			}
 		}
 		TEST_F(TreeNodeTest, CompareTree) {
 			// ランダムなツリーを生成
