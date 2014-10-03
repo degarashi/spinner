@@ -225,6 +225,7 @@ namespace spn {
 		self.iterateDepthFirst([&os](auto& s, int indent){
 			s.print(os, indent);
 			os << std::endl;
+			return TreeNode<T>::Iterate::StepIn;
 		});
 		return os;
 	}
