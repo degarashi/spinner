@@ -55,10 +55,10 @@ namespace spn {
 			// 適当な数の要素を追加(最低1回)
 			AddRandom(asv, (rdF() & 0xf00) + 1, rdF);
 			// 順番確認
-			ChkSequence(asv, nullptr);
+			ASSERT_NO_FATAL_FAILURE(ChkSequence(asv, nullptr));
 			// 適当なインデックスの要素を削除
 			RemRandom(asv, rdR(0, asv.size()-1), rdR);
-			ChkSequence(asv, nullptr);
+			ASSERT_NO_FATAL_FAILURE(ChkSequence(asv, nullptr));
 		}
 
 		template <class T>

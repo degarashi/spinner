@@ -551,7 +551,7 @@ namespace spn {
 
 		TYPED_TEST(AngleTest, Loop) {
 			constexpr int N_Iterations = 100;
-			constexpr auto ThULPs = ULPs_C(TypeParam(1.0), TypeParam(0.0001));
+			constexpr auto ThULPs = ULPs_C(TypeParam(1.0), TypeParam(0.001));
 			constexpr auto oneloop = AngleInfo<Degree_t>::oneloop<TypeParam>;
 			// singleテスト
 			// ループ毎にsingleした値と独自にwhileで求めた値を比べる
