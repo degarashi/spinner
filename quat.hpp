@@ -329,7 +329,8 @@
 		DEF_OPS(/, _mmDivPs)
 		*/
 		QT QT::slerp(const QuatT& q, float t) const {
-			const float theta = std::acos(dot(q)),
+			const float ac = std::max(0.f, std::min(1.f, dot(q)));
+			const float theta = std::acos(ac),
 						S = std::sin(theta);
 			if(std::fabs(S) < 1e-4f)
 				return *this;
