@@ -210,7 +210,7 @@ namespace spn {
 		auto fnParentIndex = [](const auto& ar, const auto& p){
 			if(!p)
 				return ar.end() - ar.begin();
-			auto itr = std::find_if(ar.begin(), ar.end(), [&p](auto& r){ return *r == *p; });
+			auto itr = std::find_if(ar.begin(), ar.end(), [&p](auto& r){ return r == p.get(); });
 			return itr - ar.begin();
 		};
 		// 配列化して親ノード番号をチェック
