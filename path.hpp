@@ -8,6 +8,7 @@
 #include "serialization/chars.hpp"
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/deque.hpp>
+#include <boost/serialization/vector.hpp>
 #include <boost/serialization/base_object.hpp>
 
 struct stat;
@@ -86,7 +87,17 @@ namespace spn {
             friend class boost::serialization::access;
             template <class Archive>
             void serialize(Archive& ar, const unsigned int) {
-                ar & BOOST_SERIALIZATION_NVP(_path) & BOOST_SERIALIZATION_NVP(_segment) & BOOST_SERIALIZATION_NVP(_bAbsolute);
+				std::vector<uint32_t> sv;
+				if(typename Archive::is_saving()) {
+					std::copy(_path.begin(), _path.end(), std::back_inserter(sv));
+					ar & boost::serialization::make_nvp("path", sv);
+				}
+				if(typename Archive::is_loading()) {
+					ar & boost::serialization::make_nvp("path", sv);
+					_path.clear();
+					std::copy(sv.begin(), sv.end(), std::back_inserter(_path));
+				}
+                ar & BOOST_SERIALIZATION_NVP(_segment) & BOOST_SERIALIZATION_NVP(_bAbsolute);
             }
 
 		public:
