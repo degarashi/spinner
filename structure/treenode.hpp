@@ -77,9 +77,9 @@ namespace spn {
 				Quit				//!< 直ちに巡回を終える
 			};
 			TreeNode() = default;
-			TreeNode(TreeNode&& t) = default;
+			explicit TreeNode(TreeNode&& t) = default;
 			//! copy-ctorに置いてはリンク情報をコピーしない
-			TreeNode(const TreeNode&) {}
+			explicit TreeNode(const TreeNode&) {}
 			// コピー禁止
 			TreeNode& operator = (const TreeNode&) = delete;
 			// ムーブは可
