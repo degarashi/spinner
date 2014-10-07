@@ -1,6 +1,6 @@
 #pragma once
-#define BOOST_PP_VARIADICS 1
 #include <boost/serialization/level.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <cstdint>
 
 BOOST_CLASS_IMPLEMENTATION(char16_t, object_serializable)
@@ -9,11 +9,11 @@ namespace boost {
     namespace serialization {
         template <class Archive>
         void serialize(Archive& ar, char16_t& ch, const unsigned int) {
-            ar & reinterpret_cast<uint16_t&>(ch);
+            ar & boost::serialization::make_nvp("ch", reinterpret_cast<uint16_t&>(ch));
         }
         template <class Archive>
         void serialize(Archive& ar, char32_t& ch, const unsigned int) {
-            ar & reinterpret_cast<uint32_t&>(ch);
+            ar & boost::serialization::make_nvp("ch", reinterpret_cast<uint32_t&>(ch));
         }
     }
 }
