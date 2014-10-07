@@ -9,7 +9,7 @@ namespace spn {
 		class ColorTest : public RandomTestInitializer {};
 		TEST_F(ColorTest, RGBtoHSVtoRGB) {
 			auto rd = getRand();
-			auto fnRand = [&rd](){ return rd.getUniformRange<float>(0.f, 1.f); };
+			auto fnRand = [&rd](){ return rd.getUniform<float>({0.f, 1.f}); };
 			// RGB -> HSV -> RGBと変換して一致しているか
 			RGBColor rgb0(fnRand(), fnRand(), fnRand());
 			HSVColor hsv = rgb0.toHSV();
@@ -30,7 +30,7 @@ namespace spn {
 		}
 		TEST_F(ColorTest, HSVtoRGBtoHSV) {
 			auto rd = getRand();
-			auto fnRand = [&rd](){ return rd.getUniformRange<float>(0.f, 1.f); };
+			auto fnRand = [&rd](){ return rd.getUniform<float>({0.f, 1.f}); };
 			// HSV -> RGB -> HSVと変換して一致しているか
 			HSVColor hsv0(fnRand(), fnRand(), fnRand());
 			RGBColor rgb = hsv0.toRGB();

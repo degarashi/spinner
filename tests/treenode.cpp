@@ -176,14 +176,14 @@ namespace spn {
 			};
 			// ノードが1つしか無い時は追加オンリー
 			E_Manip typ = (t.size() <= 1) ? E_Manip::Add :
-							static_cast<E_Manip>(rd.template getUniformRange<int>(0, static_cast<int>(E_Manip::_Num)-1));
+							static_cast<E_Manip>(rd.template getUniform<int>({0, static_cast<int>(E_Manip::_Num)-1}));
 			switch(typ) {
 				// 新たなノードを追加
 				case E_Manip::Add:
 				case E_Manip::Add2:
 				case E_Manip::Add3: {
 					// 挿入箇所を配列から適当に選ぶ
-					int at = rd.template getUniformRange<int>(0, t.size()-1);
+					int at = rd.template getUniform<int>({0, t.size()-1});
 					// Tree-A
 					value = _CallTS([value, at](auto& t){
 										t.add(at, std::make_shared<typename std::decay_t<decltype(t)>::Type>(value));
@@ -194,7 +194,7 @@ namespace spn {
 				// ノードを削除
 				case E_Manip::Remove: {
 					// ルート以外を選ぶ
-					int at = rd.template getUniformRange<int>(1, t.size()-1);
+					int at = rd.template getUniform<int>({1, t.size()-1});
 					value = _CallTS([at](auto& t){
 										return t.rem(at)->value;
 									}, std::forward<T>(t), std::forward<Ts>(ts)...);
@@ -202,8 +202,8 @@ namespace spn {
 					break; }
 				// ノードを別の場所に繋ぎ変え
 				case E_Manip::Recompose: {
-					int from = rd.template getUniformRange<int>(1, t.size()-1),
-						to = rd.template getUniformRange<int>(0, t.size()-2);
+					int from = rd.template getUniform<int>({1, t.size()-1}),
+						to = rd.template getUniform<int>({0, t.size()-2});
 					if(to >= from)
 						++to;
 
@@ -329,7 +329,7 @@ namespace spn {
 			ASSERT_TRUE(CompareTree(*treeA.getRoot(), *treeB.getRoot()));
 			// 値を適当に変更
 			auto ar = treeA.plain();
-			ar[rd.template getUniformRange<int>(0, ar.size()-1)]->value += 100;
+			ar[rd.template getUniform<int>({0, ar.size()-1})]->value += 100;
 			// ツリー構造比較はtrue
 			ASSERT_TRUE(CompareTreeStructure(*treeA.getRoot(), *treeB.getRoot()));
 			// データ比較はfalse

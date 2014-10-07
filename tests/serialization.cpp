@@ -51,7 +51,7 @@ namespace spn {
 		TYPED_TEST(SerializeVector, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
 				auto data = GenRVec<TypeParam::width, TypeParam::align>(rdF);
 				CheckSerializedDataBin(data);
@@ -65,7 +65,7 @@ namespace spn {
 		TYPED_TEST(SerializeMatrix, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
 				auto data = GenRMat<TypeParam::align, TypeParam::height, TypeParam::width>(rdF);
 				CheckSerializedDataBin(data);
@@ -76,7 +76,7 @@ namespace spn {
 		TEST_F(SerializePose2D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
 				Pose2D ps(GenRVec<2,false>(rdF),
 							RadF(rdF()),
@@ -88,7 +88,7 @@ namespace spn {
 		TEST_F(SerializePose3D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniformRange<float>(-1e3f, 1e3f); };
+			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
 				Pose3D ps(GenRVec<3,true>(rdF),
 							GenRQuat<true>(rdF),
@@ -110,12 +110,12 @@ namespace spn {
 				std::vector<decltype(base.add(0))> ids;
 				for(int j=0 ; j<NITER ; j++) {
 					// ランダムにデータを追加/削除する
-					if(base.empty() || ((rd.getUniformRange<int>(0,3)) != 0)) {
+					if(base.empty() || ((rd.getUniform<int>({0,3})) != 0)) {
 						// 追加
 						ids.push_back(base.add(rd.getUniform<int>()));
 					} else {
 						// 削除
-						int idx = rd.getUniformRange<int>(0, ids.size()-1);
+						int idx = rd.getUniform<int>({0, ids.size()-1});
 						auto itr = ids.begin() + idx;
 						base.rem(*itr);
 						ids.erase(itr);
@@ -138,12 +138,12 @@ namespace spn {
 				std::vector<HLMy> handle;
 				for(int j=0 ; j<NITER ; j++) {
 					// ランダムにデータを追加・削除
-					if(handle.empty() || rd.getUniformRange<int>(0, 1)==0) {
+					if(handle.empty() || rd.getUniform<int>({0, 1})==0) {
 						// 追加
 						handle.push_back(op->emplace(rd.getUniform<int>(), rd.getUniform<int>()));
 					} else {
 						// 削除
-						int idx = rd.getUniformRange<int>(0, handle.size()-1);
+						int idx = rd.getUniform<int>({0, handle.size()-1});
 						handle[idx].release();
 						handle.erase(handle.begin()+idx);
 					}

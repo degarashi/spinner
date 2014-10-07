@@ -50,7 +50,7 @@ namespace spn {
 		void TestAssoc(RD& rd) {
 			A	asv;
 			auto rdF = [&rd](){ return rd.template getUniform<int>(); };
-			auto rdR = [&rd](int from, int to){ return rd.template getUniformRange<int>(from,to); };
+			auto rdR = [&rd](int from, int to){ return rd.template getUniform<int>({from,to}); };
 
 			// 適当な数の要素を追加(最低1回)
 			AddRandom(asv, (rdF() & 0xf00) + 1, rdF);

@@ -3,6 +3,7 @@
 #include <random>
 #include <limits>
 #include "singleton.hpp"
+#include "structure/range.hpp"
 
 namespace spn {
 	//! Mersenne Twister(32bit)を用いた乱数生成
@@ -35,22 +36,22 @@ namespace spn {
 				integerの場合は範囲指定なしnumeric_limits<T>::min() -> max()の乱数 */
 			template <class T>
 			T getUniform() {
-				return getUniformRange(L<T>::lowest(), L<T>::max());
+				return getUniform<T>({L<T>::lowest(), L<T>::max()});
+			}
+			//! 指定範囲の一様分布(in range)
+			template <class T>
+			T getUniform(const Range<T>& range) {
+				return typename GetDist<T>::uniform_t(range.from, range.to)(_mt);
 			}
 			//! 指定範囲の一様分布(vmax)
 			template <class T>
 			T getUniformMax(const T& vmax) {
-				return getUniformRange(L<T>::lowest(), vmax);
+				return getUniform<T>({L<T>::lowest(), vmax});
 			}
 			//! 指定範囲の一様分布(vmin)
 			template <class T>
 			T getUniformMin(const T& vmin) {
-				return getUniformRange(vmin, L<T>::max());
-			}
-			//! 指定範囲の一様分布(vmin -> vmax)
-			template <class T>
-			T getUniformRange(const T& vmin, const T& vmax) {
-				return typename GetDist<T>::uniform_t(vmin, vmax)(_mt);
+				return getUniform<T>({vmin, L<T>::max()});
 			}
 	};
 	#define mgr_random (::spn::MTRandomMgr::_ref())

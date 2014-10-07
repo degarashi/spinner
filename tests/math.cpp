@@ -166,7 +166,7 @@ namespace spn {
 			template <int M, int N, bool A>
 			void _MatrixCheck(MTRandom& rd) {
 				// 配列を使って計算した結果とMatrixクラスの結果を、誤差含めて比較
-				auto rdF = [&rd](){ return rd.template getUniformRange<float>(ValueMin, ValueMax); };
+				auto rdF = [&rd](){ return rd.template getUniform<float>({ValueMin, ValueMax}); };
 
 				using Mat = MatT<M,N,A>;
 				auto fnTestScalar = [&rdF](auto& rd, auto&& op) {
@@ -225,9 +225,9 @@ namespace spn {
 				void SetUp() override {
 					RandomTestInitializer::SetUp();
 					_rd = getRand();
-					_fnRandF = [&rd=*_rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
-					_fnRandF01 = [&rd=*_rd](){ return rd.template getUniformRange<float>(0,1); };
-					_fnRandPI = [&rd=*_rd](){ return rd.template getUniformRange<float>(-PI,PI); };
+					_fnRandF = [&rd=*_rd](){ return rd.template getUniform<float>({RandMin, RandMax}); };
+					_fnRandF01 = [&rd=*_rd](){ return rd.template getUniform<float>({0,1}); };
+					_fnRandPI = [&rd=*_rd](){ return rd.template getUniform<float>({-PI,PI}); };
 				}
 				void TearDown() override {
 					_rd = none;
@@ -425,7 +425,7 @@ namespace spn {
 			constexpr float RandMin = -1e3f,
 							RandMax = 1e3f;
 			auto rd = getRand();
-			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniform<float>({RandMin, RandMax}); };
 
 			// 行列をDecompAffineした結果を再度合成して同じかどうかチェック
 			for(int i=0 ; i<N_Iteration ; i++) {
@@ -477,7 +477,7 @@ namespace spn {
 			constexpr float RandMin = -1e3f,
 							RandMax = 1e3f;
 			auto rd = getRand();
-			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniform<float>({RandMin, RandMax}); };
 			// YawPitchDistで計算した値を再度合成して結果を比較
 			auto nzv = GenRVecNZ<3,false>(rdF, 1e-2f);
 			auto ypd = YawPitchDist::FromPos(nzv);
@@ -493,7 +493,7 @@ namespace spn {
 		TEST_P(YPDTest, FromPos_Fixed) {
 			auto rd = getRand();
 			auto rdF = [&rd](){
-				return rd.template getUniformRange<float>(-1.f, 1.f);
+				return rd.template getUniform<float>({-1.f, 1.f});
 			};
 
 			// 予め答えが用意されたパターンと照らし合わせ
@@ -512,7 +512,7 @@ namespace spn {
 			constexpr float RandMin = -1e2f,
 							RandMax = 1e2f;
 			auto rd = getRand();
-			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniformRange<float>(RandMin, RandMax); };
+			auto rdF = [RandMin, RandMax, &rd](){ return rd.template getUniform<float>({RandMin, RandMax}); };
 			RadF yaw(rdF()),
 				pitch(rdF());
 
@@ -538,7 +538,7 @@ namespace spn {
 					_rd = getRand();
 					constexpr T RandMin = T(-1e2),
 								RandMax = T(1e2);
-					_rdF = [this, RandMin, RandMax](){ return _rd->template getUniformRange<T>(RandMin, RandMax); };
+					_rdF = [this, RandMin, RandMax](){ return _rd->template getUniform<T>({RandMin, RandMax}); };
 				}
 				void TearDown() override {
 					_rd = none;
@@ -632,8 +632,8 @@ namespace spn {
 		namespace {
 			template <class T>
 			void TestAsIntegral(MTRandom rd) {
-				auto fvalue = rd.getUniformRange<T>(std::numeric_limits<T>::lowest()/2,
-														std::numeric_limits<T>::max()/2);
+				auto fvalue = rd.getUniform<T>({std::numeric_limits<T>::lowest()/2,
+														std::numeric_limits<T>::max()/2});
 				auto ivalueC = AsIntegral_C(fvalue);
 				auto ivalue = AsIntegral(fvalue);
 				EXPECT_EQ(ivalueC, ivalue);
@@ -642,7 +642,7 @@ namespace spn {
 			void TestCompare(MTRandom rd) {
 				auto fnRand = [&rd]() {
 					auto range0 = static_cast<T>(std::pow(T(2), std::numeric_limits<T>::max_exponent/2));
-					return rd.getUniformRange<T>(-range0, range0);
+					return rd.getUniform<T>({-range0, range0});
 				};
 				for(int i=0 ; i<N_Iteration ; i++) {
 					auto f0 = fnRand(),
@@ -694,7 +694,8 @@ namespace spn {
 
 		TEST_F(MathTest, GapStructure) {
 			auto rd = getRand();
-			auto gen = std::bind(&MTRandom::getUniform<float>, std::ref(rd));
+			float (MTRandom::*FPtr)() = &MTRandom::getUniform<float>;
+			auto gen = std::bind(FPtr, std::ref(rd));
 			using F16 = std::array<float,16>;
 			F16 tmp;
 			std::generate(tmp.begin(), tmp.end(), std::ref(gen));

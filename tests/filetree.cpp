@@ -63,9 +63,9 @@ namespace spn {
 			auto randomName = [&rd, &nameset]() {
 				for(;;) {
 					char ftmp[MAX_NAME+1];
-					int fname = rd.getUniformRange<int>(3, MAX_NAME);
+					int fname = rd.getUniform<int>({3, MAX_NAME});
 					for(int k=0 ; k<fname ; k++)
-						ftmp[k] = rd.getUniformRange<int>('A', 'Z');
+						ftmp[k] = rd.getUniform<int>({'A', 'Z'});
 					ftmp[fname] = '\0';
 
 					std::string str(ftmp);
@@ -79,10 +79,10 @@ namespace spn {
 			auto placeRandomFile = [&rd](Dir& dir, const std::string& name) {
 				dir <<= name;
 				std::ofstream ofs(dir.plain_utf8().c_str(), std::ios::binary);
-				int fsize = rd.getUniformRange<int>(MIN_SIZE, MAX_SIZE);
+				int fsize = rd.getUniform<int>({MIN_SIZE, MAX_SIZE});
 				char tmp[MAX_SIZE];
 				for(int k=0 ; k<fsize ; k++)
-					tmp[k] = rd.getUniformRange<int>(0, 0xff);
+					tmp[k] = rd.getUniform<int>({0, 0xff});
 				ofs.write(tmp, fsize);
 				dir.popBack();
 			};
@@ -95,7 +95,7 @@ namespace spn {
 
 			int layer = 0;
 			for(int j=0 ; j<10 ; j++) {
-				switch(rd.getUniformRange<int>(0, 2)) {
+				switch(rd.getUniform<int>({0, 2})) {
 					case 0:
 						// ディレクトリを1つ上がる
 						if(layer > 0) {
@@ -165,7 +165,7 @@ namespace spn {
 				});
 				if(ps.empty())
 					return Path_Size();
-				int idx = rd.getUniformRange<int>(0, ps.size()-1);
+				int idx = rd.getUniform<int>({0, ps.size()-1});
 				return std::move(ps[idx]);
 			};
 			auto fnSelectFile = [&fnSelect](const Dir& dir) {
@@ -182,7 +182,7 @@ namespace spn {
 				Dir tdir(dir);
 				for(;;) {
 					// 階層を降りる or 留まる
-					if(rd.getUniformRange(0, 1) == 0) {
+					if(rd.getUniform<int>({0, 1}) == 0) {
 						auto ps = fnSelectDir(tdir);
 						if(!ps.first.empty()) {
 							tdir <<= ps.first;
@@ -211,7 +211,7 @@ namespace spn {
 				hist.emplace(new FEv_Modify(basePath, d.plain_utf8(), true));
 			};
 			for(int j=0 ; j<100 ; j++) {
-				switch(rd.getUniformRange<int>(0, Action::NumAction)) {
+				switch(rd.getUniform<int>({0, Action::NumAction})) {
 					case Action::Act_Create: {
 						std::string str = randomName();
 						placeRandomFile(dir, str);
