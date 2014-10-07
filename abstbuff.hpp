@@ -21,7 +21,6 @@ namespace spn {
 			const Buff*	_buffC;
 		};
 		size_t		_size;
-		AbstBuffer* _parent = nullptr;
 
 		//! 内部メモリを解放せずに無効化
 		void _invalidate() noexcept {
@@ -31,14 +30,19 @@ namespace spn {
 		}
 
 	public:
-		AbstBuffer(const AbstBuffer&) = delete;
-		AbstBuffer(AbstBuffer&& ab) noexcept: AbstBuffer(ab) {}
-		AbstBuffer(AbstBuffer& ab) noexcept {
-			_parent = &ab;
+		AbstBuffer(const AbstBuffer& ab) noexcept {
+			_pSrc = ab._pSrc;
+			_size = ab._size;
+			if((_type = ab._type) == Type::Movable) {
+				// データをコピー
+				_buffM = new Buff(*ab._buffM);
+			}
+		}
+		AbstBuffer(AbstBuffer&& ab) noexcept {
 			_type = ab._type;
 			_pSrc = ab._pSrc;
 			_size = ab._size;
-			if(ab._type == Type::Movable)
+			if(_type == Type::Movable)
 				ab._invalidate();
 		}
 		~AbstBuffer() {
@@ -55,13 +59,20 @@ namespace spn {
 		AbstBuffer(const Buff& buff) noexcept: _type(Type::Const), _buffC(&buff), _size(buff.size()) {}
 
 		AbstBuffer& operator = (AbstBuffer&& a) noexcept {
-			return this->operator = (a); }
-		AbstBuffer& operator = (AbstBuffer& a) noexcept {
 			_type = a._type;
 			_buffM = a._buffM;
 			_size = a._size;
-			if(a._type == Type::Movable)
+			if(_type == Type::Movable)
 				a._invalidate();
+			return *this; }
+		AbstBuffer& operator = (const AbstBuffer& a) noexcept {
+			_type = a._type;
+			_buffM = a._buffM;
+			_size = a._size;
+			if(_type == Type::Movable) {
+				// データをコピー
+				_buffM = new Buff(*a._buffM);
+			}
 			return *this;
 		}
 		//! バッファを外部に出力 (movableはmove)
@@ -72,6 +83,7 @@ namespace spn {
 					break;
 				case Type::Movable:
 					dst = std::move(*_buffM);
+					delete _buffM;
 					_invalidate();
 					break;
 				case Type::Const:
@@ -87,9 +99,10 @@ namespace spn {
 				case Type::ConstPtr:
 					return Buff(_pSrc, _pSrc+_size);
 				case Type::Movable: {
-					auto* tmp = _buffM;
+					Buff ret(std::move(*_buffM));
+					delete _buffM;
 					_invalidate();
-					return std::move(*tmp); }
+					return std::move(ret); }
 				case Type::Const:
 						return *_buffC;
 				default:
@@ -138,21 +151,53 @@ namespace spn {
 		mutable bool	_bNonNull;	//!< non null-terminatedでない場合にtrue (バイト長は必ず持っている条件)
 		public:
 			AbstString() noexcept: AbstString(nullptr) {}
-			AbstString(std::nullptr_t) noexcept: base_type(nullptr), _bStrLen(false), _bNonNull(true) {}
+			AbstString(std::nullptr_t) noexcept:
+				base_type(nullptr),
+				_bStrLen(false),
+				_bNonNull(true)
+			{}
 			// 文字数カウント機能を追加
-			AbstString(const T* src): base_type(src, (_strLenP=GetLength(src)).dataLen), _bStrLen(true), _bNonNull(false) {}
+			AbstString(const T* src):
+				base_type(src, (_strLenP=GetLength(src)).dataLen),
+				_bStrLen(true),
+				_bNonNull(false)
+			{}
 			// Not NullTerminatedかもしれないのでフラグを立てておく
-			AbstString(const T* src, size_t dataLen): base_type(src, dataLen), _bStrLen(false), _bNonNull(true) {}
-			AbstString(Str&& str): base_type(std::move(str)), _bStrLen(false), _bNonNull(false) {}
-			AbstString(const Str& str): base_type(str), _bStrLen(false), _bNonNull(false) {}
-			AbstString(AbstString& str) noexcept: base_type(str), _strLenP(str._strLenP), _bStrLen(str._bStrLen), _bNonNull(str._bNonNull) {}
-			AbstString(AbstString&& str) noexcept: AbstString(str) {}
-			AbstString(const AbstString&) = delete;
+			AbstString(const T* src, size_t dataLen):
+				base_type(src, dataLen),
+				_bStrLen(false),
+				_bNonNull(true)
+			{}
+			AbstString(const Str& str):
+				base_type(str),
+				_bStrLen(false),
+				_bNonNull(false)
+			{}
+			AbstString(Str&& str):
+				base_type(std::move(str)),
+				_bStrLen(false),
+				_bNonNull(false)
+			{}
+			AbstString(const AbstString& str) noexcept:
+				base_type(str),
+				_strLenP(str._strLenP),
+				_bStrLen(str._bStrLen),
+				_bNonNull(str._bNonNull)
+			{}
+			AbstString(AbstString&& str) noexcept:
+				base_type(std::move(str)),
+				_strLenP(str._strLenP),
+				_bStrLen(str._bStrLen),
+				_bNonNull(str._bNonNull)
+			{}
 
 			AbstString& operator = (AbstString&& a) noexcept {
-				return this->operator = (a); }
-			AbstString& operator = (AbstString& a) noexcept {
-				reinterpret_cast<base_type&>(*this) = reinterpret_cast<base_type&>(a);
+				this->~AbstString();
+				new(this) AbstString(std::move(a));
+				return *this;
+			}
+			AbstString& operator = (const AbstString& a) noexcept {
+				reinterpret_cast<const base_type&>(*this) = reinterpret_cast<const base_type&>(a);
 				_strLenP = a._strLenP;
 				_bStrLen = a._bStrLen;
 				_bNonNull = a._bNonNull;
@@ -199,13 +244,11 @@ namespace spn {
 		template <class T>
 		static AbstString<T> MakeABS(const T* src, size_t dataLen);
 		template <class T>
-		static AbstString<T> MakeABS(std::basic_string<T>&& s);
-		template <class T>
-		static AbstString<T> MakeABS(std::basic_string<T>& s);
-		template <class T>
 		static AbstString<T> MakeABS(const std::basic_string<T>& s);
 		template <class T>
-		static AbstString<T> MakeABS(AbstString<T>& s);
+		static AbstString<T> MakeABS(std::basic_string<T>&& s);
+		template <class T>
+		static AbstString<T> MakeABS(const AbstString<T>& s);
 		template <class T>
 		static AbstString<T> MakeABS(AbstString<T>&& s);
 	};
@@ -254,13 +297,12 @@ namespace spn {
 		public:
 			ToNStrT() = default;
 			template <class T2>
-			ToNStrT(AbstString<T2> c): base(UTFConvertToN<T>(c)) {}
-			ToNStrT& operator = (ToNStrT& c) noexcept {
-				this->~ToNStrT();
-				new(this) ToNStrT(c);
-				return *this;
-			}
-			ToNStrT& operator = (ToNStrT&& c) noexcept { return this->operator =(c); }
+			ToNStrT(const AbstString<T2>& c): base(UTFConvertToN<T>(c)) {}
+			template <class T2>
+			ToNStrT(AbstString<T2>&& c): base(UTFConvertToN<T>(c)) {}
+
+			ToNStrT& operator = (ToNStrT&& c) noexcept= default;
+			ToNStrT& operator = (const ToNStrT& c) noexcept = default;
 			template <class... Ts>
 			ToNStrT(Ts&&... ts): ToNStrT(decltype(ToNStr::MakeABS(std::forward<Ts>(ts)...))(std::forward<Ts>(ts)...)) {}
 	};
