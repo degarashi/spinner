@@ -87,17 +87,16 @@ namespace spn {
             friend class boost::serialization::access;
             template <class Archive>
             void serialize(Archive& ar, const unsigned int) {
-				std::vector<uint32_t> sv;
+				// UTF-8文字列として書き出し
+				std::string path;
 				if(typename Archive::is_saving()) {
-					std::copy(_path.begin(), _path.end(), std::back_inserter(sv));
-					ar & boost::serialization::make_nvp("path", sv);
+					path = plain_utf8();
+					ar & BOOST_SERIALIZATION_NVP(path);
 				}
 				if(typename Archive::is_loading()) {
-					ar & boost::serialization::make_nvp("path", sv);
-					_path.clear();
-					std::copy(sv.begin(), sv.end(), std::back_inserter(_path));
+					ar & BOOST_SERIALIZATION_NVP(path);
+					setPath(path);
 				}
-                ar & BOOST_SERIALIZATION_NVP(_segment) & BOOST_SERIALIZATION_NVP(_bAbsolute);
             }
 
 		public:
