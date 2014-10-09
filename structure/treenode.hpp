@@ -204,6 +204,15 @@ namespace spn {
 			std::vector<const T*> plainPtr() const {
 				return _plainPtr<const T*>();
 			}
+			//! ツリー深度を取得
+			int getDepth() const {
+				int depth = 0;
+				if(_spChild)
+					depth = _spChild->getDepth() + 1;
+				if(_spSibling)
+					depth = std::max(depth, _spSibling->getDepth());
+				return depth;
+			}
 	};
 	template <class T0, class T1, class CMP>
 	bool _CompareTree(const TreeNode<T0>& t0, const TreeNode<T1>& t1, CMP&& cmp) {

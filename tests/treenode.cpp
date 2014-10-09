@@ -247,17 +247,21 @@ namespace spn {
 				return std::decay_t<decltype(nd)>::Iterate::StepIn;
 			});
 		}
+		namespace {
+			// ランダムにノード操作
+			template <class RD, class V, class... TS>
+			void MakeRandomTree(RD& rd, int repeat, V&& fnValue, TS&&... tree) {
+				for(int i=0 ; i<repeat ; i++)
+					RandomManipulate(rd, fnValue(i), std::forward<TS>(tree)...);
+			}
+		}
 		class TreeNodeTest : public RandomTestInitializer {};
 		TEST_F(TreeNodeTest, General) {
 			auto rd = getRand();
 			// TreeNodeと、子を配列で持つノードでそれぞれツリーを作成
 			TestTree<TestNode>		treeA(0);		// 確認用
 			TestTree<TreeNode_t>	treeB(0);		// テスト対象
-			// ランダムにノード操作
-			constexpr int N_Manipulation = 100;
-			for(int i=1 ; i<N_Manipulation ; i++)
-				RandomManipulate(rd, i, treeA, treeB);
-
+			MakeRandomTree(rd, 100, [](int r){ return r+1; }, treeA, treeB);
 			// 親ノードの接続確認
 			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()));
 			// Cloneしたツリーでも確認
@@ -295,10 +299,7 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	tree(0);
-			// ランダムにノード操作
-			constexpr int N_Manipulation = 100;
-			for(int i=1 ; i<N_Manipulation ; i++)
-				RandomManipulate(rd, i, tree);
+			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
 			auto spRoot = tree.getRoot();
 			{
 				// 配列化(smart pointer)
@@ -317,10 +318,7 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	treeA(0);
-			// ランダムにノード操作
-			constexpr int N_Manipulation = 100;
-			for(int i=1 ; i<N_Manipulation ; i++)
-				RandomManipulate(rd, i, treeA);
+			MakeRandomTree(rd, 100, [](int r){ return r+1; }, treeA);
 			TestTree<TreeNode_t>	treeB(treeA.getRoot()->clone());
 
 			// ツリー構造比較はtrue
@@ -339,9 +337,7 @@ namespace spn {
 			auto rd = getRand();
 			// ランダムなツリーを作る
 			TestTree<TreeNode_t>	tree(0);
-			constexpr int N_Manipulation = 100;
-			for(int i=1 ; i<N_Manipulation ; i++)
-				RandomManipulate(rd, i, tree);
+			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
 
 			// シリアライズ
 			auto sl = tree.getRoot();
@@ -358,6 +354,22 @@ namespace spn {
 
 			// シリアライズ前後でデータを比べる
 			ASSERT_NO_FATAL_FAILURE(CheckEqual(ar0, ar1));
+		}
+		TEST_F(TreeNodeTest, TreeDepth) {
+			auto rd = getRand();
+			// ランダムなツリーを作る
+			TestTree<TreeNode_t>	tree(0);
+			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
+
+			// Iterate関数を使ってカウント
+			int depth = 0;
+			tree.getRoot()->iterateDepthFirst([&depth](auto&, int d){
+				depth = std::max(depth, d);
+				return TreeNode_t::Iterate::StepIn;
+			});
+			// GetDepthでカウント
+			int depth2 = tree.getRoot()->getDepth();
+			EXPECT_EQ(depth, depth2);
 		}
 	}
 }
