@@ -5,7 +5,6 @@
 #include "../assoc.hpp"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include "serialization/pair.hpp"
 
 namespace spn {
 	namespace test {

@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <gtest/gtest.h>
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/utility.hpp>
 
 namespace boost {
 	namespace archive {
