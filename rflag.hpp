@@ -36,7 +36,7 @@ namespace spn {
 			using base = ValueHolder<Ts...>;
 			using ct_base = spn::CType<Ts...>;
 			template <class T>
-			static T* _GetNull() { return reinterpret_cast<T*>(0); }
+			static T* _NullPtr() { return reinterpret_cast<T*>(0); }
 
 			mutable FlagValue _rflag;
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
@@ -62,26 +62,35 @@ namespace spn {
 			template <class T>
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,-1>) { return 0; }
 
-			template <class T>
-			auto _refresh(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
+			template <class T, class CB>
+			auto _refresh(const Class* self, CB&& callback) const -> decltype(base::cref(_NullPtr<T>())) {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
-				_rflag &= ~(self->_refresh(ptr->ref(_GetNull<T>()), _GetNull<T>()));
+				_rflag &= ~(self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>()));
 				_rflag &= ~Get<T>();
+				callback(GetFlagIndex<T>());
 				AssertP(Trap, !(_rflag & OrHL<T>()), "refresh flag was not cleared correctly")
-				return ptrC->cref(_GetNull<T>());
+				return ptrC->cref(_NullPtr<T>());
 			}
+			//! 変数型の格納順インデックス
 			template <class TA>
-			static constexpr FlagValue _GetSingle() {
-				return 1 << ct_base::template Find<TA>::result;
+			static constexpr int GetFlagIndex() {
+				return ct_base::template Find<TA>::result;
 			}
+			//! 変数型を示すフラグ
+			template <class TA>
+			static constexpr FlagValue GetFlagSingle() {
+				return 1 << GetFlagIndex<TA>();
+			}
+			//! 引数の変数フラグをORで合成
 			template <class... TsA>
 			static constexpr FlagValue _Sum(std::integral_constant<int,0>) { return 0; }
 			template <class TA, class... TsA, int N>
 			static constexpr FlagValue _Sum(std::integral_constant<int,N>) {
-				return _GetSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
+				return GetFlagSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
 			}
 
+			//! 変数に影響するフラグを立てる
 			template <class... TsA>
 			void _setFlag(std::integral_constant<int,0>) {}
 			template <class T, class... TsA, int N>
@@ -101,26 +110,32 @@ namespace spn {
 			void resetAll() {
 				_rflag = All();
 			}
+			//! 引数の変数を示すフラグ
 			template <class... TsA>
 			static constexpr FlagValue Get() {
 				return _Sum<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
 			}
+			//! 変数全てを示すフラグ値
 			static constexpr FlagValue All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
 			}
+			//! 現在のフラグ値
 			FlagValue GetFlag() const {
 				return _rflag;
 			}
+			//! フラグのテストだけする
 			template <class... TsA>
 			FlagValue Test() const {
 				return GetFlag() & Get<TsA...>();
 			}
 
+			//! 自分より上の階層のフラグ (Low -> High)
 			template <class T>
 			static constexpr FlagValue OrLH() {
 				// TypeListを巡回、A::Has<T>ならOr<A>()をたす
 				return Get<T>() | _IterateLH<T>(std::integral_constant<int,0>());
 			}
+			//! 自分以下の階層のフラグ (High -> Low)
 			template <class T>
 			static constexpr FlagValue OrHL() {
 				return Get<T>() | _IterateHL<T>(std::integral_constant<int,T::size-1>());
@@ -131,22 +146,23 @@ namespace spn {
 			void setFlag() {
 				_setFlag<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
 			}
-
+			//! 必要に応じて更新をかけつつ、参照を返す
 			template <class T>
-			auto get(const Class* self) const -> decltype(base::cref(_GetNull<T>())) {
+			auto get(const Class* self) const -> decltype(base::cref(_NullPtr<T>())) {
 				if(!(_rflag & Get<T>()))
-					return base::cref(_GetNull<T>());
-				return _refresh<T>(self);
+					return base::cref(_NullPtr<T>());
+				return _refresh<T>(self, [](auto){});
 			}
+			//! 更新フラグはそのままに参照を返す
 			template <class T>
-			auto ref() const -> typename std::decay<decltype(base::cref(_GetNull<T>()))>::type& {
-				// 更新チェックなしで参照を返す
-				const auto& ret = base::cref(_GetNull<T>());
+			auto ref() const -> typename std::decay<decltype(base::cref(_NullPtr<T>()))>::type& {
+				const auto& ret = base::cref(_NullPtr<T>());
 				return const_cast<typename std::decay<decltype(ret)>::type&>(ret);
 			}
+			//! 更新フラグを立てつつ参照を返す
 			template <class T>
 			auto refF() -> decltype(ref<T>()) {
-				// 更新フラグありで参照を返す
+				// 更新フラグをセット
 				setFlag<T>();
 				return ref<T>();
 			}
@@ -154,6 +170,20 @@ namespace spn {
 			template <class T, class TA>
 			void set(TA&& t) {
 				refF<T>() = std::forward<TA>(t);
+			}
+			//! 指定した変数型を更新しつつ、キャッシュがrefreshされた時にコールバック関数を呼ぶ
+			template <class CB, class... TsA>
+			void refresh(const Class* /*self*/, CB&& /*cb*/, CType<TsA...>) const {}
+			template <class CB, class TA, class... TsA>
+			void refresh(const Class* self, CB&& cb, CType<TA, TsA...>) const {
+				if(_rflag & Get<TA>())
+					_refresh<TA>(self, std::forward<CB>(cb));
+				refresh(self, std::forward<CB>(cb), CType<TsA...>());
+			}
+			//! リフレッシュコールだけをする (複数同時指定可能)
+			template <class... TsA>
+			void refresh(const Class* self, CType<TsA...> t) const {
+				refresh(self, [](auto...){}, t);
 			}
 	};
 
