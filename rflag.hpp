@@ -21,10 +21,10 @@ namespace spn {
 		value_type& ref(T*) { return value; }
 		const value_type& cref(T*) const { return value; }
 		template <class T2>
-		auto ref(T2* p) -> decltype(base::ref(p)) {
+		decltype(std::declval<base>().ref((T2*)nullptr)) ref(T2* p) {			// decltype(base::ref(p))
 			return base::ref(p); }
 		template <class T2>
-		auto cref(T2* p) const -> decltype(base::cref(p)) {
+		decltype(std::declval<base>().cref((T2*)nullptr)) cref(T2* p) const {	// decltype(base::cref(p))
 			return base::cref(p); }
 	};
 	//! キャッシュ変数の自動管理クラス
@@ -37,6 +37,10 @@ namespace spn {
 			using ct_base = spn::CType<Ts...>;
 			template <class T>
 			static T* _NullPtr() { return reinterpret_cast<T*>(0); }
+			template <class T>
+			using cref_type = decltype(std::declval<base>().cref(_NullPtr<T>()));
+			template <class T>
+			using ref_type = typename std::decay<cref_type<T>>::type&;
 
 			mutable FlagValue _rflag;
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
@@ -63,7 +67,7 @@ namespace spn {
 			static constexpr FlagValue _IterateHL(std::integral_constant<int,-1>) { return 0; }
 
 			template <class T, class CB>
-			auto _refresh(const Class* self, CB&& callback) const -> decltype(base::cref(_NullPtr<T>())) {
+			cref_type<T> _refresh(const Class* self, CB&& callback) const {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
 				_rflag &= ~(self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>()));
@@ -148,20 +152,20 @@ namespace spn {
 			}
 			//! 必要に応じて更新をかけつつ、参照を返す
 			template <class T>
-			auto get(const Class* self) const -> decltype(base::cref(_NullPtr<T>())) {
+			cref_type<T> get(const Class* self) const {
 				if(!(_rflag & Get<T>()))
 					return base::cref(_NullPtr<T>());
 				return _refresh<T>(self, [](auto){});
 			}
 			//! 更新フラグはそのままに参照を返す
 			template <class T>
-			auto ref() const -> typename std::decay<decltype(base::cref(_NullPtr<T>()))>::type& {
+			ref_type<T> ref() const {
 				const auto& ret = base::cref(_NullPtr<T>());
 				return const_cast<typename std::decay<decltype(ret)>::type&>(ret);
 			}
 			//! 更新フラグを立てつつ参照を返す
 			template <class T>
-			auto refF() -> decltype(ref<T>()) {
+			ref_type<T> refF() {
 				// 更新フラグをセット
 				setFlag<T>();
 				return ref<T>();
