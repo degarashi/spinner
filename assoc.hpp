@@ -63,6 +63,10 @@ namespace spn {
 					itr = _vec.emplace(itr, std::forward<T>(t));
 				return itr - _vec.begin();
 			}
+			template <class... Ts>
+			int emplace(Ts&&... ts) {
+				return insert(value_type(std::forward<Ts>(ts)...));
+			}
 
 			void pop_front() {
 				_vec.erase(_vec.begin());
@@ -84,6 +88,9 @@ namespace spn {
 				_vec.erase(_vec.begin()+n);
 			}
 			void erase(typename Vec::iterator itr) {
+				_vec.erase(itr);
+			}
+			void erase(typename Vec::const_iterator itr) {
 				_vec.erase(itr);
 			}
 			const T& back() const { return _vec.back(); }
