@@ -8,7 +8,10 @@
 	template <class T> \
 	std::true_type HasMethod_##method(decltype(&T::method) = &T::method) { return std::true_type(); } \
 	template <class T> \
-	std::false_type HasMethod_##method(...) { return std::false_type(); }
+	std::false_type HasMethod_##method(...) { return std::false_type(); } \
+	template <class T> \
+	using HasMethod_##method##_t = decltype(HasMethod_##method<T>(nullptr));
+
 //! 特定のオーバーロードされたメソッドを持っているかチェック
 /*! DEF_HASMETHOD_OV(name, method)
 	予めクラスにspn::none method(...); を持たせておく
@@ -25,10 +28,12 @@
 
 //! 特定の型又は定数値を持っているかチェック
 /*! DEF_HASTYPE(type_name)
-	HasType_type_name(nullptr) -> std::true_type or std::false_type */
+	HasType_type_name<class_name>(nullptr) -> std::true_type or std::false_type */
 #define DEF_HASTYPE(name) \
 	template <class T> \
 	std::true_type HasType_##name(decltype(T::name)*) { return std::true_type(); } \
 	template <class T> \
-	std::false_type HasType_##name(...) { return std::false_type(); }
+	std::false_type HasType_##name(...) { return std::false_type(); } \
+	template <class T> \
+	using HasType_##name##_t = decltype(HasType_##name<T>(nullptr));
 
