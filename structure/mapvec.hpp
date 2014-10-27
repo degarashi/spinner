@@ -9,9 +9,14 @@
 #include "check_macro.hpp"
 
 namespace spn {
-	DEF_HASMETHOD(emplace_back)
+	DEF_HASMETHOD_T(emplace_back)
 
-	template <class MAP, class VEC=std::vector<typename MAP::value_type*, typename MAP::allocator_type>>
+	template <class MAP, class VEC=std::vector<
+							typename MAP::value_type*,
+							typename MAP::allocator_type::template rebind<
+												typename MAP::value_type*
+							>::other
+	>>
 	class MapVec {
 		private:
 			MAP		_map;
@@ -83,7 +88,7 @@ namespace spn {
 					auto itr = std::find(_vec.cbegin(), _vec.cend(), &p);
 					if(itr == _vec.cend()) {
 						// emplace_back()を持っていればそれを、無ければemplace()を呼ぶ
-						_addVec(&p, HasMethod_emplace_back_t<VEC>());
+						_addVec(&p, HasMethod_emplace_back<VEC>(nullptr));
 					}
 				}
 			}
