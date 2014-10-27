@@ -65,6 +65,16 @@ namespace spn {
 			RemRandom(rdF() & 0x80, rdR, *mv.refMap(), chk);
 			ASSERT_NO_FATAL_FAILURE(CheckEqual(*mv.refVec(), chk));
 		}
+		using MapVecSerialize = RandomTestInitializer;
+		TEST_F(MapVecSerialize, Test) {
+			auto rd = this->getRand();
+			auto rdF = [&rd](){ return rd.template getUniform<int>(); };
+
+			MapVec<std::unordered_map<int,int>>		mv;
+			// Mapを参照し、データをランダムに追加
+			AddRandomKV(rdF() & 0x400, rdF, *mv.refMap());
+			CheckSerializedDataBin(mv);
+		}
 	}
 }
 
