@@ -4,13 +4,19 @@
 //! 特定のメソッドを持っているかチェック
 /*! DEF_HASMETHOD(method)
 	HasMethod_method<class_name>(nullptr) -> std::true_type or std::false_type */
-#define DEF_HASMETHOD(method) \
-	template <class T> \
-	std::true_type HasMethod_##method(decltype(&T::method) = &T::method) { return std::true_type(); } \
+#define DEF_HASMETHOD_BASE(method) \
 	template <class T> \
 	std::false_type HasMethod_##method(...) { return std::false_type(); } \
 	template <class T> \
 	using HasMethod_##method##_t = decltype(HasMethod_##method<T>(nullptr));
+#define DEF_HASMETHOD(method) \
+	template <class T> \
+	std::true_type HasMethod_##method(decltype(&T::method) = &T::method) { return std::true_type(); } \
+	DEF_HASMETHOD_BASE(method)
+#define DEF_HASMETHOD_T(method) \
+	template <class T, class... Ts> \
+	std::true_type HasMethod_##method(decltype(&T::template method<Ts...>) = &T::template method<Ts...>) { return std::true_type(); } \
+	DEF_HASMETHOD_BASE(method)
 
 //! 特定のオーバーロードされたメソッドを持っているかチェック
 /*! DEF_HASMETHOD_OV(name, method)
