@@ -2,49 +2,12 @@
 	#include <intrin.h>
 #endif
 #include "test.hpp"
-#include "../assoc.hpp"
+#include "assoc.hpp"
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 
 namespace spn {
 	namespace test {
-		template <class K, class V, class C, class RDF>
-		void AddRandom(AssocVecK<K,V,C>& a, int n, RDF& rdF) {
-			while(--n >= 0)
-				a.insert(rdF(), rdF());
-		}
-		template <class K, class C, class RDF>
-		void AddRandom(AssocVec<K,C>& a, int n, RDF& rdF) {
-			while(--n >= 0)
-				a.insert(rdF());
-		}
-		template <class A, class RDR>
-		void RemRandom(A& a, int n, RDR& rdR) {
-			while(!a.empty() && --n >= 0) {
-				int idx = rdR(0, a.size()-1);
-				a.erase(idx);
-			}
-		}
-		template <class A>
-		void ChkSequence(const A& a, ...) {
-			using C = typename A::cmp_type;
-			C cmp;
-			auto val = a[0];
-			for(auto itr=a.cbegin() ; itr!=a.cend() ; itr++) {
-				ASSERT_FALSE(cmp(*itr, val));
-				val = *itr;
-			}
-		}
-		template <class A>
-		void ChkSequence(const A& a, decltype(std::declval<typename A::value_type>().first)* = nullptr) {
-			using C = typename A::cmp_type;
-			C cmp;
-			auto val = a.getKey(0);
-			for(auto itr=a.cbegin() ; itr!=a.cend() ; itr++) {
-				ASSERT_FALSE(cmp(itr->first, val));
-				val = itr->first;
-			}
-		}
 		template <class A, class RD>
 		void TestAssoc(RD& rd) {
 			A	asv;
@@ -52,11 +15,11 @@ namespace spn {
 			auto rdR = [&rd](int from, int to){ return rd.template getUniform<int>({from,to}); };
 
 			// 適当な数の要素を追加(最低1回)
-			AddRandom(asv, (rdF() & 0xf00) + 1, rdF);
+			AddRandom((rdF() & 0xf00) + 1, rdF, asv);
 			// 順番確認
 			ASSERT_NO_FATAL_FAILURE(ChkSequence(asv, nullptr));
 			// 適当なインデックスの要素を削除
-			RemRandom(asv, rdR(0, asv.size()-1), rdR);
+			RemRandom(rdR(0, asv.size()-1), rdR, asv);
 			ASSERT_NO_FATAL_FAILURE(ChkSequence(asv, nullptr));
 		}
 
@@ -81,7 +44,7 @@ namespace spn {
 
 			AssocVec<int, std::less<>> data;
 			// 適当な数の要素を追加(最低1回)
-			AddRandom(data, (rdF() & 0xf00) + 1, rdF);
+			AddRandom((rdF() & 0xf00) + 1, rdF, data);
 			CheckSerializedDataBin(data);
 		}
 		TEST_F(AssocVectorSerialize, WithKey) {
@@ -91,7 +54,7 @@ namespace spn {
 
 			AssocVecK<int, int, std::less<>> data;
 			// 適当な数の要素を追加(最低1回)
-			AddRandom(data, (rdF() & 0xf00) + 1, rdF);
+			AddRandom((rdF() & 0xf00) + 1, rdF, data);
 			CheckSerializedDataBin(data);
 		}
 	}

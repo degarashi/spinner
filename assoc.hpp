@@ -8,13 +8,13 @@
 namespace spn {
 	//! ソート済みベクタ
 	/*! 内部をソートされた状態に保つため要素の編集は不可 */
-	template <class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<T>>
-	class AssocVec : public boost::serialization::traits<AssocVec<T,Pred,CT,AL>,
+	template <class T, class Pred=std::less<>, class CT=std::vector<T>>
+	class AssocVec : public boost::serialization::traits<AssocVec<T,Pred,CT>,
 								boost::serialization::object_serializable,
 								boost::serialization::track_selectively>
 	{
 		private:
-			using Vec = CT<T, AL>;
+			using Vec = CT;
 			Vec		_vec;
 
 			friend class boost::serialization::access;
@@ -57,10 +57,10 @@ namespace spn {
 				while(itr!=itrE && pred(*itr, t))
 					++itr;
 				if(itr == itrE) {
-					_vec.emplace_back(std::forward<T>(t));
+					_vec.push_back(std::forward<T2>(t));
 					itr = _vec.end()-1;
 				} else
-					itr = _vec.emplace(itr, std::forward<T>(t));
+					itr = _vec.insert(itr, std::forward<T2>(t));
 				return itr - _vec.begin();
 			}
 			template <class... Ts>
@@ -126,19 +126,14 @@ namespace spn {
 	};
 	//! キー付きソート済みベクタ
 	/*! キーは固定のため、値の編集が可能 */
-	template <class K, class T, class Pred=std::less<>, template<class,class> class CT=std::vector, class AL=std::allocator<std::pair<K,T>>>
-	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst<Pred>, CT, AL> {
-		using Entry = std::pair<K,T>;
+	template <class K, class T, class Pred=std::less<>, class CT=std::vector<std::pair<K,T>>>
+	class AssocVecK : public AssocVec<std::pair<K,T>, CmpFirst<Pred>, CT> {
 		public:
 			using value_type = std::pair<K,T>;
+			using Entry = value_type;
 			using cmp_type = Pred;
-			using ASV = AssocVec<value_type, CmpFirst<Pred>, CT, AL>;
-			using typename ASV::AssocVec;
+			using ASV = AssocVec<value_type, CmpFirst<Pred>, CT>;
 
-			template <class K2, class T2>
-			int insert(K2&& k, T2&& t) {
-				return ASV::insert(Entry(std::forward<K2>(k), std::forward<T2>(t)));
-			}
 			T& back() {
 				const Entry& ent = const_cast<ASV*>(this)->back();
 				return const_cast<Entry&>(ent).second;
