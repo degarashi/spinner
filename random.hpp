@@ -12,10 +12,18 @@ namespace spn {
 			template <class T>
 			struct Dist_Int {
 				using uniform_t = std::uniform_int_distribution<T>;
+				static Range<T> GetNumericRange() {
+					using Lt = L<T>;
+					return {Lt::lowest(), Lt::max()};
+				}
 			};
 			template <class T>
 			struct Dist_Float  {
 				using uniform_t = std::uniform_real_distribution<T>;
+				static Range<T> GetNumericRange() {
+					using Lt = L<T>;
+					return {Lt::lowest()/2, Lt::max()/2};
+				}
 			};
 
 			template <class T, class=typename std::enable_if<std::is_integral<T>::value>::type>
@@ -30,13 +38,13 @@ namespace spn {
 			std::mt19937&	_mt;
 		public:
 			MTRandom(std::mt19937& mt): _mt(mt) {}
-			
+
 			//! 一様分布
 			/*! floating-pointの場合は0から1の乱数
 				integerの場合は範囲指定なしnumeric_limits<T>::min() -> max()の乱数 */
 			template <class T>
 			T getUniform() {
-				return getUniform<T>({L<T>::lowest(), L<T>::max()});
+				return getUniform<T>(GetDist<T>::GetNumericRange());
 			}
 			//! 指定範囲の一様分布(in range)
 			template <class T>
