@@ -204,6 +204,8 @@ namespace spn {
 		struct MoveOnly {
 			using move_type = T;
 			T	value;
+			template <class Ar>
+			void serialize(Ar& ar, const unsigned int) {}
 
 			MoveOnly(const T& v): value(v) {}
 			MoveOnly(T&& v): value(std::move(v)) {}
@@ -228,10 +230,24 @@ namespace spn {
 			bool operator == (const MoveOnly& m) const {
 				return getValue() == m.getValue();
 			}
+			bool operator != (const MoveOnly& m) const {
+				return !(this->operator == (m));
+			}
 			bool operator < (const MoveOnly& m) const {
 				return getValue() < m.getValue();
 			}
+			const T& get() const {
+				return value;
+			}
 		};
+		template <class T>
+		bool operator == (const T& value, const MoveOnly<T>& value1) noexcept { return value == value1.get(); }
+		template <class T>
+		bool operator == (const MoveOnly<T>& value, const T& value1) noexcept { return value.get() == value1; }
+		template <class T>
+		bool operator != (const T& value, const MoveOnly<T>& value1) noexcept { return value != value1.get(); }
+		template <class T>
+		bool operator != (const MoveOnly<T>& value, const T& value1) noexcept { return value.get() != value1; }
 
 		void PrintReg128(std::ostream& os, reg128 r);
 		namespace {
@@ -291,6 +307,20 @@ namespace spn {
 			)
 		>;
 		#undef MATRIX_TYPES
+	}
+}
+namespace boost {
+	namespace serialization {
+		template <class Ar, class T>
+		inline void load_construct_data(Ar& ar, spn::test::MoveOnly<T>* mv, const unsigned int) {
+			T value;
+			ar	& boost::serialization::make_nvp("value", value);
+			new(mv) spn::test::MoveOnly<T>(std::move(value));
+		}
+		template <class Ar, class T>
+		inline void save_construct_data(Ar& ar, const spn::test::MoveOnly<T>* mv, const unsigned int) {
+			ar	& boost::serialization::make_nvp("value", mv->value);
+		}
 	}
 }
 
