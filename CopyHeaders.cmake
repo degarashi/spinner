@@ -19,18 +19,28 @@ foreach(HEADER IN LISTS HEADERS)
 	endif()
 endforeach()
 list(REMOVE_DUPLICATES HEADERS_DIR)
-# ルートディレクトリ内のヘッダを出力
 # サブディレクトリ内のヘッダを出力
 foreach(DIRNAME IN LISTS HEADERS_DIR)
 	unset(HEADER_LIST)
 	foreach(HEADER IN LISTS HEADERS)
-		string(REGEX MATCH ".*/${COPYHEADERS_MY_DIR}/(${DIRNAME})/.*" DUMMY ${HEADER})
-		if(CMAKE_MATCH_1)
+		string(REGEX MATCH ".*/${COPYHEADERS_MY_DIR}/${DIRNAME}/.*" ISMATCHED ${HEADER})
+		if(ISMATCHED)
+			# サブディレクトリ内のファイルとして追加
 			list(APPEND HEADER_LIST ${HEADER})
-		else()
-			list(APPEND ROOTHEADER_LIST ${HEADER})
 		endif()
 	endforeach()
 	install(FILES ${HEADER_LIST} DESTINATION include/${COPYHEADERS_MY_DIR}/${DIRNAME})
 endforeach()
+# ルートディレクトリ内のヘッダを出力
+foreach(HEADER IN LISTS HEADERS)
+	unset(ROOTHEADER_LIST)
+	foreach(HEADER IN LISTS HEADERS)
+		string(REGEX MATCH ".*/${COPYHEADERS_MY_DIR}/[^/\\\\]+\\.hpp" ISMATCHED ${HEADER})
+		if(ISMATCHED)
+			# ルートディレクトリのファイルとして追加
+			list(APPEND ROOTHEADER_LIST ${HEADER})
+		endif()
+	endforeach()
+endforeach()
 install(FILES ${ROOTHEADER_LIST} DESTINATION include/${COPYHEADERS_MY_DIR})
+
