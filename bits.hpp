@@ -106,7 +106,7 @@ namespace spn {
 	 * 	\param LEN 処理対象ビット幅 */
 	template <class WORD, int OFS, int LEN>
 	class BitSub {
-		const static WORD MASKLOW = ((1 << LEN) - 1),
+		const static WORD MASKLOW = (WORD(1 << LEN) - 1),
 		MASK =  MASKLOW << OFS;
 		using Word = WORD;
 		Word&	_word;

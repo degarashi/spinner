@@ -287,7 +287,7 @@ namespace spn {
 
 			// ExpQuatを合成した結果をQuat合成のケースと比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-				using QT = typename This_t::QuatType;
+// 				using QT = typename This_t::QuatType;
 				auto q0 = this->genRandQ(),
 					q1 = this->genRandQ();
 				// 最短距離で補間するような細工
