@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include "argholder.hpp"
+#include "type.hpp"
 
 #ifdef ANDROID
 	#include <android/log.h>
@@ -44,7 +45,6 @@
 	#define AssertP(act, ...)
 	#define AssertTP(act, expr, throwtype, ...)
 #endif
-
 template <class... Ts>
 std::string ConcatMessage(boost::format& fmt, Ts&&... /*t*/) { return fmt.str(); }
 template <class T, class... Ts>
@@ -129,48 +129,93 @@ struct AAct_Trap : AAct_Throw<E,Ts...> {
 		base_type::onError(str);
 	}
 };
+
+#define SOURCEPOS ::spn::SourcePos{__FILE__, __PRETTY_FUNCTION__, __LINE__}
 namespace spn {
+	//! ソースコード上の位置を表す情報
+	struct SourcePos {
+		const char	*filename,
+					*funcname;
+		int			line;
+	};
 	template <class Act, class Chk, class... Ts>
-	void CheckError(Act&& act, Chk&& chk, const char* filename, const char* funcname, int line, Ts&&... ts) {
+	void EChk(Act&& act, Chk&& chk, const SourcePos& pos, Ts&&... ts) {
 		const char* msg = chk.errorDesc(std::forward<Ts>(ts)...);
 		if(msg)
-			act.onError(MakeAssertMsg(chk.getAPIName(), filename, funcname, line, msg));
+			act.onError(MakeAssertMsg(chk.getAPIName(), pos.filename, pos.funcname, pos.line, msg));
 	}
-	template <class Act, class Chk>
-	struct ErrorChecker {
-		Act			_act;
-		Chk			_chk;
-		int			_line;
-		const char	*_filename, *_fname;
-		ErrorChecker(Act&& act, Chk&& chk, const char* filename, const char* fname, int line): _act(std::move(act)), _chk(std::move(chk)), _line(line), _filename(filename), _fname(fname) {
+	namespace detail {
+		template <class RT, class Act, class Chk, class Func, class... TsA>
+		RT EChk_base(std::false_type, Act&& act, Chk&& chk, const SourcePos& pos, const Func& func, TsA&&... ts) {
 			chk.reset();
+			auto res = func(std::forward<TsA>(ts)...);
+			EChk(std::forward<Act>(act), std::forward<Chk>(chk), pos);
+			return std::move(res);
 		}
-		~ErrorChecker() {
-			CheckError(_act, _chk, _filename, _fname, _line);
+		template <class RT, class Act, class Chk, class Func, class... TsA>
+		void EChk_base(std::true_type, Act&& act, Chk&& chk, const SourcePos& pos, const Func& func, TsA&&... ts) {
+			func(std::forward<TsA>(ts)...);
+			EChk(std::forward<Act>(act), std::forward<Chk>(chk), pos);
 		}
-	};
+
+		template <class T, class Func>
+		struct NoneT_cnv {
+			using type = T;
+		};
+		template <class Func>
+		struct NoneT_cnv<spn::none_t, Func> {
+			using type = ResultOf_t<Func>;
+		};
+	}
+
+	//! エラーチェック & アサート(APIがエラーを記憶しているタイプ)
+	template <class RT, class Act, class Chk, class Func, class... Ts>
+	auto EChk_memory(Act&& act, Chk&& chk, const SourcePos& pos, const Func& func, Ts&&... ts) {
+		// 戻り値がvoidかそれ以外かで分岐
+		using rt_t = typename detail::NoneT_cnv<RT, Func>::type;
+		return detail::EChk_base<rt_t>(typename std::is_same<void, rt_t>::type(),
+									std::forward<Act>(act),
+									std::forward<Chk>(chk),
+									pos, func, std::forward<Ts>(ts)...);
+	}
+	//! エラーチェック & アサート(APIがエラーコードを返すタイプ)
 	template <class Act, class Chk, class Func, class... TsA>
-	auto EChk_base(Act&& act, Chk&& chk, const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-		ErrorChecker<typename std::decay<Act>::type, typename std::decay<Chk>::type> chker(std::forward<Act>(act), std::forward<Chk>(chk), filename, fname, line);
-		return func(std::forward<TsA>(ts)...);
+	auto EChk_code(Act&& act, Chk&& chk, const SourcePos& pos, const Func& func, TsA&&... ts) {
+		auto code = func(std::forward<TsA>(ts)...);
+		EChk(std::forward<Act>(act),
+					std::forward<Chk>(chk),
+					pos,
+					code);
+		return code;
 	}
-	template <class Act, class Chk>
-	void EChk_base(Act&& act, Chk&& chk, const char* filename, const char* fname, int line) {
-		ErrorChecker<typename std::decay<Act>::type, typename std::decay<Chk>::type> chker(std::forward<Act>(act), std::forward<Chk>(chk), filename, fname, line);
+	//! エラーチェック & アサート(予め取得した結果コードを入力)
+	template <class Act, class Chk, class CODE>
+	CODE EChk_usercode(Act&& act, Chk&& chk, const SourcePos& pos, const CODE& code) {
+		EChk(std::forward<Act>(act),
+					std::forward<Chk>(chk),
+					pos, code);
+		return code;
 	}
-	template <class Func, class... TsA>
-	auto EChk_pass(const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-		return func(std::forward<TsA>(ts)...);
-	}
-	template <class Act, class Chk, class Func, class... TsA>
-	auto EChk_baseA1(Act&& act, Chk&& chk, const char* filename, const char* fname, int line, const Func& func, TsA&&... ts) -> decltype(func(std::forward<TsA>(ts)...)) {
-		auto val = func(std::forward<TsA>(ts)...);
-		CheckError(std::forward<Act>(act), std::forward<Chk>(chk), filename, fname, line, val);
-		return val;
-	}
-	template <class Act, class Chk, class RES>
-	RES EChk_baseA2(Act&& act, Chk&& chk, const char* filename, const char* fname, int line, const RES& res) {
-		CheckError(std::forward<Act>(act), std::forward<Chk>(chk), filename, fname, line, res);
-		return res;
-	}
+	#define EChk_memory_a		EChk_memory
+	#define EChk_code_a			EChk_code
+	#define EChk_usercode_a		EChk_usercode
+	#define EChk_a				EChk
+	#ifdef DEBUG
+		#define EChk_memory_d		EChk_memory
+		#define EChk_code_d			EChk_code
+		#define EChk_usercode_d		EChk_usercode
+		#define EChk_d				EChk
+	#else
+		#define EChk_d(...)
+		// ----- エラーチェック無し(非デバッグモード時) -----
+		template <class Act, class Chk, class Func, class... Ts>
+		auto EChk_memory_d(Act&&, Chk&&, const SourcePos&, const Func& func, Ts&&... ts) {
+			return func(std::forward<Ts>(ts)...);
+		}
+		auto EChk_code_d(Ts&&... ts) {
+			return EChk_memory_d(std::forward<Ts>(ts)...);
+		}
+		template <class Act, class Chk, class CODE>
+		CODE EChk_usercode_d(Act&&, Chk&&, const SourcePos&, const CODE& code) { return code; }
+	#endif
 }

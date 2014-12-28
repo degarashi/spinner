@@ -1,8 +1,27 @@
 #pragma once
 #include <tuple>
 #include "common.hpp"
+#include "check_macro.hpp"
 
+DEF_HASTYPE_T(type)
 namespace spn {
+	//! std::result_ofの関数対応版
+	/*! result_ofのシグニチャと意味が紛らわしいが、気にしない */
+	template <class, class>
+	struct _ResultOf;
+	template <class RT, class... Ts>
+	struct _ResultOf<RT (Ts...), std::false_type> { using type = RT; };
+	template <class RT, class... Ts>
+	struct _ResultOf<RT (&)(Ts...), std::false_type> { using type = RT; };
+	template <class RT, class... Ts>
+	struct _ResultOf<RT (*)(Ts...), std::false_type> { using type = RT; };
+	template <class T>
+	struct _ResultOf<T, std::true_type> : std::result_of<T> {};
+	template <class T>
+	struct ResultOf : _ResultOf<T, HasTypeT_type_t<std::result_of<T>>> {};
+	template <class T>
+	using ResultOf_t = typename ResultOf<T>::type;
+
 	//! bool値による型の選択
 	template <int N, class T, class F>
 	struct SelectType {

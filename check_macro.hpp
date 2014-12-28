@@ -32,7 +32,7 @@
 	std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value> CheckMethod_##name() { \
 		return std::integral_constant<bool, !std::is_same<::spn::none_t, decltype(std::declval<T>().method(::spn::ReturnT<Args>()...))>::value>(); }
 
-//! 特定の型又は定数値を持っているかチェック
+//! クラスが特定の名前の定数値を持っているかチェック
 /*! DEF_HASTYPE(type_name)
 	HasType_type_name<class_name>(nullptr) -> std::true_type or std::false_type */
 #define DEF_HASTYPE(name) \
@@ -42,4 +42,16 @@
 	std::false_type HasType_##name(...) { return std::false_type(); } \
 	template <class T> \
 	using HasType_##name##_t = decltype(HasType_##name<T>(nullptr));
+
+//! クラスが特定の名前のtype aliasを持っているかチェック
+/*! DEF_HASTYPE_T(type_name)
+	HasTypeT_type_name<class_name>(nullptr) -> std::true_type or std::false_type */
+#define DEF_HASTYPE_T(name) \
+	template <class T> \
+	std::true_type HasTypeT_##name(typename T::type*) { return std::true_type(); } \
+	template <class T> \
+	std::false_type HasTypeT_##name(...) { return std::false_type(); } \
+	template <class T> \
+	using HasTypeT_##name##_t = decltype(HasTypeT_##name<T>(nullptr));
+
 
