@@ -12,3 +12,9 @@ void Dummy_ErrMsg() {
 void LogOutput(const std::string& s) {
 	g_logOut(s);
 }
+void LogOutput(const ::spn::SourcePos& pos, const std::string& msg) {
+	boost::format str("at %1% [%2%]:%3%\t%4%");
+	ConcatMessage(str, pos.filename, pos.funcname_short, pos.line, msg.c_str());
+	LogOutput(str.str());
+}
+

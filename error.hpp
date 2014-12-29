@@ -130,12 +130,13 @@ struct AAct_Trap : AAct_Throw<E,Ts...> {
 	}
 };
 
-#define SOURCEPOS ::spn::SourcePos{__FILE__, __PRETTY_FUNCTION__, __LINE__}
+#define SOURCEPOS ::spn::SourcePos{__FILE__, __PRETTY_FUNCTION__, __func__, __LINE__}
 namespace spn {
 	//! ソースコード上の位置を表す情報
 	struct SourcePos {
 		const char	*filename,
-					*funcname;
+					*funcname,
+					*funcname_short;
 		int			line;
 	};
 	template <class Act, class Chk, class... Ts>
@@ -219,3 +220,15 @@ namespace spn {
 		CODE EChk_usercode_d(Act&&, Chk&&, const SourcePos&, const CODE& code) { return code; }
 	#endif
 }
+
+// ---- ログ出力 ----
+#define PrintLog			LogOutput(SOURCEPOS, "")
+#define PrintLogMsg(...)	LogOutput(SOURCEPOS, __VA_ARGS__)
+void LogOutput(const ::spn::SourcePos& pos, const std::string& msg);
+template <class... Ts>
+void LogOutput(const ::spn::SourcePos& pos, const std::string& msg, Ts&&... ts) {
+	boost::format str(msg);
+	ConcatMessage(str, std::forward<Ts>(ts)...);
+	LogOutput(pos, str.str());
+}
+
