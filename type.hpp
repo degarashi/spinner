@@ -42,6 +42,31 @@ namespace spn {
 		using type = T<I>;
 	};
 
+	namespace detail {
+		template <class T>
+		T dereference_ptr(...);
+		template <class T>
+		auto dereference_ptr(typename std::remove_reference<decltype(*std::declval<T>())>::type* = nullptr)
+			-> typename std::remove_reference<decltype(*std::declval<T>())>::type;
+
+		template <class T>
+		auto dereference(T& t, typename std::decay<decltype(*std::declval<T>())>::type*) -> decltype(*std::declval<T>()) {
+			return *t;
+		}
+		template <class T>
+		T& dereference(T& t, ...) {
+			return t;
+		}
+	}
+	//! *で参照出来る型を取り出す
+	template <class T>
+	using dereference_ptr_t = decltype(detail::dereference_ptr<T>(nullptr));
+	//! *で参照出来る値を取り出す (参照できない場合はそのまま)
+	template <class T>
+	auto dereference(T& t) -> decltype(detail::dereference(t, nullptr)) {
+		return detail::dereference(t, nullptr);
+	}
+
 	//! 型変換判定
 	template <class T, class U>
 	class Conversion {
