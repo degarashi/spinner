@@ -405,6 +405,7 @@ namespace spn {
 				_wh_this = sh.weak();
 			}
 		public:
+			using EnableFromThis_Tag = int;
 			template <class MGR, class DATA, bool D>
 			void handleFromThis(HdlLock<SHandleT<MGR,DATA>,D>& dst) const {
 				auto wh = WHandleT<MGR,DATA>::FromWHandle(_wh_this);
@@ -774,6 +775,7 @@ namespace spn {
 
 			template <class DAT2>
 			LHdl _acquire(DAT2&& d) {
+				decltype(auto) dat = spn::dereference(d);
 				AssertP(Trap, _checkValidAccess(), "creating resource is invalid operation while serialize")
 				++_wMagicIndex;
 				_wMagicIndex &= WHandle::Value::length_mask<WHandle::Value::MAGIC>();
@@ -787,27 +789,16 @@ namespace spn {
 					SHdl sh(id, _resID);
 				#endif
 				// EnableFromThisを継承したクラスの場合はここでハンドルをセットする
-				_setFromThis<data_type>(sh, nullptr);
+				_setFromThis(sh, dat, 0);
 				return LHdl(sh);
 			}
 			//! EnableFromThisを継承しているか
-			template <class A>
-			using HasEFT = typename std::enable_if<
-								std::is_base_of<
-									EnableFromThis,
-									typename std::decay<A>::type
-								>::value
-							>::type*&;
-			template <class D, HasEFT<D> = Enabler>
-			void _setFromThis(SHdl sh, void*) {
-				sh.ref()._setResourceHandle(sh);
-			}
-			template <class D, HasEFT<decltype(*std::declval<D>())> = Enabler>
-			void _setFromThis(SHdl sh, void*) {
-				sh.ref()->_setResourceHandle(sh);
+			template <class D>
+			void _setFromThis(SHdl sh, D& d, typename dereference_ptr_t<D>::EnableFromThis_Tag) {
+				dereference(d)._setResourceHandle(sh);
 			}
 			template <class D>
-			void _setFromThis(SHdl /*sh*/, ...) {}
+			void _setFromThis(SHdl, D&, ...) {}
 		public:
 			const MergeType& asMergeType() const {
 				s_merge._ths = this;
@@ -962,11 +953,11 @@ namespace spn {
 
 		protected:
 			//! 継承先クラスにて内部データ型をダウンキャストする際に使用
-			template <class NDATA, template<class,class> class Handle, class DATA>
+			template <class NDATA, class DATA>
 			static AnotherSHandle<NDATA> Cast(AnotherSHandle<DATA>&& h) {
 				// Handleのprivateなコンストラクタを経由して変換
 				return AnotherSHandle<NDATA>(std::move(h)); }
-			template <class NDATA, template<class,class> class Handle, class DATA>
+			template <class NDATA, class DATA>
 			static AnotherSHandle<NDATA> Cast(const AnotherSHandle<DATA>& h) {
 				return AnotherSHandle<NDATA>(h); }
 
