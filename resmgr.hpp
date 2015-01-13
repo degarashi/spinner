@@ -241,6 +241,8 @@ namespace spn {
 		using base = HdlLockB<HDL, DIRECT>;
 		using data_type = typename HDL::data_type;
 		friend typename HDL::mgr_type;
+		friend typename HDL::WHdl;
+		friend HDL;
 		private:
 			//! 参照インクリメント(down convert)
 			template <class DATA, bool D, class = DOWNCONV, class = SAMETYPE>
@@ -396,21 +398,26 @@ namespace spn {
 			bool isHandleValid() const { return MGR::_ref().isHandleValid(*this); }
 	};
 	//! shared_ptrで言うenable_shared_from_thisの、リソースマネージャ版
+	template <class SH>
 	class EnableFromThis {
+		using sh_t = SH;
+		using mgr_t = typename sh_t::mgr_type;
+		using data_t = typename sh_t::data_type;
+		using wh_t = WHandleT<mgr_t, data_t>;
+		using lh_t = HdlLock<sh_t, true>;
 		template <class DATA, class DERIVED, template <class> class Allocator>
 		friend class ResMgrA;
 		private:
-			WHandle	_wh_this;
-			void _setResourceHandle(SHandle sh) {
+			wh_t	_wh_this;
+			void _setResourceHandle(sh_t sh) {
 				_wh_this = sh.weak();
 			}
 		public:
 			using EnableFromThis_Tag = int;
-			template <class MGR, class DATA, bool D>
-			void handleFromThis(HdlLock<SHandleT<MGR,DATA>,D>& dst) const {
-				auto wh = WHandleT<MGR,DATA>::FromWHandle(_wh_this);
-				dst = wh.lock();
-				AssertP(Trap, dst.valid())
+			lh_t handleFromThis() const {
+				lh_t ret(_wh_this.lock());
+				AssertP(Trap, ret.valid())
+				return std::move(ret);
 			}
 	};
 
