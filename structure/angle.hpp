@@ -105,10 +105,10 @@ namespace spn {
 			}
 			//! 角度をループ(0から2Piの間に収める)
 			void single() {
-				float sign = (_angle > 0) ? 1 : -1;
-				_angle *= sign;
-				_angle = std::fmod(_angle, Oneloop);
-				_angle *= sign;
+				auto ang = std::fmod(_angle, Oneloop);
+				if(ang < 0)
+					ang += Oneloop;
+				_angle = ang;
 			}
 			void rangeValue(V low, V high) {
 				if(_angle < low)

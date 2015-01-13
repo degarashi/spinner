@@ -558,14 +558,16 @@ namespace spn {
 			auto angle = this->_rdF();
 			Degree<TypeParam> degf(angle);
 			for(int i=0 ; i<N_Iterations ; i++) {
-				degf.single();
+				auto tmp_degf = degf;
 				{
+					tmp_degf.single();
+
 					auto val = angle;
 					while(val > oneloop)
 						val -= oneloop;
 					while(val < 0)
 						val += oneloop;
-					EXPECT_TRUE(EqULPs(degf.get(), val, ThULPs));
+					EXPECT_TRUE(EqULPs(tmp_degf.get(), val, ThULPs));
 				}
 
 				auto a = this->_rdF();
