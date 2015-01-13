@@ -236,6 +236,9 @@ namespace spn {
 			bool operator < (const MoveOnly& m) const {
 				return getValue() < m.getValue();
 			}
+			bool operator > (const MoveOnly& m) const {
+				return getValue() > m.getValue();
+			}
 			const T& get() const {
 				return value;
 			}
@@ -248,6 +251,10 @@ namespace spn {
 		bool operator != (const T& value, const MoveOnly<T>& value1) noexcept { return value != value1.get(); }
 		template <class T>
 		bool operator != (const MoveOnly<T>& value, const T& value1) noexcept { return value.get() != value1; }
+		template <class T>
+		std::ostream& operator << (std::ostream& os, const MoveOnly<T>& value) {
+			return os << value.getValue();
+		}
 
 		void PrintReg128(std::ostream& os, reg128 r);
 		namespace {
