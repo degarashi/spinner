@@ -36,6 +36,28 @@ namespace spn {
 			TestAssoc<AssocVecK<int,int,TypeParam>>(rd);
 		}
 
+		template <class T>
+		using AssocVectorModify = AssocVectorSequence<T>;
+		TYPED_TEST_CASE(AssocVectorModify, AssocT);
+		TYPED_TEST(AssocVectorModify, WithoutKey) {
+			auto rd = this->getRand();
+			auto rdF = [&rd](){ return rd.template getUniformMin<int>(0); };
+			AssocVec<int, TypeParam> asv;
+			// 適当な数の要素を追加
+			AddRandom(rdF() % 0xf00, rdF, asv);
+			// 何箇所か適当に値を改変
+			int n = rdF() % 0x10;
+			auto* ptr = const_cast<int*>(&asv.front());
+			while(n-- != 0) {
+				int pos = rdF() % asv.size();
+				ptr[pos] ^= 0xf0f0f0f0;
+			}
+			// 再度ソートをかける
+			asv.re_sort();
+			// 順番確認
+			ASSERT_NO_FATAL_FAILURE(ChkSequence(asv, nullptr));
+		}
+
 		using AssocVectorSerialize = RandomTestInitializer;
 		TEST_F(AssocVectorSerialize, WithoutKey) {
 			// ランダムなデータ列を作る

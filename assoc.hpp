@@ -4,10 +4,12 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/vector.hpp>
 #include "serialization/traits.hpp"
+#include "sort.hpp"
 
 namespace spn {
 	//! ソート済みベクタ
-	/*! 内部をソートされた状態に保つため要素の編集は不可 */
+	/*! 内部をソートされた状態に保つため要素の編集は基本的に不可
+		もし要素を編集した場合は必ずre_sort()を呼ぶ */
 	template <class T, class Pred=std::less<>, class CT=std::vector<T>>
 	class AssocVec : public boost::serialization::traits<AssocVec<T,Pred,CT>,
 								boost::serialization::object_serializable,
@@ -66,6 +68,11 @@ namespace spn {
 			template <class... Ts>
 			int emplace(Ts&&... ts) {
 				return insert(value_type(std::forward<Ts>(ts)...));
+			}
+			//! 外部から要素の書き換えを行った際にソートし直す
+			void re_sort() {
+				// 前回と大体同じような並び順になっている事を想定し、単純挿入ソート
+				insertion_sort(_vec.begin(), _vec.end(), Pred());
 			}
 
 			void pop_front() {
