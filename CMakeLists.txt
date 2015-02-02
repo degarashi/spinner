@@ -5,7 +5,7 @@ project(spinner)
 # MinGW: BUILD_TYPE = MinGW
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
 message(STATUS ${BUILD_TYPE})
-include("${BUILD_TYPE}.cmake" require)
+include("crosscompile/${BUILD_TYPE}.cmake" require)
 
 # OS依存ファイルの設定
 if(${WIN32})
@@ -25,7 +25,7 @@ file(GLOB_RECURSE HEADERS "*.hpp")
 
 set(COPYHEADERS_EXCLUDE_DIR "tests")
 set(COPYHEADERS_MY_DIR "spinner")
-include(CopyHeaders.cmake require)
+include(crosscompile/CopyHeaders.cmake require)
 
 message(STATUS "CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 message(STATUS "CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")

@@ -1,0 +1,3 @@
+[submodule "crosscompile"]
+	path = crosscompile
+	url = ../crosscompile/
