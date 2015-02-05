@@ -1059,7 +1059,7 @@ namespace spn {
 				if(itr != _nameMap.end())
 					return std::make_pair(LHdl(itr->second), false);
 
-				auto lh = cb();
+				auto lh = cb(static_cast<const key_t&>(key));
 				itr = _nameMap.emplace(std::move(key), lh.get()).first;
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &(itr->first);
@@ -1100,7 +1100,7 @@ namespace spn {
 			 *			新たにエントリが作成されたらtrue, 既存のキーが使われたらfalse] */
 			template <class KEY2, class CB>
 			std::pair<LHdl,bool> acquire(KEY2&& key, CB&& cb) {
-				auto fn = [&](){ return base_type::acquire(std::forward<CB>(cb)()); };
+				auto fn = [&](const auto& key){ return base_type::acquire(std::forward<CB>(cb)(key)); };
 				return _acquire(key_t(std::forward<KEY2>(key)), fn);
 			}
 			//! キーを指定してハンドルを取得
