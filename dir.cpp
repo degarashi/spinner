@@ -284,7 +284,7 @@ namespace spn {
 			_type = m.str(1);
 			PathBlock::setPath(path.substr(m[0].length()));
 		} else
-			PathBlock::setPath(p);
+			PathBlock::setPath(std::move(path));
 	}
 	const std::string& URI::getType_utf8() const {
 		return _type;
