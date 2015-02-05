@@ -310,4 +310,11 @@ namespace spn {
 		ret.append(plain_utf32());
 		return std::move(ret);
 	}
+	bool URI::operator == (const URI& u) const {
+		return _type == u._type
+				&& static_cast<const PathBlock&>(*this) == u;
+	}
+	bool URI::operator != (const URI& u) const {
+		return !(this->operator == (u));
+	}
 }

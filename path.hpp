@@ -184,6 +184,8 @@ namespace spn {
 
 			URI& operator = (const URI&) = default;
 			URI& operator = (URI&& u);
+			bool operator == (const URI& u) const;
+			bool operator != (const URI& u) const;
 
 			void setPath(To8Str p);
 			const std::string& getType_utf8() const;
@@ -244,5 +246,19 @@ namespace spn {
 		FStatus(uint32_t flag);
 		bool operator == (const FStatus& fs) const;
 		bool operator != (const FStatus& fs) const;
+	};
+}
+namespace std {
+	template <>
+	struct hash<spn::PathBlock> {
+		std::size_t operator()(const spn::PathBlock& pb) const {
+			return std::hash<std::u32string>()(pb.plain_utf32());
+		}
+	};
+	template <>
+	struct hash<spn::URI> {
+		std::size_t operator()(const spn::URI& uri) const {
+			return std::hash<std::u32string>()(uri.plain_utf32());
+		}
 	};
 }
