@@ -1017,27 +1017,24 @@ namespace spn {
 				\return			新たに作成されたリソースハンドル
 			*/
 			template <class CB>
-			LHdl _replace(key_t&& key, CB cb) {
-				if(!_modifyResourceName(key)) {
-					// リソース名が不正
-					return LHdl();
-				}
-				auto itr = _nameMap.find(key);
+			LHdl _replace(key_t&& key, CB&& cb) {
+				auto key_c = _modifyResourceName(key);
+				auto itr = _nameMap.find(key_c);
 				if(itr != _nameMap.end()) {
 					// 古いリソースは名前との関連付けを外す
 					SHdl h = itr->second;
 					base_type::_refSH(h).data.stp = nullptr;
 					// 古いハンドルの所有権は外部が持っているのでここでは何もしない
 
-					auto lh = cb();
+					auto lh = std::forward<CB>(cb)(std::move(key));
 					itr->second = lh.get();
 					base_type::_refSH(lh.get()).data.stp = &(itr->first);
 					// 名前ポインタはそのまま流用
 					return std::move(lh);
 				}
 				// エントリの新規作成
-				auto lh = cb();
-				itr = _nameMap.insert(std::make_pair(std::move(key), lh.get())).first;
+				auto lh = std::forward<CB>(cb)(std::move(key));
+				itr = _nameMap.insert(std::make_pair(std::move(key_c), lh.get())).first;
 				// 名前登録
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &itr->first;
@@ -1049,26 +1046,23 @@ namespace spn {
 				\return			(リソースハンドル, 新規作成フラグ)
 			*/
 			template <class CB>
-			std::pair<LHdl,bool> _acquire(key_t&& key, CB cb) {
-				if(!_modifyResourceName(key)) {
-					// リソース名が不正
-					return std::make_pair(LHdl(), false);
-				}
+			std::pair<LHdl,bool> _acquire(key_t&& key, CB&& cb) {
+				auto key_c = _modifyResourceName(key);
 				// 既に同じ名前が登録されていたら既存のハンドルを返す
-				auto itr = _nameMap.find(key);
+				auto itr = _nameMap.find(key_c);
 				if(itr != _nameMap.end())
 					return std::make_pair(LHdl(itr->second), false);
 
-				auto lh = cb(static_cast<const key_t&>(key));
-				itr = _nameMap.emplace(std::move(key), lh.get()).first;
+				auto lh = std::forward<CB>(cb)(std::move(key));
+				itr = _nameMap.emplace(std::move(key_c), lh.get()).first;
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &(itr->first);
 				return std::make_pair(std::move(lh), true);
 			}
 			//! リソース名修正関数
 			/*! 必要に応じてリソース名の加工を行う。
-				不正なリソース名などでエラーが発生した場合はfalseを返す */
-			virtual bool _modifyResourceName(key_t& key) const { return true; }
+				戻り値がキーとして使用され、引数はコールバック関数へ渡される */
+			virtual key_t _modifyResourceName(key_t& key) const { return key; }
 
 			BOOST_SERIALIZATION_SPLIT_MEMBER();
 			friend boost::serialization::access;
