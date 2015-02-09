@@ -74,12 +74,8 @@ namespace spn {
 		if(count > 0)
 			cb(count);
 	}
-	const char32_t PathBlock::SC(U'/'),
-					PathBlock::DOT(U'.'),
-					PathBlock::EOS(U'\0'),
-					PathBlock::CLN(U':');
 	bool PathBlock::_IsSC(char32_t c) {
-		return c==U'\\' || c==SC;
+		return c==U'\\' || c==detail::CharConst<char32_t>::SC;
 	}
 	void PathBlock::setPath(To32Str elem) {
 		int len = elem.getLength();
@@ -96,7 +92,7 @@ namespace spn {
 
 			_path.assign(ptr, ptrE);
 			_segment.clear();
-			_ReWriteSC(_path.begin(), _path.end(), SC, [this](int n){ _segment.push_back(n); });
+			_ReWriteSC(_path.begin(), _path.end(), detail::CharConst<char32_t>::SC, [this](int n){ _segment.push_back(n); });
 		} else
 			clear();
 	}
@@ -120,6 +116,7 @@ namespace spn {
 			else {
 				src += res->nread;
 
+				constexpr auto SC = detail::CharConst<char32_t>::SC;
 				if(!_path.empty())
 					_path.push_back(SC);
 				_path.insert(_path.end(), src, srcE);
@@ -128,6 +125,7 @@ namespace spn {
 		}
 	}
 	void PathBlock::pushBack(const PathBlock& p) {
+		constexpr auto SC = detail::CharConst<char32_t>::SC;
 		if(p.isAbsolute())
 			this->operator = (p);
 		else {
@@ -195,6 +193,7 @@ namespace spn {
 					_driveLetter = Text::UTF32To8(*res->driveLetter).code;
 				src += res->nread;
 
+				constexpr auto SC = detail::CharConst<char32_t>::SC;
 				if(src != srcE) {
 					_path.push_front(SC);
 					_path.insert(_path.begin(), src, srcE);
@@ -209,6 +208,7 @@ namespace spn {
 		if(isAbsolute())
 			this->operator = (p);
 		else {
+			constexpr auto SC = detail::CharConst<char32_t>::SC;
 			_path.push_front(SC);
 			_path.insert(_path.begin(), p._path.begin(), p._path.end());
 			_segment.insert(_segment.begin(), p._segment.begin(), p._segment.end());
@@ -250,9 +250,9 @@ namespace spn {
 			#ifdef WIN32
 				Assert(Throw, static_cast<bool>(_driveLetter))
 				dst += *_driveLetter;
-				dst += CLN;
+				dst += u32::CLN;
 			#endif
-			dst += SC;
+			dst += detail::CharConst<char32_t>::SC;
 		}
 	}
 	std::u32string PathBlock::getHeader_utf32() const {
@@ -302,7 +302,7 @@ namespace spn {
 
 				s.append(_path.begin() + ofs_b,
 						 _path.begin() + ofs_e);
-				if(!s.empty() && s.back()==SC)
+				if(!s.empty() && s.back()==detail::CharConst<char32_t>::SC)
 					s.pop_back();
 			}
 		}
@@ -332,6 +332,8 @@ namespace spn {
 			bool bFound = false;
 			for(;;) {
 				auto c = *str++;
+				constexpr auto EOS = detail::CharConst<char32_t>::EOS,
+							DOT = detail::CharConst<char32_t>::DOT;
 				if(c == EOS) {
 					if(bFound) {
 						tc[wcur] = EOS;
@@ -352,40 +354,44 @@ namespace spn {
 		}
 		return std::move(rt);
 	}
-	int PathBlock::getExtNum() const {
+	Int_OP PathBlock::getExtNum() const {
 		if(segments() > 0) {
 			auto ts = getLast_utf8();
-			return _ExtGetNum(ts);
+			return ExtGetNum(ts);
 		}
-		return -1;
+		return spn::none;
 	}
-	int PathBlock::_ExtGetNum(const std::string& ext) {
-		const auto* str = ext.c_str();
-		for(;;) {
-			auto c = *str++;
-			if(std::isdigit(c)) {
-				// 数字部分を取り出す
-				return std::atol(str-1);
-			} else if(c == '\0')
-				break;
-		}
-		return 0;
-	}
-	int PathBlock::addExtNum(int n) {
+	void PathBlock::setExtNum(const CBStringNum& cb) {
 		if(segments() > 0) {
-			auto ts = getExtension(false);
-			n = _ExtIncNum(ts, n);
+			auto ts = getLast_utf8();
+			ExtSetNum(ts, cb);
 			setExtension(std::move(ts));
-			return n;
 		}
-		return -1;
 	}
+	Int_OP PathBlock::getPathNum() const {
+		if(segments() > 0) {
+			auto ts = getLast_utf8();
+			return PathGetNum(ts);
+		}
+		return spn::none;
+	}
+	void PathBlock::setPathNum(const CBStringNum& cb) {
+		if(segments() > 0) {
+			auto ts = getLast_utf8();
+			PathSetNum(ts, cb);
+			popBack();
+			pushBack(std::move(ts));
+		}
+	}
+
 	void PathBlock::setExtension(To32Str ext) {
 		if(segments() > 0) {
 			auto ts = getLast_utf32();
 			const auto* str = ts.c_str();
 			int rcur = 0;
-			while(str[rcur]!=EOS && str[rcur++]!=DOT);
+			constexpr auto EOS = detail::CharConst<char32_t>::EOS,
+						DOT = detail::CharConst<char32_t>::DOT;
+			while(str[rcur]!=EOS && str[rcur++] != DOT);
 			if(str[rcur] == EOS) {
 				// 拡張子を持っていない
 				ts += DOT;
@@ -398,26 +404,84 @@ namespace spn {
 			pushBack(std::move(ts));
 		}
 	}
-	int PathBlock::_ExtIncNum(std::string& ext, int n) {
-		int rcur = 0;
-		char tc[32] = {};
-		const auto* str = ext.c_str();
-		for(;;) {
-			auto c = str[rcur];
-			if(std::isdigit(c)) {
-				// 数字部分を取り出す
-				n += std::atol(str+rcur);
-				ext.resize(rcur);
-				std::sprintf(tc, "%d", n);
-				ext += tc;
-				return n;
-			} else if(c == '\0')
-				break;
-			++rcur;
+	PathBlock::CItr_OP PathBlock::_StringGetPos(CItr itrB, CItr itrE, const ChkStringPos& chk) {
+		auto itr = itrE;
+		while(itr != itrB) {
+			if(!chk(--itr))
+				return itr;
 		}
-		std::sprintf(tc, "%d", n);
-		ext += tc;
-		return n;
+		return spn::none;
+	}
+	PathBlock::CItr_OP PathBlock::_StringGetExtPos(CItr itrB, CItr itrE) {
+		auto fnChkDot = [](CItr itr){ return *itr != detail::CharConst<char>::DOT; };
+		auto itr_op = _StringGetPos(itrB, itrE, fnChkDot);
+		if(itr_op)
+			return ++(*itr_op);
+		return spn::none;
+	}
+	PathBlock::CItr_OP PathBlock::_StringGetNumPos(CItr itrB, CItr itrE) {
+		auto fnChkNum = [](CItr itr) { return std::isdigit(*itr); };
+		auto itr_op = _StringGetPos(itrB, itrE, fnChkNum);
+		if(itr_op)
+			return ++(*itr_op);
+		return itrB;
+	}
+	Int_OP PathBlock::_StringGetNum(CItr itrB, CItr itrE) {
+		if(auto itr_op = _StringGetNumPos(itrB, itrE))
+			return _StringToNum(*itr_op, itrE);
+		return spn::none;
+	}
+	Int_OP PathBlock::_StringToNum(CItr itrB, CItr itrE) {
+		if(itrB == itrE)
+			return spn::none;
+		return std::stoi(std::string(itrB, itrE));
+	}
+
+	void PathBlock::_StringSetNum(std::string& str, int beg_pos, int end_pos, const CBStringNum& cb) {
+		auto itrB = str.cbegin() + beg_pos;
+		auto itrE = str.cbegin() + end_pos;
+		auto itr_op = _StringGetNumPos(itrB, itrE);
+		auto itrB2 = itr_op ? *itr_op : itrE;
+		std::string result(str.cbegin(), itrB2);
+
+		Int_OP prevNum = _StringGetNum(itrB2, itrE);
+		if(auto num = cb(prevNum))
+			result += std::to_string(*num);
+		result.append(itrE, str.cend());
+
+		std::swap(str, result);
+	}
+	void PathBlock::ExtSetNum(std::string& path, const CBStringNum& cb) {
+		auto itr_op = _StringGetExtPos(path.cbegin(), path.cend());
+		// 拡張子を持っていない時は何もしない
+		if(!itr_op)
+			return;
+
+		// Dot〜文字列の最後までが対象
+		_StringSetNum(path, *itr_op - path.cbegin(), path.size(), cb);
+	}
+	void PathBlock::PathSetNum(std::string& path, const CBStringNum& cb) {
+		auto itr_op = _StringGetExtPos(path.cbegin(), path.cend());
+		CItr itr = itr_op ? (--*itr_op) : path.cbegin();
+		// 文字列の最初〜Dotまでが対象
+		_StringSetNum(path, 0, itr-path.cbegin(), cb);
+	}
+	Int_OP PathBlock::ExtGetNum(const std::string& path) {
+		// 拡張子を表すDotの位置を特定
+		auto itr_op = _StringGetExtPos(path.cbegin(), path.cend());
+		if(!itr_op)
+			return spn::none;
+		// Dot〜文字列の最後までを対象に、数値を探す
+		return _StringGetNum(*itr_op, path.cend());
+	}
+	Int_OP PathBlock::PathGetNum(const std::string& path) {
+		if(path.empty())
+			return spn::none;
+		// 拡張子を表すDotの位置を特定
+		auto itr_op = _StringGetExtPos(path.cbegin(), path.cend());
+		CItr itr = itr_op ? *itr_op : path.cend();
+		// 文字列の最初〜Dotまでを対象に、数値を探す
+		return _StringGetNum(path.cbegin(), --itr);
 	}
 
 	// ------------------- FStatus -------------------

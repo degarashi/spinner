@@ -13,12 +13,48 @@
 
 struct stat;
 namespace spn {
+	namespace detail {
+		template <class T>
+		struct CharConst;
+		template <>
+		struct CharConst<char> {
+			constexpr static char SC = '/',
+								DOT = '.',
+								EOS = '\0',
+								CLN = ':';
+		};
+		template <>
+		struct CharConst<char32_t> {
+			constexpr static char32_t SC = U'/',	//!< セパレート文字
+								DOT = U'.',		//!< 拡張子の前の記号
+								EOS = U'\0',	//!< 終端記号
+								CLN = U':';		//!< コロン :
+		};
+	}
+	using Int_OP = spn::Optional<int>;
 	class PathBlock {
 		public:
 			enum {
 				Beg = 0,
 				End = 0xffff
 			};
+			using CItr = std::string::const_iterator;
+			using CItr_OP = spn::Optional<CItr>;
+			using ChkStringPos = std::function<bool (CItr)>;
+			using CBStringNum = std::function<Int_OP (Int_OP)>;
+			static Int_OP ExtGetNum(const std::string& path);
+			static Int_OP PathGetNum(const std::string& path);
+			static void ExtSetNum(std::string& path, const CBStringNum& cb);
+			static void PathSetNum(std::string& path, const CBStringNum& cb);
+		private:
+			static CItr_OP _StringGetPos(CItr itrB, CItr itrE, const ChkStringPos& chk);
+			static CItr_OP _StringGetExtPos(CItr itrB, CItr itrE);
+			static CItr_OP _StringGetNumPos(CItr itrB, CItr itrE);
+			//! 文字列末尾の数値を取り出す
+			/*! 数値が無ければnoneを返す */
+			static Int_OP _StringGetNum(CItr itrB, CItr itrE);
+			static Int_OP _StringToNum(CItr itrB, CItr itrE);
+			static void _StringSetNum(std::string& str, int beg_pos, int end_pos, const CBStringNum& cb);
 		protected:
 			using Path = std::deque<char32_t>;
 			using Segment = std::deque<int>;
@@ -27,10 +63,6 @@ namespace spn {
 			Path		_path;
 			//! 区切り文字の前からのオフセット
 			Segment		_segment;
-			const static char32_t SC,		//!< セパレート文字
-								DOT,		//!< 拡張子の前の記号
-								EOS,		//!< 終端記号
-								CLN;		//!< コロン :
 			bool		_bAbsolute;
 			OPChar		_driveLetter;		//!< ドライブ文字(Windows用。Linuxでは無視)　\0=無効
 
@@ -40,15 +72,13 @@ namespace spn {
 			template <class CB>
 			static void _ReWriteSC(Path::iterator from, Path::iterator to, char32_t sc, CB cb);
 
-			static int _ExtGetNum(const std::string& ext);
-			static int _ExtIncNum(std::string& ext, int n=1);
 			template <class CB>
 			void _iterateSegment(const char32_t* c, int /*len*/, char32_t /*sc*/, CB cb) {
 				char32_t tc[128];
 				auto* pTc = tc;
-				while(*c != EOS) {
+				while(*c != detail::CharConst<char32_t>::EOS) {
 					if(_IsSC(*c)) {
-						*pTc = EOS;
+						*pTc = detail::CharConst<char32_t>::EOS;
 						cb(tc, pTc-tc);
 						pTc = tc;
 					} else
@@ -158,8 +188,16 @@ namespace spn {
 			bool hasExtention() const;
 			void setExtension(To32Str ext);
 			std::string getExtension(bool bRaw=false) const;
-			int getExtNum() const;
-			int addExtNum(int n=1);
+			//! 拡張子末尾の数値を取得
+			/*! filename.ext123 -> 123
+				filename.ext -> 0 */
+			Int_OP getExtNum() const;
+			//! 拡張子末尾の数値を加算
+			void setExtNum(const CBStringNum& cb);
+			//! ファイル名末尾の数値を取得
+			Int_OP getPathNum() const;
+			//! ファイル名末尾の数値を加算
+			void setPathNum(const CBStringNum& cb);
 			void clear();
 			bool empty() const;
 	};
