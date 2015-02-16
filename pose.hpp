@@ -84,6 +84,14 @@ namespace spn {
 			Vec2& refOffset();
 			Vec2& refScale();
 			RadF& refAngle();
+			// ---- helper function ----
+			void moveUp(float speed);
+			void moveDown(float speed);
+			void moveLeft(float speed);
+			void moveRight(float speed);
+			Vec2 getUp() const;
+			Vec2 getRight() const;
+			void setUp(const Vec2& up);
 
 			Pose2D lerp(const Pose2D& p1, float t) const;
 			Value refValue();

@@ -143,12 +143,12 @@ namespace spn {
 			return d0+1 + 2;
 		return 2.f-(d0+1);
 	}
-	//! 上方向を基準としたdirの角度を返す
-	inline float AngleValue(const Vec2& dir) {
+	//! 上方向を基準としたdirの角度を返す(半時計周り)
+	inline RadF AngleValue(const Vec2& dir) {
 		float ac0 = std::acos(dir.y);
 		if(dir.x >= 1e-6f)
-			return 2*spn::PI - ac0;
-		return ac0;
+			return RadF(2*spn::PI - ac0);
+		return RadF(ac0);
 	}
 	//! 平面上の一点が三角形の内部に含まれるかどうかを判定する
 	/*! \param vtx0 三角形の頂点0

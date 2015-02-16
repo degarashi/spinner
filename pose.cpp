@@ -166,6 +166,30 @@ namespace spn {
 		_angle = t.ang;
 		_setAsChanged();
 	}
+	void Pose2D::moveUp(float speed) {
+		refOffset() += getUp() * speed;
+	}
+	void Pose2D::moveDown(float speed) {
+		moveUp(-speed);
+	}
+	void Pose2D::moveRight(float speed) {
+		refOffset() += getRight() * speed;
+	}
+	void Pose2D::moveLeft(float speed) {
+		moveRight(-speed);
+	}
+	Vec2 Pose2D::getUp() const {
+		float rd = (getAngle() + DegF(90)).get();
+		return {std::cos(rd), std::sin(rd)};
+	}
+	Vec2 Pose2D::getRight() const {
+		float rd = getAngle().get();
+		return {std::cos(rd), std::sin(rd)};
+	}
+	void Pose2D::setUp(const Vec2& up) {
+		setAngle(AngleValue(up));
+	}
+
 	std::ostream& operator << (std::ostream& os, const Pose2D& ps) {
 		return os << "Pose2D [ offset: " << ps._ofs << std::endl
 				<< "angle: " << *ps._angle << std::endl
