@@ -57,7 +57,7 @@ namespace spn {
 
 		// Pitch
 		constexpr float h = AngleInfo<Radian_t>::oneloop<float> / 2.f;
-		ypd.pitch.set(Saturate(std::asin(v.y), -h, h));
+		ypd.pitch.set(Saturate(std::asin(Saturate(v.y, 1.f)), -h, h));
 		return ypd;
 	}
 	std::pair<spn::Vec3, spn::Quat> YawPitchDist::toOffsetRot() const {

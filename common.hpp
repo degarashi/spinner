@@ -178,6 +178,29 @@ namespace spn {
 		auto valA = std::fabs(val);
 		return valA==std::numeric_limits<float>::infinity() || IsNaN(valA); }
 
+	//! 値飽和
+	template <class T>
+	T Saturate(const T& val, const T& minV, const T& maxV) {
+		if(val > maxV)
+			return maxV;
+		if(val < minV)
+			return minV;
+		return val;
+	}
+	template <class T>
+	T Saturate(const T& val, const T& range) {
+		return Saturate(val, -range, range);
+	}
+	//! 値の範囲判定
+	template <class T>
+	bool IsInRange(const T& val, const T& vMin, const T& vMax) {
+		return val>=vMin && val<=vMax;
+	}
+	template <class T>
+	bool IsInRange(const T& val, const T& vMin, const T& vMax, const T& vEps) {
+		return IsInRange(val, vMin-vEps, vMax+vEps);
+	}
+
 	//! std::tupleの要素ごとの距離(EqAbs)比較
 	template <class T, int NPow>
 	struct TupleNear {

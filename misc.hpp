@@ -57,28 +57,6 @@ namespace spn {
 		static_assert(sizeof(T0) == sizeof(T1), "invalid reinterpret value");
 		return *reinterpret_cast<const T1*>(&val);
 	}
-	//! 値飽和
-	template <class T>
-	T Saturate(const T& val, const T& minV, const T& maxV) {
-		if(val > maxV)
-			return maxV;
-		if(val < minV)
-			return minV;
-		return val;
-	}
-	template <class T>
-	T Saturate(const T& val, const T& range) {
-		return Saturate(val, -range, range);
-	}
-	//! 値が範囲内に入っているか
-	template <class T>
-	bool IsInRange(const T& val, const T& vMin, const T& vMax) {
-		return val>=vMin && val<=vMax;
-	}
-	template <class T>
-	bool IsInRange(const T& val, const T& vMin, const T& vMax, const T& vEps) {
-		return IsInRange(val, vMin-vEps, vMax+vEps);
-	}
 	//! aがb以上だったらaからsizeを引いた値を返す
 	inline int CndSub(int a, int b, int size) {
 		return a - (size & ((b - a - 1) >> 31));
@@ -145,7 +123,7 @@ namespace spn {
 	}
 	//! 上方向を基準としたdirの角度を返す(半時計周り)
 	inline RadF AngleValue(const Vec2& dir) {
-		float ac0 = std::acos(dir.y);
+		float ac0 = std::acos(Saturate(dir.y, 1.f));
 		if(dir.x >= 1e-6f)
 			return RadF(2*spn::PI - ac0);
 		return RadF(ac0);

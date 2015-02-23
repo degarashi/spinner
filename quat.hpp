@@ -329,7 +329,7 @@
 		DEF_OPS(/, _mmDivPs)
 		*/
 		QT QT::slerp(const QuatT& q, float t) const {
-			const float ac = std::max(0.f, std::min(1.f, dot(q)));
+			const float ac = Saturate(dot(q), 0.f, 1.f);
 			const float theta = std::acos(ac),
 						S = std::sin(theta);
 			if(std::fabs(S) < 1e-4f)
@@ -430,7 +430,7 @@
 			if(rAxis.len_sq() < 1e-4f)
 				return QuatT(0,0,0,1);
 			rAxis.normalize();
-			float d = from.dot(to);
+			float d = Saturate(from.dot(to), 1.f);
 			d = std::acos(d);
 			return Rotation(rAxis, RadF(d));
 		}
@@ -481,7 +481,7 @@
 			return sum;
 		}
 		RadF QT::angle() const {
-			return RadF(std::acos(w)*2);
+			return RadF(std::acos(Saturate(w, 1.f))*2);
 		}
 		VEC3 QT::getVector() const {
 			return VEC3(x,y,z);
