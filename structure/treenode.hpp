@@ -36,9 +36,15 @@ namespace spn {
 			using SPVector = std::vector<SP>;
 			using SPCVector = std::vector<SPC>;
 
-			SP	_spChild,
-				_spSibling;
-			WP	_wpParent;
+			SP			_spChild,
+						_spSibling;
+			WP			_wpParent;
+
+			// --- ノードつなぎ変え時に呼ばれる関数. 継承先クラスが適時オーバーライドする ---
+			void onParentChange(const SP& /*from*/, const SP& /*to*/) {}
+			void onChildRemove(const SP& /*node*/) {}
+			void onChildAdded(const SP& /*node*/) {}
+
 			static void _PrintIndent(std::ostream& os, int n) {
 				while(--n >= 0)
 					os << '\t';
@@ -51,6 +57,7 @@ namespace spn {
 					return Iterate::StepIn;
 				});
 			}
+
 			template <class T_SP>
 			std::vector<T_SP> _plain() const {
 				std::vector<T_SP> spv;
@@ -76,6 +83,7 @@ namespace spn {
 				Next,				//!< 子を巡回せず兄弟ノードへ進む
 				Quit				//!< 直ちに巡回を終える
 			};
+
 			TreeNode() = default;
 			explicit TreeNode(TreeNode&& t) = default;
 			//! copy-ctorに置いてはリンク情報をコピーしない
@@ -89,9 +97,15 @@ namespace spn {
 				setParent(WP(s));
 			}
 			void setParent(const WP& w) {
-				AssertP(Trap, w.lock().get() != this, "self-reference detected")
-				_wpParent = w;
+				SP sp = w.lock(),
+				   spP = getParent();
+				AssertP(Trap, sp.get() != this, "self-reference detected")
+				if(sp.get() != spP.get()) {
+					onParentChange(spP, sp);
+					_wpParent = w;
+				}
 			}
+
 			SP getParent() const {
 				return SP(_wpParent.lock());
 			}
@@ -104,6 +118,7 @@ namespace spn {
 			void removeChild(const SP& target) {
 				AssertP(Trap, _spChild)
 				if(_spChild == target) {
+					onChildRemove(target);
 					// 最初の子ノードが削除対象
 					target->setParent(WP());
 					_spChild = target->getSibling();
@@ -115,6 +130,8 @@ namespace spn {
 			}
 			void removeSibling(pointer prev, const SP& target) {
 				if(target.get() == this) {
+					if(auto sp = getParent())
+						sp->onChildRemove(this->shared_from_this());
 					// このノードが削除対象
 					AssertP(Trap, prev)
 					prev->_spSibling = _spSibling;
@@ -132,6 +149,7 @@ namespace spn {
 				else {
 					_spChild = s;
 					s->setParent(this->shared_from_this());
+					onChildAdded(s);
 				}
 			}
 			void addSibling(const SP& s) {
@@ -141,6 +159,8 @@ namespace spn {
 				else {
 					_spSibling = s;
 					s->setParent(_wpParent);
+					if(auto sp = getParent())
+						sp->onChildAdded(s);
 				}
 			}
 			//! 深さ優先で巡回
@@ -176,6 +196,7 @@ namespace spn {
 				});
 				return std::move(ret);
 			}
+			//! このノード以下を全て複製
 			SP clone(const WP& parent=WP()) const {
 				SP sp = std::make_shared<T>(*this->shared_from_this());
 				if(_spChild)
@@ -195,16 +216,19 @@ namespace spn {
 			SPVector plain() {
 				return _plain<SP>();
 			}
+			//! ツリー構造を配列化 (const)
 			SPCVector plain() const {
 				return _plain<SPC>();
 			}
+			//! ツリー構造を配列化 (pointer)
 			std::vector<T*> plainPtr() {
 				return _plainPtr<T*>();
 			}
+			//! ツリー構造を配列化 (const pointer)
 			std::vector<const T*> plainPtr() const {
 				return _plainPtr<const T*>();
 			}
-			//! ツリー深度を取得
+			//! 最大ツリー深度を取得
 			int getDepth() const {
 				int depth = 0;
 				if(_spChild)
