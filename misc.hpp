@@ -128,13 +128,10 @@ namespace spn {
 			return RadF(2*spn::PI - ac0);
 		return RadF(ac0);
 	}
-	//! 平面上の一点が三角形の内部に含まれるかどうかを判定する
-	/*! \param vtx0 三角形の頂点0
-		\param vtx1 三角形の頂点1
-		\param vtx2 三角形の頂点2
-		\param pos 判定する平面上の点
-		\return 三角形に含まれているならtrue, 含まれていないならfalse */
-	bool IsInTriangle(const Vec3& vtx0, const Vec3& vtx1, const Vec3& vtx2, const Vec3& pos);
+	//! 2次元ベクトルを係数で混ぜ合わせる
+	Vec2 MixVector(const float (&cf)[3], const Vec2& p0, const Vec2& p1, const Vec2& p2);
+	//! 重心座標を計算
+	void BarycentricCoord(float ret[3], const Vec2& p0, const Vec2& p1, const Vec2& p2, const Vec2& pos);
 	//! クラメルの公式で使う行列式を計算
 	float CramerDet(const Vec3& v0, const Vec3& v1, const Vec3& v2);
 	float CramerDet(const Vec2& v0, const Vec2& v1);

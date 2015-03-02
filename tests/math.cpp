@@ -693,7 +693,23 @@ namespace spn {
 		TEST_F(MathTest, DoubleCompareULPs) {
 			TestCompare<double>(getRand());
 		}
+		TEST_F(MathTest, BarycentricCoord) {
+			auto rd = getRand();
+			auto rc = [&](){ return rd.template getUniform<float>({-5e1f,5e1f}); };
+			auto rv = [&](){ return GenRVec<2,false>(rc); };
 
+			Vec2 vtx[] = {rv(), rv(), rv()},
+				pos = rv(),
+				range;
+			float dt = std::abs((vtx[2]-vtx[0]).cw(vtx[1]-vtx[0]));
+			float c[3];
+			dt = Rcp22Bit(std::max(1e-8f, dt));
+			auto threshold = (ULPs_Increment(dt) - dt) * (1<<24);
+			// 重心座標を求め、それを使って合成した座標が元と一致するか
+			BarycentricCoord(c, vtx[0], vtx[1], vtx[2], pos);
+			float dist = pos.distance(MixVector(c, vtx[0], vtx[1], vtx[2]));
+			EXPECT_TRUE(EqAbs(dist, 0.f,  threshold));
+		}
 		TEST_F(MathTest, GapStructure) {
 			auto rd = getRand();
 			float (MTRandom::*FPtr)() = &MTRandom::getUniform<float>;

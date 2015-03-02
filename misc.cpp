@@ -158,36 +158,31 @@ namespace spn {
 		});
 		return ret;
 	}
+	Vec2 MixVector(const float (&cf)[3], const Vec2& p0, const Vec2& p1, const Vec2& p2) {
+		return p0 * cf[0] +
+				p1 * cf[1] +
+				p2 * cf[2];
+	}
+	void BarycentricCoord(float ret[3], const Vec2& p0, const Vec2& p1, const Vec2& p2, const Vec2& pos) {
+		Vec2 pt0 = p0 - p2,
+			pt1 = p1 - p2,
+			ptp = pos - p2;
 
-	bool IsInTriangle(const Vec3& vtx0, const Vec3& vtx1, const Vec3& vtx2, const Vec3& pos) {
-		Vec3 normal = *NormalFromPoints(vtx0, vtx1, vtx2);
+		spn::Mat22 m;
+		m.setColumn(0, pt0);
+		m.setColumn(1, pt1);
+		float det = m.calcDeterminant();
 
-		// 1st Triangle
-		Vec3 tv = Vec3(vtx1-vtx0) % (pos-vtx0);
-		float lensq = tv.len_sq();
-		if(lensq > 1e-5f) {
-			tv /= lensq;
-			if(normal.dot(tv) < -1e-4f)
-				return false;
+		m.setColumn(0, ptp);
+		ret[0] = m.calcDeterminant();
+
+		m.setColumn(0, pt0);
+		m.setColumn(1, ptp);
+		ret[1] = m.calcDeterminant();
+		if(det != 0) {
+			ret[0] /= det;
+			ret[1] /= det;
 		}
-
-		// 2nd Triangle
-		tv = Vec3(vtx2-vtx1) % (pos-vtx1);
-		lensq = tv.len_sq();
-		if(lensq > 1e-5f) {
-			tv /= lensq;
-			if(normal.dot(tv) < -1e-4f)
-				return false;
-		}
-
-		// 3rd Triangle
-		tv = Vec3(vtx0-vtx2) % (pos-vtx2);
-		lensq = tv.len_sq();
-		if(lensq > 1e-5f) {
-			tv /= lensq;
-			if(normal.dot(tv) < -1e-4f)
-				return false;
-		}
-		return true;
+		ret[2] = 1.f - ret[0] - ret[1];
 	}
 }
