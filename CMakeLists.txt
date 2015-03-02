@@ -23,7 +23,7 @@ add_library(spinner STATIC ${CXX_SRC})
 install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 file(GLOB_RECURSE HEADERS "*.hpp")
 
-set(COPYHEADERS_EXCLUDE_DIR "tests")
+set(COPYHEADERS_EXCLUDE_DIR "")		# ここに除外したいヘッダディレクトリを指定
 set(COPYHEADERS_MY_DIR "spinner")
 include(crosscompile/CopyHeaders.cmake require)
 

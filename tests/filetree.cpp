@@ -42,7 +42,6 @@ namespace spn {
 					cb(d);
 			});
 		}
-		PathBlock g_apppath;
 
 		class FileTreeTest : public RandomTestInitializer {};
 		constexpr int MAX_NAME = 16,
