@@ -7,7 +7,7 @@ namespace spn {
 		T	from,
 			to;
 		Range() = default;
-		Range(const T& f, const T& t): from(f), to(t) {
+		constexpr Range(const T& f, const T& t): from(f), to(t) {
 			AssertP(Trap, from <= to, "invalid range");
 		}
 	};
