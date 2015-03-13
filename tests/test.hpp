@@ -75,24 +75,57 @@ namespace spn {
 				v.m[i] = rd();
 			return v;
 		}
+		template <int N, bool A, class RD>
+		auto GenRVec(RD& rd, const RangeF& r) {
+			auto rc = [&](){ return rd.template getUniform<float>(r); };
+			return GenRVec<N,A>(rc);
+		}
+		constexpr float DefaultRVecValue = 1e4f;
+		constexpr RangeF DefaultRVecRange{-DefaultRVecValue, DefaultRVecValue};
+		template <class RD>
+		auto GenR2Vec(RD& rd, const RangeF& r=DefaultRVecRange) { return GenRVec<2,true>(rd, r); }
+		template <class RD>
+		auto GenR3Vec(RD& rd, const RangeF& r=DefaultRVecRange) { return GenRVec<3,true>(rd, r); }
+		template <class RD>
+		auto GenR4Vec(RD& rd, const RangeF& r=DefaultRVecRange) { return GenRVec<4,true>(rd, r); }
+
 		//! ランダムなベクトル（但しゼロではない）
 		template <int N, bool A, class RD>
-		auto GenRVecNZ(RD& rd, float th) {
+		auto GenRVecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) {
 			VecT<N,A> v;
 			do {
-				v = GenRVec<N,A>(rd);
+				v = GenRVec<N,A>(rd, r);
 			} while(v.length() < th);
 			return v;
 		}
+		template <class RD>
+		auto GenR2VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<2,true>(rd, th, r); }
+		template <class RD>
+		auto GenR3VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<3,true>(rd, th, r); }
+		template <class RD>
+		auto GenR4VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<4,true>(rd, th, r); }
+
 		//! ランダムな方向ベクトル
 		template <int N, bool A, class RD>
 		auto GenRDir(RD& rd) {
-			return GenRVecNZ<N,A>(rd, 1e-4f).normalization();
+			return GenRVecNZ<N,A>(rd, 1e-4f, {-1.f, 1.f}).normalization();
 		}
+		template <class RD>
+		auto GenR2Dir(RD& rd) { return GenRDir<2,true>(rd); }
+		template <class RD>
+		auto GenR3Dir(RD& rd) { return GenRDir<3,true>(rd); }
+		template <class RD>
+		auto GenR4Dir(RD& rd) { return GenRDir<4,true>(rd); }
+		template <class RD>
+		auto GenRPI(RD& rd) { return rd.template getUniform<float>({-PI,PI}); }
+		template <class RD>
+		auto GenR01(RD& rd) { return rd.template getUniform<float>({0.f, 1.f}); }
+
 		//! ランダムなクォータニオン
 		template <bool A, class RD>
 		auto GenRQuat(RD& rd) {
-			return QuatT<A>::Rotation(GenRDir<3,A>(rd), RadF(rd()));
+			auto rc = [&](){ return rd.template getUniform<float>({-PI, PI}); };
+			return QuatT<A>::Rotation(GenRDir<3,A>(rd), RadF(rc()));
 		}
 		template <bool A, class RD>
 		auto GenRExpQuat(RD& rd) {
@@ -106,6 +139,11 @@ namespace spn {
 					m.ma[i][j] = rd();
 			}
 			return m;
+		}
+		template <bool A, int M, int N, class RD>
+		auto GenRMat(RD& rd, const RangeF& r) {
+			auto rc = [&](){ return rd.template getUniform<float>(r); };
+			return GenRMat<A,M,N>(rc);
 		}
 
 		extern PathBlock g_apppath;

@@ -76,11 +76,12 @@ namespace spn {
 		TEST_F(SerializePose2D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
+			auto rdF = [&rd](){ return rd.template getUniform<float>({-PI, PI}); };
+			const RangeF r{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose2D ps(GenRVec<2,false>(rdF),
+				Pose2D ps(GenR2Vec(rd, r),
 							RadF(rdF()),
-							GenRVec<2,false>(rdF));
+							GenR2Vec(rd, r));
 				CheckSerializedDataBin(ps);
 			}
 		}
@@ -88,11 +89,11 @@ namespace spn {
 		TEST_F(SerializePose3D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
+			RangeF range{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose3D ps(GenRVec<3,true>(rdF),
-							GenRQuat<true>(rdF),
-							GenRVec<3,true>(rdF));
+				Pose3D ps(GenR3Vec(rd, range),
+							GenRQuat<true>(rd),
+							GenR3Vec(rd, range));
 				CheckSerializedDataBin(ps);
 			}
 		}
