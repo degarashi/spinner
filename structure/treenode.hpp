@@ -52,7 +52,7 @@ namespace spn {
 			template <class CB>
 			void _iterateAll(CB&& cb) const {
 				auto* self = const_cast<this_t*>(this);
-				self->iterateDepthFirst([&cb](auto& nd, int){
+				self->template iterateDepthFirst<true>([&cb](auto& nd, int){
 					cb(nd);
 					return Iterate::StepIn;
 				});
@@ -164,7 +164,9 @@ namespace spn {
 				}
 			}
 			//! 深さ優先で巡回
-			template <class Callback, bool BConst=false>
+			/*! \tparam Sib		兄弟ノードを巡回対象に加えるか
+				\tparam BConst	trueならconst巡回 */
+			template <bool Sib, class Callback, bool BConst=false>
 			Iterate iterateDepthFirst(Callback&& cb, int depth=0) {
 				using thistc = std::conditional_t<BConst, const T, T>;
 				Iterate t = cb(static_cast<thistc&>(*this), depth);
@@ -172,22 +174,22 @@ namespace spn {
 					return Iterate::Quit;
 				if(t == Iterate::StepIn) {
 					if(_spChild) {
-						if(_spChild->iterateDepthFirst(std::forward<Callback>(cb), depth+1) == Iterate::Quit)
+						if(_spChild->template iterateDepthFirst<true>(std::forward<Callback>(cb), depth+1) == Iterate::Quit)
 							return Iterate::Quit;
 					}
 				}
-				if(_spSibling)
-					return _spSibling->iterateDepthFirst(std::forward<Callback>(cb), depth);
+				if(Sib && _spSibling)
+					return _spSibling->template iterateDepthFirst<true>(std::forward<Callback>(cb), depth);
 				return Iterate::ReturnFromChild;
 			}
-			template <class Callback>
+			template <bool Sib, class Callback>
 			Iterate iterateDepthFirst(Callback&& cb, int depth=0) const {
-				return const_cast<this_t*>(this)->iterateDepthFirst<Callback, true>(std::forward<Callback>(cb), depth);
+				return const_cast<this_t*>(this)->template iterateDepthFirst<Sib, Callback, true>(std::forward<Callback>(cb), depth);
 			}
 			template <class Callback>
 			SP find(Callback&& cb) const {
 				SP ret;
-				iterateDepthFirst([&cb, &ret](auto& nd, int){
+				iterateDepthFirst<false>([&cb, &ret](auto& nd, int){
 					if(cb(nd)) {
 						ret = nd.shared_from_this();
 						return Iterate::Quit;
@@ -277,7 +279,7 @@ namespace spn {
 	template <class T>
 	inline std::ostream& operator << (std::ostream& os, const TreeNode<T>& t) {
 		auto& self = const_cast<TreeNode<T>&>(t);
-		self.iterateDepthFirst([&os](auto& s, int indent){
+		self.iterateDepthFirst<false>([&os](auto& s, int indent){
 			s.print(os, indent);
 			os << std::endl;
 			return TreeNode<T>::Iterate::StepIn;

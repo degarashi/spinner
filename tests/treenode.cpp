@@ -39,11 +39,11 @@ namespace spn {
 					ASSERT_EQ(nd->getParent().get(), this);
 					nd->parent = WPNode();
 				}
-				template <class Callback>
+				template <bool Sib, class Callback>
 				void iterateDepthFirst(Callback&& cb, int depth=0) {
 					cb(*this, depth);
 					for(auto& c : child)
-						c->iterateDepthFirst(std::forward<Callback>(cb), depth+1);
+						c->iterateDepthFirst<Sib>(std::forward<Callback>(cb), depth+1);
 				}
 				SPNode getChild() const {
 					if(child.empty())
@@ -140,7 +140,7 @@ namespace spn {
 				}
 				static VEC Plain(const SP& sp) {
 					VEC ret;
-					sp->iterateDepthFirst([&ret](auto& nd, int){
+					sp->template iterateDepthFirst<true>([&ret](auto& nd, int){
 						ret.emplace_back(nd.shared_from_this());
 						return std::decay_t<decltype(nd)>::Iterate::StepIn;
 					});
@@ -222,7 +222,7 @@ namespace spn {
 		void PrintOut(SP& root) {
 			using T = typename SP::element_type;
 			std::unordered_set<const T*> testset;
-			root->iterateDepthFirst([&testset](auto& nd, int d){
+			root->iterateDepthFirst<false>([&testset](auto& nd, int d){
 				using Ret = typename std::decay_t<decltype(nd)>::Iterate;
 				while(d-- > 0)
 					std::cout << '\t';
@@ -241,7 +241,7 @@ namespace spn {
 		void DuplNodeTest(TR& tree)	{
 			using T = typename TR::Type;
 			std::unordered_set<T*> testset;
-			tree.getRoot()->iterateDepthFirst([&testset](auto& nd, int){
+			tree.getRoot()->iterateDepthFirst<false>([&testset](auto& nd, int){
 				EXPECT_EQ(testset.count(&nd), 0);
 				testset.emplace(&nd);
 				return std::decay_t<decltype(nd)>::Iterate::StepIn;
@@ -363,7 +363,7 @@ namespace spn {
 
 			// Iterate関数を使ってカウント
 			int depth = 0;
-			tree.getRoot()->iterateDepthFirst([&depth](auto&, int d){
+			tree.getRoot()->iterateDepthFirst<false>([&depth](auto&, int d){
 				depth = std::max(depth, d);
 				return TreeNode_t::Iterate::StepIn;
 			});
