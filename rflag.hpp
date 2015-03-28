@@ -214,7 +214,7 @@ namespace spn {
 		uint32_t _refresh(valueT&, name*) const;
 	#define RFLAG_RVALUE_(name, valueT) \
 		uint32_t _refresh(valueT&, name*) const { return 0; }
-	#define RFLAG_GETMETHOD(name) auto get##name() const -> decltype(_rflag.get<name>(this)) { return _rflag.get<name>(this); }
+	#define RFLAG_GETMETHOD(name) auto get##name() const -> decltype(_rflag.template get<name>(this)) { return _rflag.template get<name>(this); }
 	#define PASS_THROUGH(func, ...)		func(__VA_ARGS__)
 	#define RFLAG_FUNC(z, data, elem)	PASS_THROUGH(RFLAG_RVALUE, BOOST_PP_SEQ_ENUM(elem))
 	#define SEQ_GETFIRST(z, data, elem)	(BOOST_PP_SEQ_ELEM(0,elem))
@@ -258,7 +258,7 @@ namespace spn {
 	//! キャッシュ変数にset()メソッドを定義
 	#define RFLAG_SETMETHOD(name) \
 		template <class TArg> \
-		void BOOST_PP_CAT(set, name(TArg&& t)) { _rflag.set<name>(std::forward<TArg>(t)); }
+		void BOOST_PP_CAT(set, name(TArg&& t)) { _rflag.template set<name>(std::forward<TArg>(t)); }
 	//! 最下層のキャッシュ変数に一括でset()メソッドを定義
 	#define RFLAG_SETMETHOD_S(seq) \
 		BOOST_PP_SEQ_FOR_EACH( \
@@ -269,7 +269,7 @@ namespace spn {
 
 	//! キャッシュ変数にref()メソッドを定義
 	#define RFLAG_REFMETHOD(name) \
-		auto& BOOST_PP_CAT(ref, name()) { return _rflag.refF<name>(); }
+		auto& BOOST_PP_CAT(ref, name()) { return _rflag.template refF<name>(); }
 	//! 最下層のキャッシュ変数に一括でref()メソッドを定義
 	#define RFLAG_REFMETHOD_S(seq) \
 		BOOST_PP_SEQ_FOR_EACH( \
@@ -288,9 +288,9 @@ namespace spn {
 			RFLAG_GETMETHOD(Value0)
 			RFLAG_GETMETHOD(Value1)
 
-		参照する時は _rflag.get<Value0>(this) とやるか、
+		参照する時は _rflag.template get<Value0>(this) とやるか、
 		getValue0()とすると依存変数の自動更新
-		_rfvalue.ref<Value0>(this)とすれば依存関係を無視して取り出せる
+		_rfvalue.template ref<Value0>(this)とすれば依存関係を無視して取り出せる
 
 		--- 上記の簡略系 ---
 		#define SEQ ((Value0)(Type0))((Value1)(Type1)(Depend))
