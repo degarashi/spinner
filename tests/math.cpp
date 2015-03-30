@@ -18,7 +18,7 @@ namespace spn {
 	namespace test {
 		namespace {
 			constexpr auto ThresholdULPs = ULPs_C(0.f, 1e-4f);
-			constexpr auto ThresholdULPs_Quat = ULPs_C(0.f, 1e-3f);
+			constexpr auto ThresholdULPs_Quat = ULPs_C(0.f, 5e-3f);
 			constexpr float ValueMin = -1e4f,
 							ValueMax = 1e4f,
 							N_Iteration = 100;
@@ -424,7 +424,7 @@ namespace spn {
 			for(int i=0 ; i<N_Iteration ; i++) {
 				auto q = GenRQuat<true>(rd);
 				auto t = GenR3Vec(rd, range);
-				auto s = GenR3VecNZ(rd, 1e-2f, range);
+				auto s = GenR3VecLen(rd, 1e-2f, range);
 
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
@@ -470,7 +470,7 @@ namespace spn {
 			constexpr RangeF range = {-1e3f, 1e3f};
 			auto rd = getRand();
 			// YawPitchDistで計算した値を再度合成して結果を比較
-			Vec3 nzv = GenR3VecNZ(rd, 1e-2f, range);
+			Vec3 nzv = GenR3VecLen(rd, 1e-2f, range);
 			auto ypd = YawPitchDist::FromPos(nzv);
 			auto ofsRot = ypd.toOffsetRot();
 			auto nzv2 = -ofsRot.second.getDir() * ypd.distance;

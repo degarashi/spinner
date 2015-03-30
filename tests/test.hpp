@@ -89,26 +89,51 @@ namespace spn {
 		template <class RD>
 		auto GenR4Vec(RD& rd, const RangeF& r=DefaultRVecRange) { return GenRVec<4,true>(rd, r); }
 
-		//! ランダムなベクトル（但しゼロではない）
-		template <int N, bool A, class RD>
-		auto GenRVecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) {
+		//! 条件を満たすランダムベクトルを生成
+		template <int N, bool A, class RD, class Chk>
+		auto GenRVecCnd(RD& rd, Chk&& chk, const RangeF& r=DefaultRVecRange) {
 			VecT<N,A> v;
 			do {
 				v = GenRVec<N,A>(rd, r);
-			} while(v.length() < th);
+			} while(!std::forward<Chk>(chk)(v));
 			return v;
 		}
+		//! ランダムなベクトル（但し長さがゼロではない）
+		template <int N, bool A, class RD>
+		auto GenRVecLen(RD& rd, float th, const RangeF& r=DefaultRVecRange) {
+			return GenRVecCnd<N,A>(rd, [th](auto& v){ return v.length() >= th; }, r);
+		}
 		template <class RD>
-		auto GenR2VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<2,true>(rd, th, r); }
+		auto GenR2VecLen(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecLen<2,true>(rd, th, r); }
 		template <class RD>
-		auto GenR3VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<3,true>(rd, th, r); }
+		auto GenR3VecLen(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecLen<3,true>(rd, th, r); }
 		template <class RD>
-		auto GenR4VecNZ(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecNZ<4,true>(rd, th, r); }
+		auto GenR4VecLen(RD& rd, float th, const RangeF& r=DefaultRVecRange) { return GenRVecLen<4,true>(rd, th, r); }
+
+		//! ランダムなベクトル (但し全ての成分の絶対値がそれぞれ基準範囲内)
+		template <int N, bool A, class RD>
+		auto GenRVecAbs(RD& rd, const RangeF& rTh, const RangeF& r=DefaultRVecRange) {
+			return GenRVecCnd<N,A>(rd,
+					[rTh](auto& v){
+						for(int i=0 ; i<N ; i++) {
+							if(!rTh.hit(v.m[i]))
+								return false;
+						}
+						return true;
+					},
+					r);
+		}
+		template <class RD>
+		auto GenR2VecAbs(RD& rd, const RangeF& rTh, const RangeF& r=DefaultRVecRange) { return GenRVecAbs<2,true>(rd, rTh, r); }
+		template <class RD>
+		auto GenR3VecAbs(RD& rd, const RangeF& rTh, const RangeF& r=DefaultRVecRange) { return GenRVecAbs<3,true>(rd, rTh, r); }
+		template <class RD>
+		auto GenR4VecAbs(RD& rd, const RangeF& rTh, const RangeF& r=DefaultRVecRange) { return GenRVecAbs<4,true>(rd, rTh, r); }
 
 		//! ランダムな方向ベクトル
 		template <int N, bool A, class RD>
 		auto GenRDir(RD& rd) {
-			return GenRVecNZ<N,A>(rd, 1e-4f, {-1.f, 1.f}).normalization();
+			return GenRVecLen<N,A>(rd, 1e-4f, {-1.f, 1.f}).normalization();
 		}
 		template <class RD>
 		auto GenR2Dir(RD& rd) { return GenRDir<2,true>(rd); }
