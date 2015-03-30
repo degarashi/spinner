@@ -2,7 +2,7 @@
 #include <cstdlib>
 
 namespace spn {
-	// ------------------------------ Pose2D ------------------------------
+	// ------------------------------ Pose2D::Value ------------------------------
 	Pose2D::Value::Value(Pose2D& p): _pose(p), ofs(p._ofs), scale(p._scale), ang(p._angle) {}
 	Pose2D::Value::~Value() { _pose._setAsChanged(); }
 	Pose2D::Value::Value(const Pose2D::Value& v): _pose(v._pose), ofs(v.ofs), scale(v.scale), ang(v.ang) {}
@@ -12,6 +12,8 @@ namespace spn {
 		ang = tv.ang;
 		return *this;
 	}
+
+	// ------------------------------ Pose2D::TValue ------------------------------
 	Pose2D::TValue::TValue(const Value& v): ofs(v.ofs), scale(v.scale), ang(v.ang) {}
 	Pose2D::TValue& Pose2D::TValue::operator = (const Value& v) {
 		ofs = v.ofs;
@@ -27,6 +29,7 @@ namespace spn {
 		return *this;
 	}
 
+	// ------------------------------ Pose2D ------------------------------
 	Pose2D::Pose2D() {
 		identity();
 	}
@@ -38,6 +41,7 @@ namespace spn {
 		_ofs = pos;
 		_angle = ang;
 		_scale = sc;
+		_rflag = PRF_ALL;
 	}
 	Pose2D::Pose2D(const TValue& tv) {
 		_ofs = tv.ofs;
@@ -196,7 +200,7 @@ namespace spn {
 				<< "scale: " << *ps._scale << ']';
 	}
 
-	// ------------------------------ Pose3D ------------------------------
+	// ------------------------------ Pose3D::Value ------------------------------
 	Pose3D::Value::Value(Pose3D& p): _pose(p), ofs(p._ofs), scale(p._scale), rot(p._rot) {}
 	Pose3D::Value::~Value() { _pose._setAsChanged(); }
 	Pose3D::Value::Value(const Value& v): _pose(v._pose), ofs(v.ofs), scale(v.scale), rot(v.rot) {}
@@ -214,6 +218,8 @@ namespace spn {
 		rot = tv.rot;
 		return *this;
 	}
+
+	// ------------------------------ Pose3D::TValue ------------------------------
 	Pose3D::TValue::TValue(const Value& v): ofs(v.ofs), scale(v.scale), rot(v.rot) {}
 	Pose3D::TValue& Pose3D::TValue::operator = (const Value& v) {
 		ofs = v.ofs;
@@ -229,6 +235,7 @@ namespace spn {
 		return *this;
 	}
 
+	// ------------------------------ Pose3D ------------------------------
 	Pose3D::Pose3D(): _finalMat() {
 		identity();
 	}
@@ -240,6 +247,7 @@ namespace spn {
 		_ofs = pos;
 		_rot = rot;
 		_scale = sc;
+		_rflag = PRF_ALL;
 	}
 	Pose3D::Pose3D(const TValue& tv): _ofs(tv.ofs), _rot(tv.rot), _scale(tv.scale) {
 		_rflag = PRF_ALL;
