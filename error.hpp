@@ -213,6 +213,7 @@ namespace spn {
 		auto EChk_memory_d(Act&&, Chk&&, const SourcePos&, const Func& func, Ts&&... ts) {
 			return func(std::forward<Ts>(ts)...);
 		}
+		template <class... Ts>
 		auto EChk_code_d(Ts&&... ts) {
 			return EChk_memory_d(std::forward<Ts>(ts)...);
 		}
