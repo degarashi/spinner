@@ -265,7 +265,7 @@ namespace spn {
 			// 親ノードの接続確認
 			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()));
 			// Cloneしたツリーでも確認
-			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()->clone()));
+			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()->cloneTree()));
 			ASSERT_EQ(treeA.size(), treeB.size());
 			// 2種類のツリーで比較
 			// (深度優先で巡回した時に同じ順番でノードが取り出せる筈)
@@ -319,7 +319,7 @@ namespace spn {
 			auto rd = getRand();
 			TestTree<TreeNode_t>	treeA(0);
 			MakeRandomTree(rd, 100, [](int r){ return r+1; }, treeA);
-			TestTree<TreeNode_t>	treeB(treeA.getRoot()->clone());
+			TestTree<TreeNode_t>	treeB(treeA.getRoot()->cloneTree());
 
 			// ツリー構造比較はtrue
 			ASSERT_TRUE(CompareTreeStructure(*treeA.getRoot(), *treeB.getRoot()));

@@ -13,8 +13,15 @@
 #include <boost/serialization/weak_ptr.hpp>
 
 namespace spn {
+	DEF_HASMETHOD(clone)
+	// cloneメソッドを持っていればそれを呼ぶ
 	template <class T>
-	auto CopyAsSP(T& t) {
+	auto CopyAsSP(T& t, std::true_type) {
+		return t.clone();
+	}
+	// cloneメソッドを持っていない時はコピーコンストラクタで対処
+	template <class T>
+	auto CopyAsSP(T& t, std::false_type) {
 		using Tc = typename std::remove_const<T>::type;
 		return std::shared_ptr<Tc>(new Tc(t));
 	}
@@ -205,12 +212,13 @@ namespace spn {
 				return std::move(ret);
 			}
 			//! このノード以下を全て複製
-			SP clone(const WP& parent=WP()) const {
-				SP sp = CopyAsSP(static_cast<const T&>(*this));
+			SP cloneTree(const WP& parent=WP()) const {
+				SP sp = CopyAsSP(static_cast<const T&>(*this),
+								HasMethod_clone<T>(nullptr));
 				if(_spChild)
-					sp->_spChild = _spChild->clone(sp);
+					sp->_spChild = _spChild->cloneTree(sp);
 				if(_spSibling)
-					sp->_spSibling = _spSibling->clone(parent);
+					sp->_spSibling = _spSibling->cloneTree(parent);
 				sp->_wpParent = parent;
 				return std::move(sp);
 			}
