@@ -13,6 +13,12 @@
 #include <boost/serialization/weak_ptr.hpp>
 
 namespace spn {
+	template <class T>
+	auto CopyAsSP(T& t) {
+		using Tc = typename std::remove_const<T>::type;
+		return std::shared_ptr<Tc>(new Tc(t));
+	}
+
 	//! 汎用ツリー構造
 	/*! Tは必ずTreeNode<T>を継承する前提 */
 	template <class T>
@@ -200,7 +206,7 @@ namespace spn {
 			}
 			//! このノード以下を全て複製
 			SP clone(const WP& parent=WP()) const {
-				SP sp = std::make_shared<T>(*this->shared_from_this());
+				SP sp = CopyAsSP(static_cast<const T&>(*this));
 				if(_spChild)
 					sp->_spChild = _spChild->clone(sp);
 				if(_spSibling)
