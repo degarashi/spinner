@@ -1133,6 +1133,24 @@ namespace spn {
 		using HL##suffix = spn::HdlLock<H##suffix, true>; \
 		using BOOST_PP_CAT(BOOST_PP_CAT(HL,suffix),F) = spn::HdlLock<H##suffix, false>;
 	#define DEF_NHANDLE(mgr ,suffix, bsp, sp) DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator, spn::String<std::string>)
+
+	//! SHandleT, WHandleT, HdlLockの時true_type, それ以外はfalse_type
+	template <class T>
+	struct IsHandleT : std::false_type {};
+	template <class Mgr, class Data>
+	struct IsHandleT<SHandleT<Mgr,Data>> : std::true_type {};
+	template <class Mgr, class Data>
+	struct IsHandleT<WHandleT<Mgr,Data>> : std::true_type {};
+	template <class H, bool B>
+	struct IsHandleT<HdlLock<H,B>> : std::true_type {};
+
+	//! IsHandleT | SHandle | WHandle の時true_type, それ以外はfalse_type
+	template <class T>
+	struct IsHandle : IsHandleT<T> {};
+	template <>
+	struct IsHandle<SHandle> : std::true_type {};
+	template <>
+	struct IsHandle<WHandle> : std::true_type {};
 }
 namespace std {
 	template <class MGR, class DATA>
