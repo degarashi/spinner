@@ -176,6 +176,7 @@ namespace spn {
 					_hdl.increment();
 			}
 			HDL get() const { return _hdl; }
+			HDL getBase() const { return _hdl; }
 			~HdlLockB() {
 				release();
 			}
@@ -318,7 +319,7 @@ namespace spn {
 
 		public:
 			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
-			static SHandleT FromSHandle(SHandle sh) { return SHandleT(sh); }
+			static SHandleT FromHandle(SHandle sh) { return SHandleT(sh); }
 			using WHdl = WHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
@@ -340,10 +341,8 @@ namespace spn {
 				// ref()と同じ理由でキャスト
 				return reinterpret_cast<const data_type&>(MGR::_ref().cref(*this));
 			}
-			static SHandleT FromHandle(SHandle sh) {
-				return SHandleT(sh);
-			}
 			void* getPtr() { MGR::_ref().getPtr(*this); }
+			SHandle getBase() const { return *this; }
 
 			//! 弱参照ハンドルを得る
 			WHdl weak() const { return WHdl::FromHandle(MGR::_ref().weak(*this)); }
@@ -366,7 +365,7 @@ namespace spn {
 			WHandleT(WHandle wh): WHandle(wh) {}
 		public:
 			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
-			static WHandleT FromWHandle(WHandle wh) { return WHandleT(wh); }
+			static WHandleT FromHandle(WHandle wh) { return WHandleT(wh); }
 			using SHdl = SHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
@@ -387,10 +386,7 @@ namespace spn {
 			template <class DAT,
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
 			WHandleT(const WHandleT<MGR,DAT>& wh): WHandle(wh) {}
-			static WHandleT FromHandle(WHandle wh) {
-				return WHandleT(wh);
-			}
-
+			WHandle getBase() const { return *this; }
 			//! リソース参照
 			/*!	参照が無効なら例外を投げる
 			*	\return リソースの参照 */
