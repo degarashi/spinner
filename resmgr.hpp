@@ -252,6 +252,8 @@ namespace spn {
 			template <class DATA, bool D, class = DOWNCONV, class = SAMETYPE>
 			HdlLock(HdlLock<SHandleT<typename HDL::mgr_type, DATA>, D>&& hl): base(reinterpret_cast<base&&>(hl)) {}
 		public:
+			static HdlLock FromHandle(SHandle sh) { return HdlLock(sh); }
+
 			using base::base;
 			using base::operator =;
 			HdlLock() = default;
@@ -366,6 +368,7 @@ namespace spn {
 		public:
 			//! 何らかの事情でSHandleからSHandleTを明示的に作成したい時に使う
 			static WHandleT FromHandle(WHandle wh) { return WHandleT(wh); }
+			static WHandleT FromHandle(SHandle sh) { return sh.weak(); }
 			using SHdl = SHandleT<MGR, DATA>;
 			using mgr_type = MGR;
 			using data_type = DATA;
