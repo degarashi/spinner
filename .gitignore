@@ -5,3 +5,4 @@ build/
 .kdev4/
 .kdev_include_paths
 CMakeLists.txt.user*
+.clang_complete

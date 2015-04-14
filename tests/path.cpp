@@ -61,7 +61,7 @@ namespace spn {
 			pb.popBack();
 			pb.pushBack("bar123.foo64");
 			auto num = pb.getPathNum();
-			ASSERT_TRUE(num);
+			ASSERT_TRUE(static_cast<bool>(num));
 			ASSERT_EQ(123, *num);
 
 			// 数値の改変テスト
@@ -71,7 +71,7 @@ namespace spn {
 				return spn::none;
 			});
 			num = pb.getPathNum();
-			ASSERT_TRUE(num);
+			ASSERT_TRUE(static_cast<bool>(num));
 			ASSERT_EQ(123*2, *num);
 
 			// 数値の削除テスト
@@ -94,7 +94,7 @@ namespace spn {
 			// 指定した数値の取得テスト
 			pb.setExtension("bar123");
 			auto num = pb.getExtNum();
-			ASSERT_TRUE(num);
+			ASSERT_TRUE(static_cast<bool>(num));
 			ASSERT_EQ(123, *num);
 
 			// 数値の改変テスト
@@ -104,7 +104,7 @@ namespace spn {
 				return spn::none;
 			});
 			num = pb.getExtNum();
-			ASSERT_TRUE(num);
+			ASSERT_TRUE(static_cast<bool>(num));
 			ASSERT_EQ(123*2, *num);
 
 			// 数値の削除テスト
