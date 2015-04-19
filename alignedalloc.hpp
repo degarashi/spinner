@@ -52,11 +52,6 @@ namespace spn {
 	T* AAlloc(int nAlign, Args&&... args) {
 		return new(AlignedAlloc<0>(nAlign, sizeof(T)).first) T(std::forward<Args>(args)...);
 	}
-	//! initializer_listによる初期化
-	template <class T, class A>
-	T* AAlloc(int nAlign, std::initializer_list<A>&& w) {
-		return new(AlignedAlloc<0>(nAlign, sizeof(T)).first) T(std::forward<std::initializer_list<A>>(w));
-	}
 	//! バイトアラインメント付きの配列メモリ確保
 	template <class T>
 	T* AArray(int nAlign, int n) {
@@ -101,7 +96,11 @@ namespace spn {
 				// アラインメントチェック
 				AssertP(Trap, (((uintptr_t)this)&(N-1)) == 0)
 			}
+	};
+	template <class T>
+	class AAllocator {
 		private:
+			constexpr static std::size_t NAlign = alignof(T);
 			static void AlignedDelete(void* ptr) {
 				AFree(reinterpret_cast<T*>(ptr));
 			}
@@ -119,40 +118,27 @@ namespace spn {
 				}
 			};
 
-			//! initializer_listのctor
-			template <class A>
-			static T* _New(std::initializer_list<A>&& w) {
-				return AAlloc<T>(N, std::forward<std::initializer_list<A>>(w)); }
 			//! 任意の引数によるctor
 			template <class... Args>
 			static T* _New(Args&&... args) {
-				return AAlloc<T>(N, std::forward<Args>(args)...); }
+				return AAlloc<T>(NAlign, std::forward<Args>(args)...); }
 		public:
 			//! アラインメント済みのメモリにオブジェクトを確保し、カスタムデリータ付きのunique_ptrとして返す
 			template <class... Args>
-			static std::unique_ptr<T, AlignedDeleter> NewU_Args(Args&&... args) {
+			static auto NewU(Args&&... args) {
 				return std::unique_ptr<T, AlignedDeleter>(_New(std::forward<Args>(args)...)); }
-			template <class A>
-			static std::unique_ptr<T, AlignedDeleter> NewU_IL(std::initializer_list<A>&& w) {
-				return std::unique_ptr<T, AlignedDeleter>(_New(std::move(w))); }
-			static std::unique_ptr<T[], ArrayDeleter> ArrayU(size_t n) {
-				return std::unique_ptr<T[], ArrayDeleter>(AArray<T>(N, n)); }
-			//! アラインメント済みのメモリにオブジェクトを確保し、個別デリータ付きのunique_ptrとして返す
+			static auto ArrayU(size_t n) {
+				return std::unique_ptr<T[], ArrayDeleter>(AArray<T>(NAlign, n)); }
+			//! アラインメント済みのメモリにオブジェクトを確保し、関数型デリータ付きのunique_ptrとして返す
 			template <class... Args>
-			static std::unique_ptr<T, void (*)(void*)> NewUF_Args(Args&&... args) {
+			static auto NewUF(Args&&... args) {
 				return std::unique_ptr<T, void(*)(void*)>(_New(std::forward<Args>(args)...), AlignedDelete); }
-			template <class A>
-			static std::unique_ptr<T, void (*)(void*)> NewUF_IL(std::initializer_list<A>&& w) {
-				return std::unique_ptr<T, void(*)(void*)>(_New(std::move(w)), AlignedDelete); }
-			static std::unique_ptr<T[], void (*)(void*)> ArrayUF(size_t n) {
-				return std::unique_ptr<T[], void(*)(void*)>(AArray<T>(N,n), ArrayDelete); }
+			static auto ArrayUF(size_t n) {
+				return std::unique_ptr<T[], void(*)(void*)>(AArray<T>(NAlign,n), ArrayDelete); }
 			//! アラインメント済みのメモリにオブジェクトを確保し、shared_ptrとして返す
 			template <class... Args>
-			static std::shared_ptr<T> NewS_Args(Args&&... args) {
+			static auto NewS(Args&&... args) {
 				return std::shared_ptr<T>(_New(std::forward<Args>(args)...), AlignedDeleter()); }
-			template <class A>
-			static std::shared_ptr<T> NewS_IL(std::initializer_list<A>&& w) {
-				return std::shared_ptr<T>(_New(std::move(w)), AlignedDeleter()); }
 	};
 
 	template <class T, size_t Align>
