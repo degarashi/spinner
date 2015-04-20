@@ -338,5 +338,12 @@ namespace std {
 			return tmp;
 		}
 	};
+	template <bool A>
+	struct hash<spn::QuatT<A>> {
+		size_t operator()(const spn::QuatT<A>& q) const {
+			using VT = spn::VecT<4,A>;
+			return hash<VT>()(reinterpret_cast<const VT&>(q));
+		}
+	};
 }
 
