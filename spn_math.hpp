@@ -314,6 +314,22 @@ namespace spn {
 	struct QuatT;
 	template <bool A>
 	struct ExpQuatT;
+
+	//! Vector型の時はtrue_type, それ以外はfalse_type
+	template <class T>
+	struct IsVectorT : std::false_type {};
+	template <int N, bool A>
+	struct IsVectorT<spn::VecT<N,A>> : std::true_type {};
+	//! Matrix型の時はtrue_type, それ以外はfalse_type
+	template <class T>
+	struct IsMatrixT : std::false_type {};
+	template <int M, int N, bool A>
+	struct IsMatrixT<spn::MatT<M,N,A>> : std::true_type {};
+	//! Quaternion型の時はtrue_type, それ以外はfalse_type
+	template <class T>
+	struct IsQuatT : std::false_type {};
+	template <bool A>
+	struct IsQuatT<spn::QuatT<A>> : std::true_type {};
 }
 namespace std {
 	template <int N, bool A>
