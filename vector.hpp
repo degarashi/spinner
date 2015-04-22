@@ -41,7 +41,7 @@
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
 		namespace spn {
 			template <>
-			struct Vec : boost::equality_comparable<VT> {
+			struct Vec {
 				constexpr static int width = DIM;
 				constexpr static bool align = ALIGNB;
 				using AVec = VecT<DIM,true>;
@@ -64,6 +64,8 @@
 				explicit VecT(reg128 r);
 				explicit VecT(float a);
 				explicit VecT(ENUM_ARGPAIR(BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)));
+				template <class V, class=std::enable_if_t<std::is_floating_point<V>::value>>
+				explicit VecT(const V* src);
 				VecT(std::initializer_list<float> il);
 				reg128 loadPS() const;
 				reg128 loadPSZ() const;
@@ -124,6 +126,8 @@
 				/*! \return 要素が全て等しい時にtrue, それ以外はfalse */
 				template <bool A>
 				bool operator == (const VecT<DIM,A>& v) const;
+				template <bool A>
+				bool operator != (const VecT<DIM,A>& v) const;
 
 				float normalize();
 				VecT normalization() const;
@@ -222,6 +226,13 @@
 					BOOST_PP_SEQ_SUBSEQ(SEQ_VECELEM, 0, DIM)
 				)
 			}
+			template <class V, class>
+			VT::VecT(const V* src) {
+				for(int i=0 ; i<DIM ; i++)
+					m[i] = src[i];
+			}
+			template VT::VecT(const float*);
+			template VT::VecT(const double*);
 			VT::VecT(std::initializer_list<float> il) {
 				// 要素数が満たなかったら残りは0にする
 				alignas(16) float tmp[4] = {};
@@ -389,8 +400,14 @@
 				r0 = reg_and_ps(r0, reg_shuffle_ps(r0, r0, _REG_SHUFFLE(0,1,2,3)));
 				return reg_cvttss_si32(r0) != 0;
 			}
+			template <bool A>
+			bool VT::operator != (const VecT<DIM,A>& v) const {
+				return !(this->operator == (v));
+			}
 			template bool VT::operator == (const VecT<DIM,false>&) const;
 			template bool VT::operator == (const VecT<DIM,true>&) const;
+			template bool VT::operator != (const VecT<DIM,false>&) const;
+			template bool VT::operator != (const VecT<DIM,true>&) const;
 
 			float VT::normalize() {
 				float len = length();
