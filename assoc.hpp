@@ -53,16 +53,17 @@ namespace spn {
 			/*! \return 挿入されたソート後のインデックス */
 			template <class T2>
 			int insert(T2&& t) {
+				T obj(std::forward<T2>(t));
 				auto itrE = _vec.end();
 				auto itr = _vec.begin();
 				Pred pred;
-				while(itr!=itrE && pred(*itr, t))
+				while(itr!=itrE && pred(*itr, obj))
 					++itr;
 				if(itr == itrE) {
-					_vec.push_back(std::forward<T2>(t));
+					_vec.emplace_back(std::move(obj));
 					itr = _vec.end()-1;
 				} else
-					itr = _vec.insert(itr, std::forward<T2>(t));
+					itr = _vec.emplace(itr, std::move(obj));
 				return itr - _vec.begin();
 			}
 			template <class... Ts>
