@@ -92,14 +92,14 @@ namespace spn {
 				_vec.pop_back();
 				return std::move(ret);
 			}
-			void erase(int n) {
-				_vec.erase(_vec.begin()+n);
+			typename Vec::const_iterator erase(int n) {
+				return _vec.erase(_vec.cbegin()+n);
 			}
-			void erase(typename Vec::iterator itr) {
-				_vec.erase(itr);
+			typename Vec::iterator erase(typename Vec::iterator itr) {
+				return _vec.erase(itr);
 			}
-			void erase(typename Vec::const_iterator itr) {
-				_vec.erase(itr);
+			typename Vec::const_iterator erase(typename Vec::const_iterator itr) {
+				return _vec.erase(itr);
 			}
 			const T& back() const { return _vec.back(); }
 			const T& front() const { return _vec.front(); }
