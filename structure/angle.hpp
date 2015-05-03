@@ -42,14 +42,14 @@ namespace spn {
 	template <>
 	struct AngleInfo<Degree_t> {
 		template <class T>
-		constexpr static T oneloop = T(360);
+		constexpr static T onerotation = T(360);
 		const static char *name,
 							*name_short;
 	};
 	template <>
 	struct AngleInfo<Radian_t> {
 		template <class T>
-		constexpr static T oneloop = T(2*Pi<T>);
+		constexpr static T onerotation = T(2*Pi<T>);
 		const static char *name,
 							*name_short;
 	};
@@ -63,7 +63,6 @@ namespace spn {
 			using tag_type = TAG;
 			using value_type = V;
 			value_type	_angle;
-			constexpr static value_type Oneloop = AngleInfo<tag_type>::template oneloop<value_type>;
 
 			friend class boost::serialization::access;
 			template <class Ar>
@@ -71,6 +70,7 @@ namespace spn {
 				ar & BOOST_SERIALIZATION_NVP(_angle);
 			}
 		public:
+			constexpr static value_type OneRotationAng = AngleInfo<tag_type>::template onerotation<value_type>;
 			Angle() = default;
 			//! Degreeで角度指定
 			template <class TAG2, class V2>
@@ -78,8 +78,11 @@ namespace spn {
 				_angle = ConvertAngle<TAG2, TAG>()(ang.get());
 			}
 			//! floatで直接角度指定
-			explicit Angle(value_type ang) {
-				_angle = ang;
+			explicit constexpr Angle(value_type ang):
+				_angle(ang)
+			{}
+			constexpr static Angle Rotation(value_type r=value_type(1)) {
+				return Angle(OneRotationAng * r);
 			}
 			Angle& operator = (const Angle& ang) = default;
 			template <class TAG2, class V2>
@@ -105,9 +108,9 @@ namespace spn {
 			}
 			//! 角度をループ(0から2Piの間に収める)
 			void single() {
-				auto ang = std::fmod(_angle, Oneloop);
+				auto ang = std::fmod(_angle, OneRotationAng);
 				if(ang < 0)
-					ang += Oneloop;
+					ang += OneRotationAng;
 				_angle = ang;
 			}
 			void rangeValue(V low, V high) {

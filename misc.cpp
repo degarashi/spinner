@@ -56,7 +56,7 @@ namespace spn {
 		}
 
 		// Pitch
-		constexpr float h = AngleInfo<Radian_t>::oneloop<float> / 2.f;
+		constexpr float h = AngleInfo<Radian_t>::onerotation<float> / 2.f;
 		ypd.pitch.set(Saturate(std::asin(Saturate(v.y, 1.f)), -h, h));
 		return ypd;
 	}
