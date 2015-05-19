@@ -5,6 +5,56 @@
 
 DEF_HASTYPE_T(type)
 namespace spn {
+	//! 可変長テンプレート引数の最初の型
+	template <class... Ts>
+	struct FirstType;
+	template <class T, class... Ts>
+	struct FirstType<T,Ts...> {
+		using type = T;
+	};
+	//! 可変長テンプレート引数の最後の型
+	template <class... Ts>
+	struct LastType;
+	template <class T>
+	struct LastType<T> {
+		using type = T;
+	};
+	template <class T, class... Ts>
+	struct LastType<T,Ts...> : LastType<Ts...> {};
+
+	//! テンプレート引数が全てtrueならstd::true_type, それ以外はstd::false_type
+	template <bool... Bs>
+	struct And_t;
+	template <bool... Bs>
+	struct And_t<true, Bs...> : And_t<Bs...> {};
+	template <>
+	struct And_t<true> : std::true_type {};
+	template <bool... Bs>
+	struct And_t<false, Bs...> : std::false_type {};
+
+	struct Invalid_t {};
+	//! テンプレート引数型が全て同じならstd::true_type, それ以外はstd::false_type
+	template <class... Ts>
+	struct SameType;
+	template <class T0>
+	struct SameType<T0> : std::true_type {
+		using v_type = T0;
+	};
+	template <class T>
+	struct SameType<T,T> : std::true_type {
+		using v_type = T;
+	};
+	template <class T0, class T1>
+	struct SameType<T0,T1> : std::false_type {
+		using v_type = Invalid_t;
+	};
+	template <class T0, class... Ts>
+	struct SameType<T0, Ts...> : SameType<T0, typename SameType<Ts...>::v_type> {};
+
+	//! テンプレート引数値が全て同じならstd::true_type, それ以外はstd::false_type
+	template <int... Ns>
+	struct Equal_t : SameType<std::integral_constant<int, Ns>...> {};
+
 	//! std::result_ofの関数対応版
 	/*! result_ofのシグニチャと意味が紛らわしいが、気にしない */
 	template <class, class>
