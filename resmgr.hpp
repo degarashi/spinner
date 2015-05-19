@@ -216,6 +216,10 @@ namespace spn {
 			bool operator == (const HdlLockB<HDL,D>& hl) const {
 				return _hdl == hl.get();
 			}
+			template <bool D>
+			bool operator != (const HdlLockB<HDL,D>& hl) const {
+				return !(this->operator == (hl));
+			}
 			HdlLockB& operator = (HDL hdl) {
 				reset(hdl);
 				return *this;
