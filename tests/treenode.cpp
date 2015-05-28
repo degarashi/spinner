@@ -142,7 +142,7 @@ namespace spn {
 					VEC ret;
 					sp->template iterateDepthFirst<true>([&ret](auto& nd, int){
 						ret.emplace_back(nd.shared_from_this());
-						return std::decay_t<decltype(nd)>::Iterate::StepIn;
+						return Iterate::StepIn;
 					});
 					return std::move(ret);
 				}
@@ -365,7 +365,7 @@ namespace spn {
 			int depth = 0;
 			tree.getRoot()->iterateDepthFirst<false>([&depth](auto&, int d){
 				depth = std::max(depth, d);
-				return TreeNode_t::Iterate::StepIn;
+				return Iterate::StepIn;
 			});
 			// GetDepthでカウント
 			int depth2 = tree.getRoot()->getDepth();

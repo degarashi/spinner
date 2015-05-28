@@ -25,7 +25,13 @@ namespace spn {
 		using Tc = typename std::remove_const<T>::type;
 		return std::shared_ptr<Tc>(new Tc(t));
 	}
-
+	//! iterateDepthFirstの戻り値
+	enum class Iterate {
+		ReturnFromChild,	//!< 内部用
+		StepIn,				//!< 子を巡回
+		Next,				//!< 子を巡回せず兄弟ノードへ進む
+		Quit				//!< 直ちに巡回を終える
+	};
 	//! 汎用ツリー構造
 	/*! Tは必ずTreeNode<T>を継承する前提 */
 	template <class T>
@@ -89,14 +95,6 @@ namespace spn {
 			}
 
 		public:
-			//! iterateDepthFirstの戻り値
-			enum class Iterate {
-				ReturnFromChild,	//!< 内部用
-				StepIn,				//!< 子を巡回
-				Next,				//!< 子を巡回せず兄弟ノードへ進む
-				Quit				//!< 直ちに巡回を終える
-			};
-
 			TreeNode() = default;
 			explicit TreeNode(TreeNode&& t) = default;
 			//! copy-ctorに置いてはリンク情報をコピーしない

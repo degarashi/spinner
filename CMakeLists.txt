@@ -17,7 +17,7 @@ else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
 
-set(CXX_SRC ${CXX_SRC} color.cpp random.cpp filetree.cpp error.cpp adaptstd.cpp ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp dir.cpp)
+set(CXX_SRC ${CXX_SRC} profiler.cpp color.cpp random.cpp filetree.cpp error.cpp adaptstd.cpp ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp dir.cpp)
 add_library(spinner STATIC ${CXX_SRC})
 
 install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
