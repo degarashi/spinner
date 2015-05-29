@@ -202,7 +202,7 @@ namespace spn {
 				}
 				// NVPの都合上、一旦配列に分離
 				std::vector<ID> arID(nEnt);
-				std::vector<IDS> arIDS(nEnt);
+				std::vector<IDS> arIDS(0/*nEnt*/);	// boost_1_58_0では何故かデータが追記されてしまうので, とりあえずサイズは0にしておく
 				ar & BOOST_SERIALIZATION_NVP(arID) & BOOST_SERIALIZATION_NVP(arIDS);
 				for(size_t i=0 ; i<nEnt ; i++) {
 					auto& ent = _array[i];

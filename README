@@ -18,4 +18,4 @@ Sorry, japanese text only (for now :)
 <作り始めたばかりなので実用性はありません>
 
 依存ライブラリ:
-	Boost-1.55.0(boost_regex, boost_serialization)
+	Boost-1.58.0(boost_regex, boost_serialization)
