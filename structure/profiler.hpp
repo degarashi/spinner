@@ -26,13 +26,13 @@ namespace std {
 namespace spn {
 	// スレッド毎に集計(=結果をスレッド毎に取り出す)
 	class Profiler {
+		private:
+			using SerialId = prof::SerialId;
 		public:
 			using Clock = std::chrono::steady_clock;
 			using TimePoint = Clock::time_point;
 			using Name = prof::Name;
 			using USec = std::chrono::microseconds;
-		private:
-			using SerialId = prof::SerialId;
 			//! プロファイラブロック
 			struct Block : spn::TreeNode<Block> {
 				SerialId		serialId;	//!< ツリー全体を通しての通し番号
@@ -44,6 +44,7 @@ namespace spn {
 				Block(const Name& name, SerialId id);
 			};
 			using BlockSP = std::shared_ptr<Block>;
+		private:
 			// key = 親ノードのSerialId +'|'+ nameがキー
 			using UniqueMap = std::unordered_map<prof::UniquePair, BlockSP>;
 			// key = ノード名
@@ -52,7 +53,8 @@ namespace spn {
 			SingleMap	_singleMap;		//!< 同じ名前のブロック配列
 			SerialId	_serialIdCur;
 
-			BlockSP		_spRoot;
+			BlockSP		_spRoot,		//!< 現在記録中のツリー構造ルート
+						_spRootPrev;	//!< 1つ前のツリー構造ルート
 			//! 現在計測中のブロック
 			Block*		_currentBlock;
 
@@ -82,6 +84,7 @@ namespace spn {
 			std::pair<USec,uint32_t> getAccumedTime(const Name& name) const;
 			// ツリー構造ルート取得
 			BlockSP getRoot() const;
+			BlockSP getPreviousRoot() const;
 	};
 	extern thread_local Profiler profiler;
 	namespace prof {}

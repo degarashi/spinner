@@ -37,13 +37,20 @@ namespace spn {
 	}
 	// -------------------- Profiler --------------------
 	Profiler::Profiler() {
+		_currentBlock = nullptr;
 		reset();
 	}
 	void Profiler::reset() {
+		auto* cur = _currentBlock;
+		while(cur) {
+			endBlock(cur->name);
+			cur = cur->getParent().get();
+		}
 		_uniqueMap.clear();
 		_singleMap.clear();
 		_serialIdCur = 0;
 		_currentBlock = nullptr;
+		_spRootPrev = _spRoot;
 		_spRoot.reset();
 		while(!_tmBegin.empty())
 			_tmBegin.pop();
@@ -98,8 +105,6 @@ namespace spn {
 		// ポインタを親に移す
 		_currentBlock = _currentBlock->getParent().get();
 		_tmBegin.pop();
-		// nullの場合、RootをPopしたという事なのでエラー
-		Assert(Trap, _currentBlock)
 	}
 	std::pair<Profiler::USec,uint32_t> Profiler::getAccumedTime(const Name& name) const {
 		uint32_t nc(0);
@@ -113,5 +118,8 @@ namespace spn {
 	}
 	Profiler::BlockSP Profiler::getRoot() const {
 		return _spRoot;
+	}
+	Profiler::BlockSP Profiler::getPreviousRoot() const {
+		return _spRootPrev;
 	}
 }
