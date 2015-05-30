@@ -11,9 +11,12 @@ namespace spn {
 	{}
 	Profiler::USec Profiler::Block::getLowerTime() const {
 		USec sum(0);
-		iterateDepthFirst<false>([&sum](const Block& nd, int){
-			sum += nd.takeTime;
-			return Iterate::Next;
+		iterateDepthFirst<false>([&sum](const Block& nd, int depth){
+			if(depth > 0) {
+				sum += nd.takeTime;
+				return Iterate::Next;
+			} else
+				return Iterate::StepIn;
 		});
 		return sum;
 	}
@@ -23,13 +26,14 @@ namespace spn {
 		_name(name)
 	{}
 	Profiler::BlockObj::BlockObj(BlockObj&& b):
-		_bValid(true),
+		_bValid(b._bValid),
 		_name(std::move(b._name))
 	{
 		b._bValid = false;
 	}
 	Profiler::BlockObj::~BlockObj() {
-		profiler.endBlock(_name);
+		if(_bValid)
+			profiler.endBlock(_name);
 	}
 	// -------------------- Profiler --------------------
 	Profiler::Profiler() {
@@ -41,9 +45,12 @@ namespace spn {
 		_serialIdCur = 0;
 		_currentBlock = nullptr;
 		_spRoot.reset();
+		while(!_tmBegin.empty())
+			_tmBegin.pop();
 
 		// ルートノードを追加
 		_makeBlock("Root");
+		_tmBegin.push(Clock::now());
 	}
 	Profiler::BlockSP Profiler::_makeBlock(const Name& name) {
 		auto sp = std::make_shared<Block>(name, ++_serialIdCur);
@@ -64,7 +71,7 @@ namespace spn {
 		return std::move(sp);
 	}
 	void Profiler::beginBlock(const Name& name) {
-		_tmBegin = Clock::now();
+		_tmBegin.push(Clock::now());
 		auto key = std::make_pair(_currentBlock->serialId, name);
 		auto itr = _uniqueMap.find(key);
 		if(itr != _uniqueMap.end()) {
@@ -86,10 +93,11 @@ namespace spn {
 		// ネストコールが崩れた時にエラーを出す
 		Assert(Trap, _currentBlock->name == name)
 		// かかった時間を加算
-		USec us = std::chrono::duration_cast<USec>(tmEnd - _tmBegin);
+		USec us = std::chrono::duration_cast<USec>(tmEnd - _tmBegin.top());
 		_currentBlock->takeTime += us;
 		// ポインタを親に移す
 		_currentBlock = _currentBlock->getParent().get();
+		_tmBegin.pop();
 		// nullの場合、RootをPopしたという事なのでエラー
 		Assert(Trap, _currentBlock)
 	}

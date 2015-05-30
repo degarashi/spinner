@@ -3,6 +3,7 @@
 #include "structure/treenode.hpp"
 #include <chrono>
 #include <unordered_map>
+#include <stack>
 
 namespace spn {
 	namespace {
@@ -54,8 +55,10 @@ namespace spn {
 			BlockSP		_spRoot;
 			//! 現在計測中のブロック
 			Block*		_currentBlock;
+
+			using TPStk = std::stack<TimePoint>;
 			//! 計測開始した時刻
-			TimePoint	_tmBegin;
+			TPStk		_tmBegin;
 
 			class BlockObj {
 				private:
