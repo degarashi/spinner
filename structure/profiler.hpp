@@ -9,7 +9,7 @@ namespace spn {
 	namespace {
 		namespace prof {
 			using SerialId = uint32_t;
-			using Name = std::string;
+			using Name = const char*;
 			using UniquePair = std::pair<SerialId,Name>;
 		}
 	}

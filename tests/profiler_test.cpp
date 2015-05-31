@@ -23,9 +23,11 @@ namespace spn {
 				Profiler::Name	name;
 				uint32_t		nCalled;
 			};
+			std::vector<std::string>	nameV(nBlock);
 			std::vector<Block>	block(nBlock);
 			for(int i=0 ; i<nBlock ; i++) {
-				block[i].name = (boost::format("block_%1%") % i).str();
+				nameV[i] = (boost::format("block_%1%") % i).str();
+				block[i].name = nameV[i].c_str();
 				block[i].nCalled = 0;
 			}
 			std::vector<Profiler::Name> nameStack;
