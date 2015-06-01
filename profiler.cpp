@@ -1,19 +1,16 @@
 #include "structure/profiler.hpp"
 
 namespace spn {
-	thread_local Profiler profiler;
 	// -------------------- Profiler::Block --------------------
-	Profiler::Block::Block(const Name& name, SerialId id):
-		serialId(id),
+	Profiler::Block::Block(const Name& name):
 		name(name),
-		takeTime(0),
-		nCalled(0)
+		layerHistId(0)
 	{}
 	Profiler::USec Profiler::Block::getLowerTime() const {
 		USec sum(0);
 		iterateDepthFirst<false>([&sum](const Block& nd, int depth){
 			if(depth > 0) {
-				sum += nd.takeTime;
+				sum += nd.hist.tAccum;
 				return Iterate::Next;
 			} else
 				return Iterate::StepIn;
@@ -35,91 +32,155 @@ namespace spn {
 		if(_bValid)
 			profiler.endBlock(_name);
 	}
-	// -------------------- Profiler --------------------
-	Profiler::Profiler() {
-		_currentBlock = nullptr;
-		reset();
+	// -------------------- Profiler::History --------------------
+	Profiler::History::History():
+		nCalled(0),
+		tMax(std::numeric_limits<USec::rep>::lowest()),
+		tMin(std::numeric_limits<USec::rep>::max()),
+		tAccum(0)
+	{}
+	void Profiler::History::addTime(USec t) {
+		++nCalled;
+		tMax = std::max(tMax, t);
+		tMin = std::min(tMin, t);
+		tAccum += t;
 	}
-	void Profiler::reset() {
-		auto* cur = _currentBlock;
+	Profiler::USec Profiler::History::getAverageTime() const {
+		return tAccum / nCalled;
+	}
+
+	thread_local Profiler profiler;
+	namespace {
+		const char* c_rootName = "Root";
+	}
+	// -------------------- Profiler --------------------
+	bool Profiler::_hasIntervalPassed() const {
+		return (Clock::now() - _tIntervalCur) >= _tInterval;
+	}
+	Profiler::Profiler() {
+		clear();
+	}
+	void Profiler::clear() {
+		_intervalInfo.clear();
+		_spRoot.clear();
+		while(!_tmBegin.empty())
+			_tmBegin.pop();
+		_current.pBlock = nullptr;
+		_current.histId = 0;
+		setInterval(std::chrono::seconds(1));
+
+		beginBlock(c_rootName);
+	}
+	void Profiler::resetTree() {
+		auto* cur = _current.pBlock;
 		while(cur) {
 			endBlock(cur->name);
 			cur = cur->getParent().get();
+			_current.pBlock = cur;
 		}
-		_uniqueMap.clear();
-		_singleMap.clear();
-		_serialIdCur = 0;
-		_currentBlock = nullptr;
-		_spRootPrev = _spRoot;
-		_spRoot.reset();
 		while(!_tmBegin.empty())
 			_tmBegin.pop();
+		_spRoot.advance_clear();
 
-		// ルートノードを追加
-		_makeBlock("Root");
-		_tmBegin.push(Clock::now());
-	}
-	Profiler::BlockSP Profiler::_makeBlock(const Name& name) {
-		auto sp = std::make_shared<Block>(name, ++_serialIdCur);
-		++sp->nCalled;
-
-		SerialId id = _currentBlock ? _currentBlock->serialId : 0;
-		auto key = std::make_pair(id, sp->name);
-		Assert(Trap, _uniqueMap.count(key) == 0)
-		_uniqueMap.emplace(key, sp);
-		_singleMap[sp->name].emplace_back(sp.get());
-		if(_currentBlock)
-			_currentBlock->addChild(sp);
-		else {
-			Assert(Trap, !static_cast<bool>(_spRoot))
-			_spRoot = sp;
+		// インターバル時間が過ぎていたら他にも変数をリセット
+		if(_hasIntervalPassed()) {
+			_tIntervalCur = Clock::now();
+			_intervalInfo.advance_clear();
 		}
-		_currentBlock = sp.get();
-		return std::move(sp);
+		// ルートノードを追加
+		beginBlock("Root");
 	}
 	void Profiler::beginBlock(const Name& name) {
-		_tmBegin.push(Clock::now());
-		auto key = std::make_pair(_currentBlock->serialId, name);
-		auto itr = _uniqueMap.find(key);
-		if(itr != _uniqueMap.end()) {
-			// 2度目以降の呼び出し
-			_currentBlock = itr->second.get();
-			++_currentBlock->nCalled;
-		} else {
-			// 初回呼び出し
-			auto sp = _makeBlock(name);
-			_currentBlock = sp.get();
+		int n = _tmBegin.size();
+		auto& ci = _intervalInfo.current();
+		if(n < MaxLayer) {
+			// 現在のレイヤーにおける名前Idを取得
+			int nameId;
+			{
+				auto& nv = ci.nameV[n];
+				auto itr = std::find(nv.begin(), nv.end(), name);
+				if(itr == nv.end()) {
+					nameId = nv.size() + 1;
+					nv.emplace_back(name);
+				} else
+					nameId = (itr - nv.begin()) + 1;
+			}
+			_current.histId |= CalcLayerHistId(n, nameId);
 		}
+		{
+			// 既に同じノードが無いか確認
+			auto& cur = _current.pBlock;
+			Block::SP node;
+			if(cur) {
+				cur->iterateDepthFirst<false>([&node, &name](Block& nd, int depth){
+					if(depth == 0)
+						return Iterate::StepIn;
+					if(nd.name == name) {
+						node = nd.shared_from_this();
+						return Iterate::Quit;
+					}
+					return Iterate::Next;
+				});
+			}
+			if(!node) {
+				auto blk = std::make_shared<Block>(name);
+				blk->layerHistId = (n<MaxLayer) ? _current.histId : 0;
+				ci.nameHistMap[name];
+				if(cur)
+					cur->addChild(blk);
+				else {
+					Assert(Trap, n==0)
+					Assert(Trap, !_spRoot.current())
+					_spRoot.current() = blk;
+				}
+				cur = blk.get();
+			} else {
+				cur = node.get();
+			}
+		}
+		_tmBegin.push(Clock::now());
 	}
 	Profiler::BlockObj Profiler::beginBlockObj(const Name& name) {
 		beginBlock(name);
 		return BlockObj(name);
 	}
 	void Profiler::endBlock(const Name& name) {
-		TimePoint tmEnd = Clock::now();
+		auto& cur = _current.pBlock;
 		// ネストコールが崩れた時にエラーを出す
-		Assert(Trap, _currentBlock->name == name)
+		Assert(Trap, name==cur->name)
+
+		int n = _tmBegin.size();
 		// かかった時間を加算
-		USec us = std::chrono::duration_cast<USec>(tmEnd - _tmBegin.top());
-		_currentBlock->takeTime += us;
+		USec dur = std::chrono::duration_cast<USec>(Clock::now() - _tmBegin.top());
+
+		auto& ci = _intervalInfo.current();
+		if(n <= MaxLayer) {
+			// 名前Id履歴からブロックを検索 & 用意
+			auto& h = ci.intervalHistMap[_current.histId];
+			h.addTime(dur);
+			// 名前Idの先頭を00で埋める
+			ClearLayerHistId(_current.histId, n-1);
+		}
+		Assert(Trap, ci.nameHistMap.count(name)==1)
+		ci.nameHistMap.at(name).addTime(dur);
+		cur->hist.addTime(dur);
 		// ポインタを親に移す
-		_currentBlock = _currentBlock->getParent().get();
+		cur = cur->getParent().get();
 		_tmBegin.pop();
 	}
-	std::pair<Profiler::USec,uint32_t> Profiler::getAccumedTime(const Name& name) const {
-		uint32_t nc(0);
-		USec us(0);
-		auto& s = _singleMap.at(name);
-		for(auto& b : s) {
-			nc += b->nCalled;
-			us += b->takeTime;
-		}
-		return std::make_pair(us, nc);
+	Profiler::LayerHistId Profiler::CalcLayerHistId(int level, int index) {
+		return LayerHistId(index & 0xff) << ((sizeof(LayerHistId) - level - 1)*8);
+	}
+	void Profiler::ClearLayerHistId(LayerHistId& id, int level) {
+		id &= ~CalcLayerHistId(level, 0xff);
 	}
 	Profiler::BlockSP Profiler::getRoot() const {
-		return _spRoot;
+		return _spRoot.prev();
 	}
-	Profiler::BlockSP Profiler::getPreviousRoot() const {
-		return _spRootPrev;
+	const Profiler::NameHistMap& Profiler::getNameHistory() const {
+		return _intervalInfo.prev().nameHistMap;
+	}
+	const Profiler::IntervalHistMap& Profiler::getIntervalHistory() const {
+		return _intervalInfo.prev().intervalHistMap;
 	}
 }

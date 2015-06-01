@@ -9,7 +9,8 @@ namespace spn {
 		class ProfilerTest : public RandomTestInitializer {
 			protected:
 				void SetUp() override {
-					profiler.reset();
+					profiler.clear();
+					profiler.setInterval(std::chrono::seconds(0));
 					RandomTestInitializer::SetUp();
 				}
 		};
@@ -53,25 +54,27 @@ namespace spn {
 				nameStack.pop_back();
 			}
 
+			profiler.resetTree();
 			Profiler::USec sum(0);
 			auto root = profiler.getRoot();
 			root->iterateDepthFirst<false>([&sum](const auto& blk, int){
 				// 下位ブロックの合計は自ブロックの時間を超えない
 				auto lowerTime = blk.getLowerTime();
-				EXPECT_GE(blk.takeTime, lowerTime);
-				sum += blk.takeTime - lowerTime;
+				EXPECT_GE(blk.hist.tAccum, lowerTime);
+				sum += blk.hist.tAccum - lowerTime;
 				return Iterate::StepIn;
 			});
 			// ルートブロックの累積時間は全てのブロックの個別時間を合わせたものと"ほぼ"等しい
-			ASSERT_NEAR(root->takeTime.count(),  sum.count(), sum.count()/100+1);
+			ASSERT_NEAR(root->hist.tAccum.count(),  sum.count(), sum.count()/100+1);
 			// 同じ名前のブロックを合算 => 呼び出し回数を比較
 			for(int i=0 ; i<nBlock ; i++) {
 				auto& blk = block[i];
 				if(blk.nCalled == 0) {
-					ASSERT_THROW(profiler.getAccumedTime(blk.name), std::out_of_range);
+					ASSERT_EQ(0, profiler.getNameHistory().count(blk.name));
 				} else {
-					auto res = profiler.getAccumedTime(blk.name);
-					ASSERT_EQ(res.second, blk.nCalled);
+					ASSERT_EQ(profiler.getNameHistory().count(blk.name), 1);
+					auto res = profiler.getNameHistory().at(blk.name);
+					ASSERT_EQ(res.nCalled, blk.nCalled);
 				}
 			}
 		}
