@@ -70,10 +70,11 @@ namespace spn {
 			cref_type<T> _refresh(const Class* self, CB&& callback) const {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
+				constexpr auto TFlag = Get<T>();
+				_rflag &= ~TFlag;
 				_rflag &= ~(self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>()));
-				_rflag &= ~Get<T>();
 				callback(GetFlagIndex<T>());
-				AssertP(Trap, !(_rflag & OrHL<T>()), "refresh flag was not cleared correctly")
+				AssertP(Trap, !(_rflag & (OrHL<T>() & ~TFlag)), "refresh flag was not cleared correctly")
 				return ptrC->cref(_NullPtr<T>());
 			}
 			//! 変数型の格納順インデックス
