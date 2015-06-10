@@ -1,7 +1,6 @@
 #pragma once
 #include "type.hpp"
 #include "error.hpp"
-#define BOOST_PP_VARIADICS 1
 #include <boost/preprocessor.hpp>
 
 namespace spn {
@@ -27,11 +26,15 @@ namespace spn {
 		decltype(std::declval<base>().cref((T2*)nullptr)) cref(T2* p) const {	// decltype(base::cref(p))
 			return base::cref(p); }
 	};
+	using RFlagValue_t = uint32_t;
+	struct RFlagRet {
+		RFlagValue_t	flagOr;		//!< FlagValueのOr差分 (一緒に更新された変数を伝達する時に使用)
+		bool			bCancel;	//!< trueなら自身の更新フラグを取り下げる (次回も更新がかかる)
+	};
 	//! キャッシュ変数の自動管理クラス
 	template <class Class, class... Ts>
 	class RFlag : public ValueHolder<Ts...> {
 		public:
-			using FlagValue = uint32_t;
 		private:
 			using base = ValueHolder<Ts...>;
 			using ct_base = spn::CType<Ts...>;
@@ -42,37 +45,38 @@ namespace spn {
 			template <class T>
 			using ref_type = typename std::decay<cref_type<T>>::type&;
 
-			mutable FlagValue _rflag;
+			mutable RFlagValue_t _rflag;
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
 			template <class T0>
-			static constexpr FlagValue _Add_If(std::integral_constant<bool,false>) { return 0; }
+			static constexpr RFlagValue_t _Add_If(std::integral_constant<bool,false>) { return 0; }
 			template <class T0>
-			static constexpr FlagValue _Add_If(std::integral_constant<bool,true>) { return OrLH<T0>(); }
+			static constexpr RFlagValue_t _Add_If(std::integral_constant<bool,true>) { return OrLH<T0>(); }
 			template <class T, int N>
-			static constexpr FlagValue _IterateLH(std::integral_constant<int,N>) {
+			static constexpr RFlagValue_t _IterateLH(std::integral_constant<int,N>) {
 				using T0 = typename ct_base::template At<N>::type;
 				using T0Has = typename T0::template Has<T>;
 				return _Add_If<T0>(T0Has()) |
 						_IterateLH<T>(std::integral_constant<int,N+1>());
 			}
 			template <class T>
-			static constexpr FlagValue _IterateLH(std::integral_constant<int,ct_base::size>) { return 0; }
+			static constexpr RFlagValue_t _IterateLH(std::integral_constant<int,ct_base::size>) { return 0; }
 
 			template <class T, int N>
-			static constexpr FlagValue _IterateHL(std::integral_constant<int,N>) {
+			static constexpr RFlagValue_t _IterateHL(std::integral_constant<int,N>) {
 				using T0 = typename T::template At<N>::type;
 				return OrHL<T0>() | _IterateHL<T>(std::integral_constant<int,N-1>());
 			}
 			template <class T>
-			static constexpr FlagValue _IterateHL(std::integral_constant<int,-1>) { return 0; }
+			static constexpr RFlagValue_t _IterateHL(std::integral_constant<int,-1>) { return 0; }
 
 			template <class T, class CB>
 			cref_type<T> _refresh(const Class* self, CB&& callback) const {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
 				constexpr auto TFlag = Get<T>();
-				_rflag &= ~TFlag;
-				_rflag &= ~(self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>()));
+				RFlagRet ret = self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>());
+				_rflag |= ret.flagOr;
+				_rflag &= ret.bCancel ? ~0 : ~TFlag;
 				callback(GetFlagIndex<T>());
 				AssertP(Trap, !(_rflag & (OrHL<T>() & ~TFlag)), "refresh flag was not cleared correctly")
 				return ptrC->cref(_NullPtr<T>());
@@ -84,14 +88,14 @@ namespace spn {
 			}
 			//! 変数型を示すフラグ
 			template <class TA>
-			static constexpr FlagValue GetFlagSingle() {
+			static constexpr RFlagValue_t GetFlagSingle() {
 				return 1 << GetFlagIndex<TA>();
 			}
 			//! 引数の変数フラグをORで合成
 			template <class... TsA>
-			static constexpr FlagValue _Sum(std::integral_constant<int,0>) { return 0; }
+			static constexpr RFlagValue_t _Sum(std::integral_constant<int,0>) { return 0; }
 			template <class TA, class... TsA, int N>
-			static constexpr FlagValue _Sum(std::integral_constant<int,N>) {
+			static constexpr RFlagValue_t _Sum(std::integral_constant<int,N>) {
 				return GetFlagSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
 			}
 
@@ -117,32 +121,32 @@ namespace spn {
 			}
 			//! 引数の変数を示すフラグ
 			template <class... TsA>
-			static constexpr FlagValue Get() {
+			static constexpr RFlagValue_t Get() {
 				return _Sum<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
 			}
 			//! 変数全てを示すフラグ値
-			static constexpr FlagValue All() {
+			static constexpr RFlagValue_t All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
 			}
 			//! 現在のフラグ値
-			FlagValue GetFlag() const {
+			RFlagValue_t GetFlag() const {
 				return _rflag;
 			}
 			//! フラグのテストだけする
 			template <class... TsA>
-			FlagValue Test() const {
+			RFlagValue_t Test() const {
 				return GetFlag() & Get<TsA...>();
 			}
 
 			//! 自分より上の階層のフラグ (Low -> High)
 			template <class T>
-			static constexpr FlagValue OrLH() {
+			static constexpr RFlagValue_t OrLH() {
 				// TypeListを巡回、A::Has<T>ならOr<A>()をたす
 				return Get<T>() | _IterateLH<T>(std::integral_constant<int,0>());
 			}
 			//! 自分以下の階層のフラグ (High -> Low)
 			template <class T>
-			static constexpr FlagValue OrHL() {
+			static constexpr RFlagValue_t OrHL() {
 				return Get<T>() | _IterateHL<T>(std::integral_constant<int,T::size-1>());
 			}
 
@@ -212,9 +216,9 @@ namespace spn {
 				RFLAG_RVALUE_D_ \
 			)(name, __VA_ARGS__)
 	#define RFLAG_RVALUE_D_(name, valueT, ...) \
-		uint32_t _refresh(valueT&, name*) const;
+		::spn::RFlagRet _refresh(valueT&, name*) const;
 	#define RFLAG_RVALUE_(name, valueT) \
-		uint32_t _refresh(valueT&, name*) const { return 0; }
+		::spn::RFlagRet _refresh(valueT&, name*) const { return {}; }
 	#define RFLAG_GETMETHOD(name) auto get##name() const -> decltype(_rflag.template get<name>(this)) { return _rflag.template get<name>(this); }
 	#define PASS_THROUGH(func, ...)		func(__VA_ARGS__)
 	#define RFLAG_FUNC(z, data, elem)	PASS_THROUGH(RFLAG_RVALUE, BOOST_PP_SEQ_ENUM(elem))
@@ -282,7 +286,7 @@ namespace spn {
 	/* class MyClass {
 		RFLAG_RVALUE(Value0, Type0)
 		RFLAG_RVALUE(Value0, Type0, Depends....) をクラス内に変数分だけ書く
-		更新関数を uint32_t _refresh(Type0&, Value0*) const; の形で記述
+		更新関数を RFlagRet _refresh(Type0&, Value0*) const; の形で記述
 		RFLAG(MyClass, Value0, Value0...)
 		public:
 			// 参照用の関数
