@@ -26,16 +26,25 @@ namespace spn {
 		decltype(std::declval<base>().cref((T2*)nullptr)) cref(T2* p) const {	// decltype(base::cref(p))
 			return base::cref(p); }
 	};
-	using RFlagValue_t = uint32_t;
+	using RFlagValue_t = uint_fast32_t;
 	struct RFlagRet {
 		RFlagValue_t	flagOr;		//!< FlagValueのOr差分 (一緒に更新された変数を伝達する時に使用)
 		bool			bCancel;	//!< trueなら自身の更新フラグを取り下げる (次回も更新がかかる)
 	};
+	using AcCounter_t = uint_fast32_t;
+	//! 変数が更新された時の累積カウンタの値を後で比較するためのラッパークラス
+	template <class T>
+	struct AcWrapper : T {
+		mutable AcCounter_t	ac_counter = ~0;
+		using T::T;
+		using T::operator =;
+	};
 	//! キャッシュ変数の自動管理クラス
 	template <class Class, class... Ts>
 	class RFlag : public ValueHolder<Ts...> {
-		public:
 		private:
+			//! 更新処理がかかる度にインクリメントされるカウンタ
+			mutable AcCounter_t _accum[sizeof...(Ts)];
 			using base = ValueHolder<Ts...>;
 			using ct_base = spn::CType<Ts...>;
 			template <class T>
@@ -79,6 +88,8 @@ namespace spn {
 				_rflag &= ret.bCancel ? ~0 : ~TFlag;
 				callback(GetFlagIndex<T>());
 				AssertP(Trap, !(_rflag & (OrHL<T>() & ~TFlag)), "refresh flag was not cleared correctly")
+				// 累積カウンタをインクリメント
+				++_accum[GetFlagIndex<T>()];
 				return ptrC->cref(_NullPtr<T>());
 			}
 			//! 変数型の格納順インデックス
@@ -108,6 +119,8 @@ namespace spn {
 				_rflag &= ~OrHL<T>();
 				// 自分の階層より上の変数は全てフラグを立てる
 				_rflag |= OrLH<T>() & ~Get<T>();
+				// 累積カウンタをインクリメント
+				++_accum[GetFlagIndex<T>()];
 				_setFlag<TsA...>(std::integral_constant<int,N-1>());
 			}
 
@@ -117,6 +130,8 @@ namespace spn {
 			}
 			//! 全てのキャッシュを無効化
 			void resetAll() {
+				for(auto& a : _accum)
+					a = 0;
 				_rflag = All();
 			}
 			//! 引数の変数を示すフラグ
@@ -127,6 +142,11 @@ namespace spn {
 			//! 変数全てを示すフラグ値
 			static constexpr RFlagValue_t All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
+			}
+			//! 累積カウンタ値取得
+			template <class TA>
+			AcCounter_t getAcCounter() const {
+				return _accum[GetFlagIndex<TA>()];
 			}
 			//! 現在のフラグ値
 			RFlagValue_t GetFlag() const {
@@ -151,6 +171,7 @@ namespace spn {
 			}
 
 			//! 更新フラグだけを立てる
+			/*! 累積カウンタも更新 */
 			template <class... TsA>
 			void setFlag() {
 				_setFlag<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
