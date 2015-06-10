@@ -5,6 +5,15 @@
 #include <limits>
 
 namespace spn {
+	//! 累積カウンタの比較用
+	template <class T>
+	bool CompareAndSet(T& num, const T& target) {
+		if(num != target) {
+			num = target;
+			return true;
+		}
+		return false;
+	}
 	//! コンパイル時数値計算 & 比較
 	template <int M, int N>
 	struct TValue {
