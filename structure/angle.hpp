@@ -195,3 +195,50 @@ namespace spn {
 BOOST_CLASS_IMPLEMENTATION_TEMPLATE((class)(class), spn::Angle, object_serializable)
 BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::Angle, track_never)
 
+// ------------- Angle系関数 -------------
+namespace spn {
+	//! dirAを基準に反時計回りに増加する値を返す
+	/*! \param[in] dir 値を算出したい単位ベクトル
+		\param[in] dirA 基準の単位ベクトル
+		\return 角度に応じた0〜4の値(一様ではない) */
+	inline float AngleValueNL(const Vec2& dir, const Vec2& dirA) {
+		float d0 = dir.dot(dirA);
+		if(dirA.cw(dir) <= -1e-6f)
+			return d0+1 + 2;
+		return 2.f-(d0+1);
+	}
+	//! 上方向を基準としたdirの角度を返す(半時計周り)
+	inline RadF AngleValue(const Vec2& dir) {
+		float ac0 = std::acos(std::max(-1.f, std::min(1.f,dir.y)));
+		if(dir.x >= 1e-6f)
+			return RadF(2*spn::PI - ac0);
+		return RadF(ac0);
+	}
+	inline float AngleLerpValueDiff(float ang0, float ang1, const float oneloop) {
+		auto diff = ang1 - ang0;
+		if(diff > oneloop/2)
+			diff = -oneloop + diff;
+		return diff;
+	}
+	template <class Proc>
+	float AngleLerpValue(float ang0, float ang1, const Proc& proc, const float oneloop) {
+		auto diff = AngleLerpValueDiff(ang0, ang1, oneloop);
+		return ang0 + proc(diff);
+	}
+	//! 2つの角度値をang0 -> ang1の線形補間
+	template <class T>
+	T AngleLerp(const T& ang0, const T& ang1, float r) {
+		auto fn = [r](auto&& v){ return v*r; };
+		return T(AngleLerpValue(ang0.get(), ang1.get(), fn, T::OneRotationAng));
+	}
+	//! ang0からang1へ向けてmaxDiff以下の分だけ近づける
+	template <class T>
+	T AngleMove(const T& ang0, const T& ang1, const T& maxDiff) {
+		auto fn = [mdiff = maxDiff.get()](auto&& v) {
+			if(std::abs(v) > mdiff)
+				return (v > 0) ? mdiff : -mdiff;
+			return decltype(mdiff)(v);
+		};
+		return T(AngleLerpValue(ang0.get(), ang1.get(), fn, T::OneRotationAng));
+	}
+}

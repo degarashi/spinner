@@ -527,8 +527,8 @@ namespace spn {
 				void SetUp() override {
 					RandomTestInitializer::SetUp();
 					_rd = getRand();
-					constexpr T RandMin = T(-1e2),
-								RandMax = T(1e2);
+					constexpr T RandMin = T(-1e3),
+								RandMax = T(1e3);
 					_rdF = [this, RandMin, RandMax](){ return _rd->template getUniform<T>({RandMin, RandMax}); };
 				}
 				void TearDown() override {
@@ -554,7 +554,7 @@ namespace spn {
 					tmp_degf.single();
 
 					auto val = angle;
-					while(val > onerotation)
+					while(val >= onerotation)
 						val -= onerotation;
 					while(val < 0)
 						val += onerotation;
@@ -621,7 +621,48 @@ namespace spn {
 			val = static_cast<TypeParam>(degf) / 2;
 			EXPECT_EQ((degf /= 2).get(), val);
 		}
-
+		TYPED_TEST(AngleTest, Lerp) {
+			Degree<TypeParam> ang0(this->_rdF()),
+								ang1(this->_rdF()),
+								tmp, tmp2;
+			ang0.single();
+			ang1.single();
+			// Lerp係数が0ならang0と等しい
+			tmp = AngleLerp(ang0, ang1, 0.0);
+			tmp.single();
+			EXPECT_NEAR(ang0.get(), tmp.get(), 1e-4);
+			// Lerp係数が1ならang1と等しい
+			tmp = AngleLerp(ang0, ang1, 1.0);
+			tmp.single();
+			EXPECT_NEAR(ang1.get(), tmp.get(), 1e-4);
+			// Lerp係数を0.5で2回かければ0.75でやったのと(ほぼ)同じになる
+			tmp = AngleLerp(ang0, ang1, .5);
+			tmp = AngleLerp(tmp, ang1, .5);
+			tmp2 = AngleLerp(ang0, ang1, .75);
+			tmp.single(); tmp2.single();
+			EXPECT_NEAR(tmp.get(), tmp2.get(), 1e-4);
+		}
+		TYPED_TEST(AngleTest, Move) {
+			using Ang = Degree<TypeParam>;
+			Ang		ang0(this->_rdF()),
+					ang1(this->_rdF()),
+					tmp;
+			auto fnDiff = [&tmp, &ang1](){
+				return std::abs(AngleLerpValueDiff(tmp.get(), ang1.get(), Ang::OneRotationAng));
+			};
+			ang0.single();
+			ang1.single();
+			tmp = ang0;
+			auto diff = AngleLerpValueDiff(ang0.get(), ang1.get(), Ang::OneRotationAng);
+			// 角度の差分を3で割ったら3回処理した時点でang1とほぼ等しくなる
+			auto diff3 = Ang(std::abs(diff / 3.f));
+			tmp = AngleMove(tmp, ang1, diff3);
+			EXPECT_FALSE(fnDiff() < 1e-4f);
+			tmp = AngleMove(tmp, ang1, diff3);
+			EXPECT_FALSE(fnDiff() < 1e-4f);
+			tmp = AngleMove(tmp, ang1, diff3);
+			EXPECT_TRUE(fnDiff() < 1e-4f);
+		}
 		namespace {
 			template <class T>
 			void TestAsIntegral(MTRandom rd) {

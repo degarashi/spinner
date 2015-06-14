@@ -110,24 +110,6 @@ namespace spn {
 		return spn::ReinterpretValue<float>(FloatOne | ((val>>31) & 0x80000000)); }
 	//! PlusMinus1(float)の引数がunsigned intバージョン
 	float inline PlusMinus1(unsigned int val) { return PlusMinus1(static_cast<int>(val)); }
-
-	//! dirAを基準に反時計回りに増加する値を返す
-	/*! \param[in] dir 値を算出したい単位ベクトル
-		\param[in] dirA 基準の単位ベクトル
-		\return 角度に応じた0〜4の値(一様ではない) */
-	inline float AngleValueNL(const Vec2& dir, const Vec2& dirA) {
-		float d0 = dir.dot(dirA);
-		if(dirA.cw(dir) <= -1e-6f)
-			return d0+1 + 2;
-		return 2.f-(d0+1);
-	}
-	//! 上方向を基準としたdirの角度を返す(半時計周り)
-	inline RadF AngleValue(const Vec2& dir) {
-		float ac0 = std::acos(Saturate(dir.y, 1.f));
-		if(dir.x >= 1e-6f)
-			return RadF(2*spn::PI - ac0);
-		return RadF(ac0);
-	}
 	//! 2次元ベクトルを係数で混ぜ合わせる
 	Vec2 MixVector(const float (&cf)[3], const Vec2& p0, const Vec2& p1, const Vec2& p2);
 	//! 重心座標を計算
