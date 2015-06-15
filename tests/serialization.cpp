@@ -51,9 +51,8 @@ namespace spn {
 		TYPED_TEST(SerializeVector, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
-				auto data = GenRVec<TypeParam::width, TypeParam::align>(rdF);
+				auto data = VecT<TypeParam::width, TypeParam::align>::Random(rd, {-1e3f, 1e3f});
 				CheckSerializedDataBin(data);
 			}
 		}
@@ -65,9 +64,8 @@ namespace spn {
 		TYPED_TEST(SerializeMatrix, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniform<float>({-1e3f, 1e3f}); };
 			for(int i=0 ; i<NTEST ; i++) {
-				auto data = GenRMat<TypeParam::align, TypeParam::height, TypeParam::width>(rdF);
+				auto data = MatT<TypeParam::height, TypeParam::width, TypeParam::align>::Random(rd, {-1e3f, 1e3f});
 				CheckSerializedDataBin(data);
 			}
 		}
@@ -76,12 +74,11 @@ namespace spn {
 		TEST_F(SerializePose2D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
-			auto rdF = [&rd](){ return rd.template getUniform<float>({-PI, PI}); };
 			const RangeF r{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose2D ps(GenR2Vec(rd, r),
-							RadF(rdF()),
-							GenR2Vec(rd, r));
+				Pose2D ps(Vec2::Random(rd, r),
+							RadF::Random(rd),
+							Vec2::Random(rd, r));
 				CheckSerializedDataBin(ps);
 			}
 		}
@@ -91,9 +88,9 @@ namespace spn {
 			auto rd = This_t::getRand();
 			RangeF range{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose3D ps(GenR3Vec(rd, range),
-							GenRQuat<true>(rd),
-							GenR3Vec(rd, range));
+				Pose3D ps(Vec3::Random(rd, range),
+							AQuat::Random(rd),
+							Vec3::Random(rd, range));
 				CheckSerializedDataBin(ps);
 			}
 		}

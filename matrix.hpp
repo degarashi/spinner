@@ -11,6 +11,7 @@
 		#include <cassert>
 		#include "vector.hpp"
 		#include "structure/angle.hpp"
+		#include "random/matrix.hpp"
 
 		// 定義する行列の次元(M,N)
 		#define SEQ_MATDEF	((2,2))((2,3))((2,4))((4,2))((3,2))((3,3))((3,4))((4,3))((4,4))
@@ -297,6 +298,11 @@
 				//! 被約形にする
 				/*! \return 0の行数 */
 				int rowReduce();
+
+				template <class RD>
+				static MatT Random(RD& rd, const RangeF& r=random::DefaultRMatRange) {
+					return random::GenRMat<MatT>(rd, r);
+				}
 				// TODO: DecompAffine [DIM >= 3]
 
 				// 本来行列の積算が出来るのはDIM_N == 相手のDIM_Mの時だけだが

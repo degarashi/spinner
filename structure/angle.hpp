@@ -4,6 +4,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/nvp.hpp>
 #include "serialization/traits.hpp"
+#include "../random/rotation.hpp"
 
 namespace spn {
 	// Degree角度を示すタグ構造体
@@ -162,6 +163,10 @@ namespace spn {
 			Angle operator -() const {
 				return Angle(-_angle);
 			}
+			template <class RD>
+			static Angle Random(RD& rd) {
+				return random::GenRAngle<Angle>(rd);
+			}
 
 			// ---- 比較演算子の定義 ----
 			#define DEF_ANGLE_OPERATOR(op) \
@@ -197,29 +202,18 @@ BOOST_CLASS_TRACKING_TEMPLATE((class)(class), spn::Angle, track_never)
 
 // ------------- Angle系関数 -------------
 namespace spn {
+	template <int N, bool A>
+	struct VecT;
+	using Vec2 = VecT<2,false>;
+
 	//! dirAを基準に反時計回りに増加する値を返す
 	/*! \param[in] dir 値を算出したい単位ベクトル
 		\param[in] dirA 基準の単位ベクトル
 		\return 角度に応じた0〜4の値(一様ではない) */
-	inline float AngleValueNL(const Vec2& dir, const Vec2& dirA) {
-		float d0 = dir.dot(dirA);
-		if(dirA.cw(dir) <= -1e-6f)
-			return d0+1 + 2;
-		return 2.f-(d0+1);
-	}
+	float AngleValueNL(const Vec2& dir, const Vec2& dirA);
 	//! 上方向を基準としたdirの角度を返す(半時計周り)
-	inline RadF AngleValue(const Vec2& dir) {
-		float ac0 = std::acos(std::max(-1.f, std::min(1.f,dir.y)));
-		if(dir.x >= 1e-6f)
-			return RadF(2*spn::PI - ac0);
-		return RadF(ac0);
-	}
-	inline float AngleLerpValueDiff(float ang0, float ang1, const float oneloop) {
-		auto diff = ang1 - ang0;
-		if(diff > oneloop/2)
-			diff = -oneloop + diff;
-		return diff;
-	}
+	RadF AngleValue(const Vec2& dir);
+	float AngleLerpValueDiff(float ang0, float ang1, const float oneloop);
 	template <class Proc>
 	float AngleLerpValue(float ang0, float ang1, const Proc& proc, const float oneloop) {
 		auto diff = AngleLerpValueDiff(ang0, ang1, oneloop);

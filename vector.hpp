@@ -11,6 +11,7 @@
 		#include <boost/serialization/nvp.hpp>
 		#include <cmath>
 		#include "spn_math.hpp"
+		#include "random/vector.hpp"
 
 		#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
 		#define ENUM_ARGPAIR(subseq) BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_FOR_EACH(DEF_ARGPAIR, NOTHING, subseq))
@@ -146,6 +147,26 @@
 				template <bool A>
 				VecT l_intp(const VecT<DIM,A>& v, float r) const;
 
+				//! 要素の値がランダムなベクトル
+				template <class RD>
+				static VecT Random(RD& rd, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVec<VecT>(rd, r);
+				}
+				//! ランダムなベクトル（但し長さが指定値より大きい）
+				template <class RD>
+				static VecT RandomWithLength(RD& rd, float th, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVecLen<VecT>(rd, th, r);
+				}
+				//! ランダムなベクトル (但し全ての成分の絶対値がそれぞれ基準範囲内)
+				template <class RD>
+				static VecT RandomWithAbs(RD& rd, const RangeF& rTh, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVecAbs<VecT>(rd, rTh, r);
+				}
+				//! ランダムな方向ベクトル
+				template <class RD>
+				static VecT RandomDir(RD& rd) {
+					return random::GenRDir<VecT>(rd);
+				}
 				#if ALIGN==1
 					//! AVec -> Vec へ暗黙変換
 					operator VecT<DIM,false>& ();

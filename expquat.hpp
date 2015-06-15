@@ -28,6 +28,7 @@
 		template <>
 		struct ALIGN16 ExpQuatT<ALIGNB> {
 			constexpr static int width = 3;
+			constexpr static bool align = ALIGNB;
 			union {
 				struct {
 					float	x,y,z;
@@ -63,6 +64,10 @@
 			const VEC3& asVec3() const;
 
 			std::pair<RadF,VEC3> getAngAxis() const;
+			template <class RD>
+			static ExpQuatT Random(RD& rd) {
+				return random::GenRExpQuat<ExpQuatT>(rd);
+			}
 		};
 		using BOOST_PP_CAT(ALIGNA, ExpQuat) = EQT;
 	#else

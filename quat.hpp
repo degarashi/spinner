@@ -4,6 +4,7 @@
 		#include "matrix.hpp"
 		#include "error.hpp"
 		#include "structure/angle.hpp"
+		#include "random/quat.hpp"
 		#include <boost/serialization/access.hpp>
 		#include <boost/serialization/level.hpp>
 		// 要求された定義レベルを実体化
@@ -33,6 +34,7 @@
 		template <>
 		struct ALIGN16 QuatT<ALIGNB> : QuatBase {
 			constexpr static int width = 4;
+			constexpr static bool align = ALIGNB;
 			union {
 				struct {
 					float	x,y,z,w;
@@ -132,6 +134,11 @@
 			MAT33 asMat33() const;
 			MAT44 asMat44() const;
 			EQT asExpQuat() const;
+
+			template <class RD>
+			static QuatT Random(RD& rd) {
+				return random::GenRQuat<QuatT>(rd);
+			}
 
 			friend std::ostream& operator << (std::ostream&, const QuatT&);
 		};
