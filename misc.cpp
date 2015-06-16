@@ -23,6 +23,10 @@ namespace spn {
 			diff = -oneloop + diff;
 		return diff;
 	}
+	Vec2 VectorFromAngle(const RadF& ang) {
+		const auto angv = ang.get();
+		return Vec2(-std::sin(angv), std::cos(angv));
+	}
 
 	const char* AngleInfo<Degree_t>::name = "degree";
 	const char* AngleInfo<Degree_t>::name_short = "deg";

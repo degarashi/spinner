@@ -663,6 +663,21 @@ namespace spn {
 			tmp = AngleMove(tmp, ang1, diff3);
 			EXPECT_TRUE(fnDiff() < 1e-4f);
 		}
+		TYPED_TEST(AngleTest, AngleValue) {
+			using Ang = Degree<TypeParam>;
+			Ang	ang(this->_rdF());
+			// VectorFromAngleで計算したものと行列で計算したものとはほぼ一致する
+			auto v0 = VectorFromAngle(ang),
+				 v1 = Vec2(0,1) * Mat22::Rotation(ang);
+			EXPECT_NEAR(v0.x, v1.x, 1e-4f);
+			EXPECT_NEAR(v0.y, v1.y, 1e-4f);
+
+			// AngleValueにかければ元の角度が出る
+			Ang ang1 = AngleValue(v0);
+			ang.single();
+			ang1.single();
+			EXPECT_NEAR(ang1.get(), ang.get(), 1e-2f);
+		}
 		namespace {
 			template <class T>
 			void TestAsIntegral(MTRandom rd) {

@@ -219,6 +219,8 @@ namespace spn {
 		auto diff = AngleLerpValueDiff(ang0, ang1, oneloop);
 		return ang0 + proc(diff);
 	}
+	//! 上方向を0度とし、反時計回り方向に指定角度回転したベクトルを返す
+	Vec2 VectorFromAngle(const RadF& ang);
 	//! 2つの角度値をang0 -> ang1の線形補間
 	template <class T>
 	T AngleLerp(const T& ang0, const T& ang1, float r) {
