@@ -212,7 +212,9 @@ namespace spn {
 		\return 角度に応じた0〜4の値(一様ではない) */
 	float AngleValueNL(const Vec2& dir, const Vec2& dirA);
 	//! 上方向を基準としたdirの角度を返す(半時計周り)
+	/*! \return 0〜2*PI未満の角度値 */
 	RadF AngleValue(const Vec2& dir);
+	//! ang0,ang1における-oneloop以上oneloop未満の差分角度値を計算
 	float AngleLerpValueDiff(float ang0, float ang1, const float oneloop);
 	template <class Proc>
 	float AngleLerpValue(float ang0, float ang1, const Proc& proc, const float oneloop) {

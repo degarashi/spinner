@@ -14,13 +14,16 @@ namespace spn {
 	RadF AngleValue(const Vec2& dir) {
 		float ac0 = std::acos(std::max(-1.f, std::min(1.f,dir.y)));
 		if(dir.x >= 1e-6f)
-			return RadF(2*spn::PI - ac0);
+			return RadF(RadF::OneRotationAng - ac0);
 		return RadF(ac0);
 	}
 	float AngleLerpValueDiff(float ang0, float ang1, const float oneloop) {
 		auto diff = ang1 - ang0;
-		if(diff > oneloop/2)
+		const float LHalf = oneloop/2;
+		if(diff >= LHalf)
 			diff = -oneloop + diff;
+		else if(diff < -LHalf)
+			diff = oneloop + diff;
 		return diff;
 	}
 	Vec2 VectorFromAngle(const RadF& ang) {
