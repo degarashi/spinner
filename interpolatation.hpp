@@ -1,5 +1,6 @@
 #pragma once
 #include <type_traits>
+#include "vector.hpp"
 
 namespace spn {
 	//! linear interpolation

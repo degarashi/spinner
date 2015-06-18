@@ -1,4 +1,5 @@
 #include "interpolatation.hpp"
+#include "matrix.hpp"
 
 namespace spn {
 	namespace {
