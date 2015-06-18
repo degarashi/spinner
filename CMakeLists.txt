@@ -7,18 +7,24 @@ project(spinner)
 message(STATUS ${BUILD_TYPE})
 include("crosscompile/${BUILD_TYPE}.cmake" require)
 
+# windows依存ファイル
+set(DEPENDANT_SRC_WIN dir_depWin.cpp watch_depWin.cpp)
+# unix依存ファイル
+set(DEPENDANT_SRC_UNIX dir_depLinux.cpp watch_depLinux.cpp)
+set(OS_DEPENDANT_SRC ${DEPENDANT_SRC_WIN} ${DEPENDANT_SRC_UNIX})
+# 依存ファイル以外のソースファイルを収集
+file(GLOB LIBSRC_FILE RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
+list(REMOVE_ITEM LIBSRC_FILE main.cpp ${OS_DEPENDANT_SRC})
 # OS依存ファイルの設定
 if(${WIN32})
-	set(CXX_SRC ${CXX_SRC} dir_depWin.cpp watch_depWin.cpp)
+	set(LIBSRC_FILE ${LIBSRC_FILE} ${DEPENDANT_SRC_WIN})
 elseif(${UNIX})
-	set(CXX_SRC ${CXX_SRC} dir_depLinux.cpp watch_depLinux.cpp)
+	set(LIBSRC_FILE ${LIBSRC_FILE} ${DEPENDANT_SRC_UNIX})
 	set(LINK_LIBS boost_thread boost_system pthread)
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
-
-set(CXX_SRC ${CXX_SRC} random_string.cpp profiler.cpp color.cpp random.cpp filetree.cpp error.cpp adaptstd.cpp ziptree.cpp zip.cpp spn_math.cpp spn_math2.cpp spn_math3.cpp spn_math4.cpp pathblock.cpp watch.cpp misc.cpp resmgr.cpp reshandle.cpp bits.cpp fpset.cpp pose.cpp charcode.cpp dir.cpp)
-add_library(spinner STATIC ${CXX_SRC})
+add_library(spinner STATIC ${LIBSRC_FILE})
 
 install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 file(GLOB_RECURSE HEADERS "*.hpp")
