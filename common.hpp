@@ -234,5 +234,16 @@ namespace spn {
 	typename GetCountOf_helper<N>::type& GetCountOfNA(T (&)[N]);
 	//! 配列の要素数を取得する (配列でない場合は1が返る)
 	#define countof_na(e)	sizeof(::spn::GetCountOfNA(e))
-}
 
+	template <class T, class... Args>
+	class IsCallable {
+		private:
+			template <class F>
+			static std::true_type _check(decltype(std::declval<F>()(std::declval<Args>()...), (void)0)*);
+			template <class F>
+			static std::false_type _check(...);
+		public:
+			using type = decltype(_check<T>(nullptr));
+			constexpr static bool value = type::value;
+	};
+}
