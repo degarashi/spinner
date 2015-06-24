@@ -17,7 +17,7 @@
 namespace spn {
 	namespace test {
 		namespace {
-			constexpr auto ThresholdULPs = ULPs_C(0.f, 1e-4f);
+			constexpr auto ThresholdULPs = ULPs_C(0.f, 3e-4f);
 			constexpr auto ThresholdULPs_Quat = ULPs_C(0.f, 5e-3f);
 			constexpr float ValueMin = -1e4f,
 							ValueMax = 1e4f,

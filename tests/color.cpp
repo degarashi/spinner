@@ -36,8 +36,8 @@ namespace spn {
 			RGBColor rgb = hsv0.toRGB();
 			HSVColor hsv1 = rgb.toHSV();
 
-			// 彩度が0の場合は色相が復元できない
-			if(hsv0.y > 1e-5f) {
+			// (彩度がほぼ0の場合は色相が復元できない為)
+			if(hsv0.y > 1e-4f) {
 				EXPECT_NEAR(hsv0.x, hsv1.x, 1e-5f);
 			}
 			EXPECT_NEAR(hsv0.y, hsv1.y, 1e-5f);
