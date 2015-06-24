@@ -27,6 +27,20 @@ namespace spn {
 		bool operator != (const Range& r) const {
 			return !(this->operator == (r));
 		}
+		#define DEF_OP(op) \
+			Range& operator op##= (const T& t) { \
+				from op##= t; \
+				to op##= t; \
+				return *this; \
+			} \
+			Range operator op (const T& t) const { \
+				return Range(from op t, to op t); \
+			}
+		DEF_OP(+)
+		DEF_OP(-)
+		DEF_OP(*)
+		DEF_OP(/)
+		#undef DEF_OP
 	};
 	using RangeI = Range<int>;
 	using RangeF = Range<float>;
