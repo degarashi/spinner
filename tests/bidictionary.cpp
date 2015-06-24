@@ -119,7 +119,7 @@ namespace spn {
 			// ランダムなキー & 値生成
 			template <class RD>
 			std::string GenRandomValue(RD& rd, std::string*) {
-				return random::GenRAlphabet(rd, 32);
+				return random::GenRAlphabet(rd.template getUniformF<int>(), 32);
 			}
 			template <class RD, class T,
 					 class=std::enable_if_t<std::is_arithmetic<T>::value>>

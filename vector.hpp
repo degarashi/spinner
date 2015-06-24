@@ -148,24 +148,28 @@
 				VecT l_intp(const VecT<DIM,A>& v, float r) const;
 
 				//! 要素の値がランダムなベクトル
-				template <class RD>
-				static VecT Random(RD& rd, const RangeF& r=random::DefaultRVecRange) {
-					return random::GenRVec<VecT>(rd, r);
+				template <class RDF>
+				static VecT Random(const RDF& rdf, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVec<VecT>(rdf, r);
+				}
+				template <class RDF>
+				static VecT RandomF(const RDF& rdf) {
+					return random::GenRVecF<VecT>(rdf);
 				}
 				//! ランダムなベクトル（但し長さが指定値より大きい）
-				template <class RD>
-				static VecT RandomWithLength(RD& rd, float th, const RangeF& r=random::DefaultRVecRange) {
-					return random::GenRVecLen<VecT>(rd, th, r);
+				template <class RDF>
+				static VecT RandomWithLength(const RDF& rdf, float th, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVecLen<VecT>(rdf, th, r);
 				}
 				//! ランダムなベクトル (但し全ての成分の絶対値がそれぞれ基準範囲内)
-				template <class RD>
-				static VecT RandomWithAbs(RD& rd, const RangeF& rTh, const RangeF& r=random::DefaultRVecRange) {
-					return random::GenRVecAbs<VecT>(rd, rTh, r);
+				template <class RDF>
+				static VecT RandomWithAbs(const RDF& rdf, const RangeF& rTh, const RangeF& r=random::DefaultRVecRange) {
+					return random::GenRVecAbs<VecT>(rdf, rTh, r);
 				}
 				//! ランダムな方向ベクトル
-				template <class RD>
-				static VecT RandomDir(RD& rd) {
-					return random::GenRDir<VecT>(rd);
+				template <class RDF>
+				static VecT RandomDir(const RDF& rdf) {
+					return random::GenRDir<VecT>(rdf);
 				}
 				#if ALIGN==1
 					//! AVec -> Vec へ暗黙変換

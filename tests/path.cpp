@@ -19,14 +19,14 @@ namespace spn {
 		TEST_F(PathTest, Serialize) {
 			// ランダムなパス生成
 			auto rd = getRand();
-			PathBlock pb = random::GenRPath(rd, {1,20}, {1,16}, c_DriveLetter);
+			PathBlock pb = random::GenRPath(rd.getUniformF<int>(), {1,20}, {1,16}, c_DriveLetter);
 			CheckSerializedDataBin(pb);
 		}
 		// 拡張子の抽出テスト
 		TEST_F(PathTest, Extension) {
 			// ランダムなパス生成
 			auto rd = getRand();
-			PathBlock pb = random::GenRPath(rd, {1,20}, {1,16}, c_DriveLetter);
+			PathBlock pb = random::GenRPath(rd.getUniformF<int>(), {1,20}, {1,16}, c_DriveLetter);
 			// 拡張子が無ければ空文字列が返る
 			ASSERT_TRUE(pb.getExtension().empty());
 
@@ -46,7 +46,7 @@ namespace spn {
 		TEST_F(PathTest, PathNumber) {
 			// ランダムなパス生成
 			auto rd = getRand();
-			PathBlock pb = random::GenRPath(rd, {1,20}, {1,16}, c_DriveLetter);
+			PathBlock pb = random::GenRPath(rd.getUniformF<int>(), {1,20}, {1,16}, c_DriveLetter);
 
 			// 余計な拡張子を付加
 			pb.setExtension("foo");
@@ -79,7 +79,7 @@ namespace spn {
 		TEST_F(PathTest, ExtNumber) {
 			// ランダムなパス生成
 			auto rd = getRand();
-			PathBlock pb = random::GenRPath(rd, {1,20}, {1,16}, c_DriveLetter);
+			PathBlock pb = random::GenRPath(rd.getUniformF<int>(), {1,20}, {1,16}, c_DriveLetter);
 
 			// 拡張子が無ければnoneが返る
 			ASSERT_FALSE(pb.getExtNum());

@@ -64,9 +64,9 @@
 			const VEC3& asVec3() const;
 
 			std::pair<RadF,VEC3> getAngAxis() const;
-			template <class RD>
-			static ExpQuatT Random(RD& rd) {
-				return random::GenRExpQuat<ExpQuatT>(rd);
+			template <class RDF>
+			static ExpQuatT Random(const RDF& rdf) {
+				return random::GenRExpQuat<ExpQuatT>(rdf);
 			}
 		};
 		using BOOST_PP_CAT(ALIGNA, ExpQuat) = EQT;

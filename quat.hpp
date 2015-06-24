@@ -135,9 +135,9 @@
 			MAT44 asMat44() const;
 			EQT asExpQuat() const;
 
-			template <class RD>
-			static QuatT Random(RD& rd) {
-				return random::GenRQuat<QuatT>(rd);
+			template <class RDF>
+			static QuatT Random(const RDF& rdf) {
+				return random::GenRQuat<QuatT>(rdf);
 			}
 
 			friend std::ostream& operator << (std::ostream&, const QuatT&);

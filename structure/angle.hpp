@@ -163,9 +163,9 @@ namespace spn {
 			Angle operator -() const {
 				return Angle(-_angle);
 			}
-			template <class RD>
-			static Angle Random(RD& rd) {
-				return random::GenRAngle<Angle>(rd);
+			template <class... Ts>
+			static Angle Random(Ts&&... ts) {
+				return random::GenRAngle<Angle>(std::forward<Ts>(ts)...);
 			}
 
 			// ---- 比較演算子の定義 ----

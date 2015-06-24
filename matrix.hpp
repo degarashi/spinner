@@ -299,10 +299,11 @@
 				/*! \return 0の行数 */
 				int rowReduce();
 
-				template <class RD>
-				static MatT Random(RD& rd, const RangeF& r=random::DefaultRMatRange) {
-					return random::GenRMat<MatT>(rd, r);
+				template <class RDF>
+				static MatT Random(const RDF& rdf, const RangeF& r=random::DefaultRMatRange) {
+					return random::GenRMat<MatT>(rdf, r);
 				}
+
 				// TODO: DecompAffine [DIM >= 3]
 
 				// 本来行列の積算が出来るのはDIM_N == 相手のDIM_Mの時だけだが

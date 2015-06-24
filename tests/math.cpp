@@ -215,30 +215,20 @@ namespace spn {
 			protected:
 				using QuatType = QuatT<T::value>;
 				constexpr static bool Align = T::value;
-				const static float RandMin,
-									RandMax;
 				Optional<MTRandom>		_rd;
-				std::function<float ()>	_fnRandF;
 
 				void SetUp() override {
 					RandomTestInitializer::SetUp();
 					_rd = getRand();
-					_fnRandF = [&rd=*_rd](){ return rd.template getUniform<float>({RandMin, RandMax}); };
 				}
 				void TearDown() override {
 					_rd = none;
 					RandomTestInitializer::TearDown();
 				}
 				MTRandom& refRand() { return *_rd; }
-				auto getRandF() { return _fnRandF; }
-				QuatType genRandQ() { return QuatT<Align>::Random(refRand()); }
-				auto genRandDir() { return VecT<3,Align>::RandomDir(refRand()); }
+				QuatType genRandQ() { return QuatT<Align>::Random(refRand().template getUniformF<float>()); }
+				auto genRandDir() { return VecT<3,Align>::RandomDir(refRand().template getUniformF<float>()); }
 		};
-		template <class T>
-		const float QuaternionTest<T>::RandMin = -1e3f;
-		template <class T>
-		const float QuaternionTest<T>::RandMax = 1e3f;
-
 		using QuaternionTypeList = ::testing::Types<std::false_type, std::true_type>;
 		TYPED_TEST_CASE(QuaternionTest, QuaternionTypeList);
 
@@ -280,7 +270,6 @@ namespace spn {
 
 			// ExpQuatを合成した結果をQuat合成のケースと比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-// 				using QT = typename This_t::QuatType;
 				auto q0 = this->genRandQ(),
 					q1 = this->genRandQ();
 				// 最短距離で補間するような細工
@@ -325,15 +314,17 @@ namespace spn {
 			constexpr bool Align = This_t::Align;
 			using QT = typename This_t::QuatType;
 			auto& rd = this->refRand();
+			auto rdf = rd.template getUniformF<float>();
 
 			for(int i=0 ; i<N_Iteration ; i++) {
-				RadF ang = RadF::Random(rd);
-				Vec3 axis = Vec3::RandomDir(this->refRand());
+				RadF ang = RadF::Random(rdf);
+				Vec3 axis = Vec3::RandomDir(rdf);
 				QT q = QT::Rotation(axis, ang);
 				auto m = AMat33::RotationAxis(axis, ang);
 
 				// クォータニオンでベクトルを変換した結果が行列のそれと一致するか
-				auto v = VecT<3,Align>::Random(rd, {-1e3f, 1e3f});
+				random::GenRVec<Vec3>(rdf, {-1e3f, 1e3f});
+				auto v = VecT<3,Align>::Random(rdf, {-1e3f, 1e3f});
 				auto v0 = v * q;
 				auto v1 = v * m;
 				EXPECT_TRUE(EqULPs(v0, v1, ThresholdULPs));
@@ -348,12 +339,12 @@ namespace spn {
 			using This_t = std::decay_t<decltype(*this)>;
 			using QT = typename This_t::QuatType;
 			auto& rd = this->refRand();
-			auto rdF = this->getRandF();
+			auto rdf = rd.template getUniformF<float>();
 
 			// クォータニオンを合成した結果を行列のケースと比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-				RadF ang[2] = {RadF(rdF()), RadF(rdF())};
-				Vec3 axis[2] = {Vec3::RandomDir(rd), Vec3::RandomDir(rd)};
+				RadF ang[2] = {RadF::Random(rdf), RadF::Random(rdf)};
+				Vec3 axis[2] = {Vec3::RandomDir(rdf), Vec3::RandomDir(rdf)};
 				QT		q[3];
 				AMat33	m[3];
 				for(int i=0 ; i<2 ; i++) {
@@ -375,12 +366,12 @@ namespace spn {
 			constexpr bool Align = This_t::Align;
 			using QT = typename This_t::QuatType;
 			auto& rd = this->refRand();
-			auto rdF = this->getRandF();
+			auto rdf = rd.template getUniformF<float>();
 
 			// getRight(), getUp(), getDir()が{1,0,0},{0,1,0},{0,0,1}を変換した結果と比較
 			for(int i=0 ; i<N_Iteration ; i++) {
-				RadF ang(rdF());
-				Vec3 axis = Vec3::RandomDir(rd);
+				RadF ang = RadF::Random(rdf);
+				Vec3 axis = Vec3::RandomDir(rdf);
 				QT q = QT::Rotation(axis, ang);
 				auto m = q.asMat33();
 
@@ -399,7 +390,7 @@ namespace spn {
 				const int div = 32;
 				float tdiv = 1.f/div;
 				auto axis = this->genRandDir();
-				RadF ang = RadF::Random(rd);
+				RadF ang = RadF::Random(rd.template getUniformF<float>());
 				auto q0 = this->genRandQ();
 				auto q1 = QT::Rotation(axis, ang);
 				q1 = q0 >> q1;
@@ -419,12 +410,13 @@ namespace spn {
 		TEST_F(MathTest, DecompAffine) {
 			constexpr RangeF range{-1e3f, 1e3f};
 			auto rd = getRand();
+			auto rdf = rd.template getUniformF<float>();
 
 			// 行列をDecompAffineした結果を再度合成して同じかどうかチェック
 			for(int i=0 ; i<N_Iteration ; i++) {
-				auto q = AQuat::Random(rd);
-				auto t = Vec3::Random(rd, range);
-				auto s = Vec3::RandomWithLength(rd, 1e-2f, range);
+				auto q = AQuat::Random(rdf);
+				auto t = Vec3::Random(rdf, range);
+				auto s = Vec3::RandomWithLength(rdf, 1e-2f, range);
 
 				Pose3D pose(t, q, s);
 				auto m = pose.getToWorld();
@@ -469,8 +461,9 @@ namespace spn {
 		TEST_F(YPDTest, FromPos_Random) {
 			constexpr RangeF range = {-1e3f, 1e3f};
 			auto rd = getRand();
+			auto rdf = rd.template getUniformF<float>();
 			// YawPitchDistで計算した値を再度合成して結果を比較
-			Vec3 nzv = Vec3::RandomWithLength(rd, 1e-2f, range);
+			Vec3 nzv = Vec3::RandomWithLength(rdf, 1e-2f, range);
 			auto ypd = YawPitchDist::FromPos(nzv);
 			auto ofsRot = ypd.toOffsetRot();
 			auto nzv2 = -ofsRot.second.getDir() * ypd.distance;
@@ -742,7 +735,7 @@ namespace spn {
 		}
 		TEST_F(MathTest, BarycentricCoord) {
 			auto rd = getRand();
-			auto rv = [&](){ return Vec2::Random(rd, {-5e1f,5e1f}); };
+			auto rv = [&](){ return Vec2::Random(rd.getUniformF<float>(), {-5e1f,5e1f}); };
 
 			Vec2 vtx[] = {rv(), rv(), rv()},
 				pos = rv(),

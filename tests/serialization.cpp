@@ -52,7 +52,7 @@ namespace spn {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
 			for(int i=0 ; i<NTEST ; i++) {
-				auto data = VecT<TypeParam::width, TypeParam::align>::Random(rd, {-1e3f, 1e3f});
+				auto data = VecT<TypeParam::width, TypeParam::align>::Random(rd.template getUniformF<float>(), {-1e3f, 1e3f});
 				CheckSerializedDataBin(data);
 			}
 		}
@@ -65,7 +65,7 @@ namespace spn {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::base_t::getRand();
 			for(int i=0 ; i<NTEST ; i++) {
-				auto data = MatT<TypeParam::height, TypeParam::width, TypeParam::align>::Random(rd, {-1e3f, 1e3f});
+				auto data = MatT<TypeParam::height, TypeParam::width, TypeParam::align>::Random(rd.template getUniformF<float>(), {-1e3f, 1e3f});
 				CheckSerializedDataBin(data);
 			}
 		}
@@ -74,11 +74,12 @@ namespace spn {
 		TEST_F(SerializePose2D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
+			auto rdf = rd.getUniformF<float>();
 			const RangeF r{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose2D ps(Vec2::Random(rd, r),
-							RadF::Random(rd),
-							Vec2::Random(rd, r));
+				Pose2D ps(Vec2::Random(rdf, r),
+							RadF::Random(rdf),
+							Vec2::Random(rdf, r));
 				CheckSerializedDataBin(ps);
 			}
 		}
@@ -86,11 +87,12 @@ namespace spn {
 		TEST_F(SerializePose3D, Test) {
 			using This_t = std::decay_t<decltype(*this)>;
 			auto rd = This_t::getRand();
+			auto rdf = rd.getUniformF<float>();
 			RangeF range{-1e3f, 1e3f};
 			for(int i=0 ; i<NTEST ; i++) {
-				Pose3D ps(Vec3::Random(rd, range),
-							AQuat::Random(rd),
-							Vec3::Random(rd, range));
+				Pose3D ps(Vec3::Random(rdf, range),
+							AQuat::Random(rdf),
+							Vec3::Random(rdf, range));
 				CheckSerializedDataBin(ps);
 			}
 		}
@@ -98,6 +100,7 @@ namespace spn {
 		TEST_F(SerializeTest, Noseq) {
 			using boost::serialization::make_nvp;
 			auto rd = getRand();
+			auto rdi = rd.getUniformF<int>();
 			std::stringstream buffer;
 			for(int i=0 ; i<NTEST ; i++) {
 				buffer.str("");
@@ -108,12 +111,12 @@ namespace spn {
 				std::vector<decltype(base.add(0))> ids;
 				for(int j=0 ; j<NITER ; j++) {
 					// ランダムにデータを追加/削除する
-					if(base.empty() || ((rd.getUniform<int>({0,3})) != 0)) {
+					if(base.empty() || ((rdi({0,3})) != 0)) {
 						// 追加
-						ids.push_back(base.add(rd.getUniform<int>()));
+						ids.push_back(base.add(rd.template getUniform<int>()));
 					} else {
 						// 削除
-						int idx = rd.getUniform<int>({0, ids.size()-1});
+						int idx = rdi({0, ids.size()-1});
 						auto itr = ids.begin() + idx;
 						base.rem(*itr);
 						ids.erase(itr);

@@ -6,6 +6,10 @@
 #include "structure/range.hpp"
 
 namespace spn {
+	template <class T>
+	using FRand = std::function<T (const Range<T>&)>;
+	using FRandF = FRand<float>;
+	using FrandI = FRand<int>;
 	//! Mersenne Twister(32bit)を用いた乱数生成
 	class MTRandom {
 		private:
@@ -50,6 +54,16 @@ namespace spn {
 			template <class T>
 			T getUniform(const Range<T>& range) {
 				return typename GetDist<T>::uniform_t(range.from, range.to)(_mt);
+			}
+			//! 一様分布を返すファンクタを作成(実行時範囲指定)
+			template <class T>
+			FRand<T> getUniformF() {
+				return [this](const Range<T>& r){ return getUniform<T>(r); };
+			}
+			//! 一様分布を返すファンクタを作成(事前範囲指定)
+			template <class T>
+			FRand<T> getUniformF(const Range<T>& r) {
+				return [this, r](){ return getUniform<T>(r); };
 			}
 			//! 指定範囲の一様分布(vmax)
 			template <class T>
