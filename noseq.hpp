@@ -316,7 +316,12 @@ namespace spn {
 				objE.uid = ret;
 
 				auto& idE = _array[ret].ids;
-				_firstFree = boost::get<FreeID>(idE);	// フリーリストの先頭を書き換え
+				try {
+					_firstFree = boost::get<FreeID>(idE);	// フリーリストの先頭を書き換え
+				} catch(const std::exception& e) {
+					AssertP(Trap, false, e.what())
+					throw;
+				} catch(...){ throw; }
 				idE = ObjID(objI);						// IDPairの初期化
 				return ret;
 			}
@@ -326,16 +331,21 @@ namespace spn {
 					_bRemoving = true;
 
 					auto& ids = _array[uindex].ids;
-					auto& objI = boost::get<ObjID>(ids);	// 削除対象のnoseqインデックスを受け取る
-					ID backI = _array.size()-_nFree-1;
-					if(objI != backI) {
-						// 最後尾と削除予定の要素を交換
-						std::swap(_array[backI].udata, _array[objI].udata);
-						// UIDとindex対応の書き換え
-						_array[_array[objI].udata.uid].ids = ObjID(objI);
-					}
-					// 要素を解放
-					_array[backI].udata.value = none;
+					try {
+						auto& objI = boost::get<ObjID>(ids);	// 削除対象のnoseqインデックスを受け取る
+						ID backI = _array.size()-_nFree-1;
+						if(objI != backI) {
+							// 最後尾と削除予定の要素を交換
+							std::swap(_array[backI].udata, _array[objI].udata);
+							// UIDとindex対応の書き換え
+							_array[_array[objI].udata.uid].ids = ObjID(objI);
+						}
+						// 要素を解放
+						_array[backI].udata.value = none;
+					} catch(const std::exception& e) {
+						AssertP(Trap, false, e.what())
+						throw;
+					} catch(...){ throw; }
 					// フリーリストをつなぎ替える
 					ids = FreeID(_firstFree);
 					_firstFree = uindex;
@@ -358,8 +368,13 @@ namespace spn {
 			}
 			Ref get(ID uindex) {
 				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
-				ID idx = boost::get<ObjID>(_array[uindex].ids);
-				return *_array[idx].udata.value;
+				try {
+					ID idx = boost::get<ObjID>(_array[uindex].ids);
+					return *_array[idx].udata.value;
+				} catch(const std::exception& e) {
+					AssertP(Trap, false, e.what())
+					throw;
+				} catch(...){ throw; }
 			}
 			const Ref get(ID uindex) const {
 				AssertP(Trap, Validation(uindex), "invalid resource number %1%", uindex)
@@ -397,8 +412,13 @@ namespace spn {
 					auto& ent = _array[i];
 					// エントリが有効な場合のみコールバックを呼ぶ
 					if(ent.ids.which() == 1) {
-						ID id = boost::get<ObjID>(ent.ids);
-						cb(_array[id].udata.value);
+						try {
+							ID id = boost::get<ObjID>(ent.ids);
+							cb(_array[id].udata.value);
+						} catch(const std::exception& e) {
+							AssertP(Trap, false, e.what())
+							throw;
+						} catch(...){ throw; }
 					}
 				}
 			}
