@@ -62,7 +62,7 @@ namespace spn {
 			}
 			//! 一様分布を返すファンクタを作成(事前範囲指定)
 			template <class T>
-			FRand<T> getUniformF(const Range<T>& r) {
+			auto getUniformF(const Range<T>& r) {
 				return [this, r](){ return getUniform<T>(r); };
 			}
 			//! 指定範囲の一様分布(vmax)
