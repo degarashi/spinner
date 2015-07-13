@@ -94,6 +94,7 @@
 			BOOST_PP_REPEAT(2, DEF_OP0, *)
 			DEF_OPS(*)
 			DEF_OPS(/)
+			#undef DEF_OP
 			#undef DEF_OPS
 			#undef DEF_OP0
 
