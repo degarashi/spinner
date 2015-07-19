@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 
 namespace spn {
 	//! 連想コンテナにEmplace(既に要素があったら置き換え)
