@@ -41,19 +41,19 @@ namespace spn {
 		s2 = boost::regex_replace(s2, re[1], R"([_ \\-\\w]+)");
 		s2 = boost::regex_replace(s2, re[2], R"([_ \\-\\w])");
 		s2 = boost::regex_replace(s2, re[3], R"(\\.)");
-		return std::move(s2);
+		return s2;
 	}
 	std::string Dir::setCurrentDir() const {
 		std::string prev = GetCurrentDir();
 		SetCurrentDir(plain_utf8());
-		return std::move(prev);
+		return prev;
 	}
 	Dir::StrList Dir::EnumEntryRegEx(const std::string& r) {
 		StrList res;
 		EnumEntryRegEx(r, [&res](const Dir& dir){
 			res.push_back(dir.plain_utf8());
 		});
-		return std::move(res);
+		return res;
 	}
 	Dir::StrList Dir::EnumEntryWildCard(const std::string& s) {
 		return EnumEntryRegEx(ToRegEx(s));
@@ -103,7 +103,7 @@ namespace spn {
 		}
 		if(itr0 != itr)
 			rl.emplace_back(itr0, itr);
-		return std::move(rl);
+		return rl;
 	}
 	void Dir::_EnumEntryRegEx(RegexItr itr, RegexItr itrE, std::string& lpath, size_t baseLen, EnumCB cb) {
 		if(itr == itrE)
@@ -302,13 +302,13 @@ namespace spn {
 		auto ret = _type;
 		ret.append(SEP);
 		ret.append(plain_utf8());
-		return std::move(ret);
+		return ret;
 	}
 	std::u32string URI::plainUri_utf32() const {
 		auto ret = To32Str(_type).moveTo();
 		ret.append(SEP32);
 		ret.append(plain_utf32());
-		return std::move(ret);
+		return ret;
 	}
 	bool URI::operator == (const URI& u) const {
 		return _type == u._type

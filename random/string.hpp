@@ -15,7 +15,7 @@ namespace spn {
 				int cn = rdi({0, srcLen-1});
 				result[i] = src[cn];
 			}
-			return std::move(result);
+			return result;
 		}
 		extern const std::basic_string<char> c_alphabet;
 		//! ランダムなアルファベット列(utf-8)
@@ -41,7 +41,7 @@ namespace spn {
 				pb.pushBack(GenRPathSegment(rdi,
 							rdi({nLen.from, nLen.to})));
 			}
-			return std::move(pb);
+			return pb;
 		}
 	}
 }

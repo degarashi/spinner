@@ -187,7 +187,7 @@ namespace spn {
 				// 無圧縮
 				ByteBuff ret(sz.first);
 				as.read(reinterpret_cast<char*>(&ret[0]), sz.first);
-				return std::move(ret);
+				return ret;
 			}
 			OutBuffer ob(sz.second);
 			Decompress(ob, as, sz.first, sz.second);

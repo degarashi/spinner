@@ -64,7 +64,7 @@ namespace spn {
 			dir.popBack();
 		});
 		Dir::SetCurrentDir(prev);
-		return std::move(upd);
+		return upd;
 	}
 
 	//! ツリートップから走査

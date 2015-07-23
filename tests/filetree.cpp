@@ -70,7 +70,7 @@ namespace spn {
 					std::string str(ftmp);
 					if(nameset.count(str) == 0) {
 						nameset.insert(str);
-						return std::move(str);
+						return str;
 					}
 				}
 			};
@@ -89,7 +89,7 @@ namespace spn {
 			auto fnCreateRandomFile = [&placeRandomFile, &randomName](Dir& dir) {
 				std::string name = randomName();
 				placeRandomFile(dir, name);
-				return std::move(name);
+				return name;
 			};
 
 			int layer = 0;

@@ -99,7 +99,7 @@ namespace spn {
 		const auto fn = [](const auto& a, const auto& b){ return a op b; }; \
 		auto tmp = p0; \
 		spn::TupleForEach(fn, tmp, p1); \
-		return std::move(tmp); \
+		return tmp; \
 	}
 DefOp(+)
 DefOp(-)

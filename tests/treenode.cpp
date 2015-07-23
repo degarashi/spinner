@@ -125,13 +125,13 @@ namespace spn {
 						EXPECT_NE(static_cast<T*>(nullptr), _spRoot.get());
 					}
 					_reflArray();
-					return std::move(sp);
+					return sp;
 				}
 				//! 要素の入れ替え
 				SP swapAt(int from, int to) {
 					auto node = rem(from);
 					add(to % size(), node);
-					return std::move(node);
+					return node;
 				}
 
 				//! 深度優先で配列展開
@@ -144,7 +144,7 @@ namespace spn {
 						ret.emplace_back(nd.shared_from_this());
 						return Iterate::StepIn;
 					});
-					return std::move(ret);
+					return ret;
 				}
 				const VEC& getArray() const {
 					return _spArray;

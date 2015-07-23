@@ -102,7 +102,7 @@ namespace spn {
 					Buff ret(std::move(*_buffM));
 					delete _buffM;
 					_invalidate();
-					return std::move(ret); }
+					return ret; }
 				case Type::Const:
 						return *_buffC;
 				default:

@@ -420,7 +420,7 @@ namespace spn {
 			lh_t handleFromThis() const {
 				lh_t ret(_wh_this.lock());
 				AssertP(Trap, ret.valid())
-				return std::move(ret);
+				return ret;
 			}
 	};
 
@@ -1033,7 +1033,7 @@ namespace spn {
 					itr->second = lh.get();
 					base_type::_refSH(lh.get()).data.stp = &(itr->first);
 					// 名前ポインタはそのまま流用
-					return std::move(lh);
+					return lh;
 				}
 				// エントリの新規作成
 				auto lh = std::forward<CB>(cb)(std::move(key));
@@ -1041,7 +1041,7 @@ namespace spn {
 				// 名前登録
 				auto& ent = base_type::_refSH(lh.get());
 				ent.data.stp = &itr->first;
-				return std::move(lh);
+				return lh;
 			}
 			//! リソースの新規作成。既に存在する場合はそれを返す
 			/*! \param key		置き換え対象のリソースに対応するキー

@@ -44,7 +44,7 @@ namespace spn {
 		if(u) {
 			for(auto* p : s_rmList) {
 				if(LHandle ret = p->loadResource(*u, uri))
-					return std::move(ret);
+					return ret;
 			}
 		}
 		return LHandle();

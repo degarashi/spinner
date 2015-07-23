@@ -29,7 +29,7 @@ namespace spn {
 				auto sz = size();
 				str.resize(sz);
 				std::memcpy(&str[0], data(), sz);
-				return std::move(str);
+				return str;
 			}
 	};
 }

@@ -236,7 +236,7 @@ namespace spn {
 		_outputHeader(s, bAbs);
 		if(!_path.empty())
 			s.append(_path.begin(), _path.end());
-		return std::move(s);
+		return s;
 	}
 	std::string PathBlock::getFirst_utf8(bool bAbs) const {
 		return Text::UTFConvertTo8(getFirst_utf32(bAbs));
@@ -258,7 +258,7 @@ namespace spn {
 	std::u32string PathBlock::getHeader_utf32() const {
 		std::u32string tmp;
 		_outputHeader(tmp, true);
-		return std::move(tmp);
+		return tmp;
 	}
 	std::string PathBlock::getHeader_utf8() const {
 		std::u32string tmp;
@@ -273,7 +273,7 @@ namespace spn {
 			s.append(_path.begin(),
 					_path.begin() + _segment.front());
 		}
-		return std::move(s);
+		return s;
 	}
 	std::string PathBlock::getLast_utf8() const {
 		return Text::UTFConvertTo8(getLast_utf32());
@@ -284,7 +284,7 @@ namespace spn {
 			s.append(_path.end()-_segment.back(),
 					_path.end());
 		}
-		return std::move(s);
+		return s;
 	}
 	std::u32string PathBlock::getSegment_utf32(int beg, int end) const {
 		std::u32string s;
@@ -306,7 +306,7 @@ namespace spn {
 					s.pop_back();
 			}
 		}
-		return std::move(s);
+		return s;
 	}
 	int PathBlock::size() const {
 		return _path.size() + (isAbsolute() ? 1 : 0);
@@ -352,7 +352,7 @@ namespace spn {
 					tc[wcur++] = c;
 			}
 		}
-		return std::move(rt);
+		return rt;
 	}
 	Int_OP PathBlock::getExtNum() const {
 		if(segments() > 0) {

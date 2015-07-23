@@ -83,7 +83,7 @@ namespace spn {
 				_iterateAll([&spv](auto& nd){
 					spv.emplace_back(nd.shared_from_this());
 				});
-				return std::move(spv);
+				return spv;
 			}
 			template <class T_PTR>
 			std::vector<T_PTR> _plainPtr() const {
@@ -91,7 +91,7 @@ namespace spn {
 				_iterateAll([&pv](auto& nd){
 					pv.emplace_back(&nd);
 				});
-				return std::move(pv);
+				return pv;
 			}
 
 		public:
@@ -207,7 +207,7 @@ namespace spn {
 					}
 					return Iterate::StepIn;
 				});
-				return std::move(ret);
+				return ret;
 			}
 			//! このノード以下を全て複製
 			SP cloneTree(const WP& parent=WP()) const {
@@ -218,7 +218,7 @@ namespace spn {
 				if(_spSibling)
 					sp->_spSibling = _spSibling->cloneTree(parent);
 				sp->_wpParent = parent;
-				return std::move(sp);
+				return sp;
 			}
 			//! 主にデバッグ用
 			void print(std::ostream& os, int indent) const {

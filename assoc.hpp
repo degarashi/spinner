@@ -83,14 +83,14 @@ namespace spn {
 			T pop_frontR() {
 				T ret(std::move(_vec.front()));
 				_vec.erase(_vec.begin());
-				return std::move(ret);
+				return ret;
 			}
 			void pop_back() { _vec.pop_back(); }
 			//! pop_backと同じだが、消去される要素の値を返す
 			T pop_backR() {
 				T ret(std::move(_vec.back()));
 				_vec.pop_back();
-				return std::move(ret);
+				return ret;
 			}
 			typename Vec::const_iterator erase(int n) {
 				return _vec.erase(_vec.cbegin()+n);
