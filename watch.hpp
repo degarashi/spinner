@@ -103,12 +103,12 @@ namespace spn {
 		FileEvent getType() const override;
 	};
 	struct FRecvNotify {
-		virtual void event(const FEv_Create& e, const SPData& ud) {}
-		virtual void event(const FEv_Access& e, const SPData& ud) {}
-		virtual void event(const FEv_Modify& e, const SPData& ud) {}
-		virtual void event(const FEv_Remove& e, const SPData& ud) {}
-		virtual void event(const FEv_MoveFrom& e, const SPData& ud) {}
-		virtual void event(const FEv_MoveTo& e, const SPData& ud) {}
-		virtual void event(const FEv_Attr& e, const SPData& ud) {}
+		virtual void event(const FEv_Create& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_Access& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_Modify& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_Remove& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_MoveFrom& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_MoveTo& /*e*/, const SPData& /*ud*/) {}
+		virtual void event(const FEv_Attr& /*e*/, const SPData& /*ud*/) {}
 	};
 }

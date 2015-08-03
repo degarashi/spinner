@@ -26,7 +26,7 @@ namespace spn {
 			auto OpDiv = [](auto& v0, auto& v1){ return v0 / v1; };
 			auto OpAdd = [](auto& v0, auto& v1){ return v0 + v1; };
 			auto OpSub = [](auto& v0, auto& v1){ return v0 - v1; };
-			auto OpCopy = [](auto& v0, auto& v1){ return v1; };
+			auto OpCopy = [](auto& /*v0*/, auto& v1){ return v1; };
 			template <int M, int N>
 			using Array2D = std::array<std::array<float, N>, M>;
 			//! 行列と2D配列にそれぞれランダムな値をセット
@@ -89,7 +89,7 @@ namespace spn {
 				}
 			}
 			template <class AR, class OP>
-			void MulArray(AR& ar0, const AR& ar1, OP&& op) {
+			void MulArray(AR& ar0, const AR& ar1, OP&& /*op*/) {
 				using Type = std::decay_t<decltype(ar0[0])>;
 				constexpr int width{ GetArraySize<AR>::size() },
 							height{ GetArraySize<Type>::size() };
@@ -119,7 +119,7 @@ namespace spn {
 				}
 			}
 			template <class RD, int M, int N, bool A>
-			void _MatrixCheckRect(RD& rd,
+			void _MatrixCheckRect(RD& /*rd*/,
 									std::integral_constant<int,M>,
 									std::integral_constant<int,N>,
 									std::integral_constant<bool,A>)

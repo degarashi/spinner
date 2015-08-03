@@ -151,7 +151,7 @@ namespace spn {
 			using Path_SizeL = std::vector<Path_Size>;
 
 			// ランダムにファイルやディレクトリを選択(一度選んだファイルは二度と選ばない)
-			auto fnSelect = [&nameset, &rd](const Dir& dir, uint32_t flag) {
+			auto fnSelect = [&nameset, &rd](const Dir& /*dir*/, uint32_t flag) {
 				Path_SizeL ps;
 				Dir::PathReset pr;
 				Dir::EnumEntryWildCard("*", [&nameset, &ps, flag](const Dir& dir) {
@@ -377,7 +377,7 @@ namespace spn {
 					_hist.erase(itr);
 				}
 
-				#define DEF_CHECK(typ)	void event(const typ& e, const SPData& ud) override { check(UPFEv(new typ(e))); }
+				#define DEF_CHECK(typ)	void event(const typ& e, const SPData& /*ud*/) override { check(UPFEv(new typ(e))); }
 				DEF_CHECK(FEv_Create)
 				DEF_CHECK(FEv_Access)
 				DEF_CHECK(FEv_Modify)

@@ -86,7 +86,7 @@ namespace spn {
 				int idx;
 				if(_freeIdx.empty()) {
 					idx = _nCur++;
-					if(_nCur > _buff.size()/sizeof(T)) {
+					if(_nCur > static_cast<int>(_buff.size()/sizeof(T))) {
 						Assert(Trap, bExpand, "no more free object");
 						_buff.resize(_buff.size() + (_buff.size() >> 1));
 					}

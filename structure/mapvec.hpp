@@ -65,7 +65,7 @@ namespace spn {
 				return p;
 			}
 			template <class P>
-			static auto _GetFirst(P& p, decltype(p.first)* ptr=nullptr) -> decltype(p.first)& {
+			static auto _GetFirst(P& p, decltype(p.first)* /*ptr*/=nullptr) -> decltype(p.first)& {
 				return p.first;
 			}
 

@@ -123,7 +123,7 @@ namespace spn {
 				}
 			};
 			template <class OB>
-			void Decompress(OB& ob, AdaptStream& as, size_t input_len, size_t output_len) {
+			void Decompress(OB& ob, AdaptStream& as, size_t input_len, size_t /*output_len*/) {
 				z_stream z;
 				z.zalloc = Z_NULL;
 				z.zfree = Z_NULL;

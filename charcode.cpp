@@ -12,7 +12,7 @@ namespace spn {
 			++ts;
 		return ts - str;
 	}
-	StrLen GetLength(const char32_t* str, size_t len) {
+	StrLen GetLength(const char32_t* /*str*/, size_t len) {
 		// 1ワード = 1文字と決まってるのでlenをそのまま返す
 		return len;
 	}

@@ -123,7 +123,7 @@ namespace spn {
 			using move_type = T;
 			T	value;
 			template <class Ar>
-			void serialize(Ar& ar, const unsigned int) {}
+			void serialize(Ar& /*ar*/, const unsigned int) {}
 
 			MoveOnly(const T& v): value(v) {}
 			MoveOnly(T&& v): value(std::move(v)) {}

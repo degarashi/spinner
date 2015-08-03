@@ -49,7 +49,7 @@ namespace spn {
 		}
 		return LHandle();
 	}
-	LHandle ResMgrBase::loadResource(AdaptStream& ast, const URI& uri) {
+	LHandle ResMgrBase::loadResource(AdaptStream& /*ast*/, const URI& /*uri*/) {
 		return LHandle();
 	}
 }

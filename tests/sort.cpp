@@ -26,7 +26,7 @@ namespace spn {
 							RangeI{0, std::numeric_limits<int>::max()}); };
 
 				// ランダムなデータ列を作る
-				size_t nItem = rdF() % 0xf00;
+				auto nItem = rdF() % 0xf00;
 				AR ar;
 				for(int i=0 ; i<nItem ; i++)
 					ar.emplace_back(rdF());
@@ -36,7 +36,7 @@ namespace spn {
 				// 順番確認
 				ASSERT_NO_FATAL_FAILURE(ChkSequence(ar, CMP()));
 			}
-			auto g_fnSort = [](auto& lst, auto&&... arg){
+			auto g_fnSort = [](auto& /*lst*/, auto&&... arg){
 				insertion_sort(std::forward<std::decay_t<decltype(arg)>>(arg)...);
 			};
 			auto g_fnSortL = [](auto& lst, auto&&... arg){

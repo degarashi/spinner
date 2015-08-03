@@ -52,7 +52,7 @@ namespace spn {
 				cb(lpath, *this);
 			lpath.popBack();
 		}
-		void File::addItem(int idx, spn::PathBlock& lpath) {
+		void File::addItem(int /*idx*/, spn::PathBlock& /*lpath*/) {
 			Assert(Trap, false, "invalid operation (addItem)")
 		}
 		const File* File::findFile(spn::PathBlock& lpath) const {

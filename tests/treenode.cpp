@@ -157,7 +157,7 @@ namespace spn {
 				}
 		};
 		template <class CB>
-		int _CallTS(CB&& cb) { return -1; }
+		int _CallTS(CB&& /*cb*/) { return -1; }
 		template <class CB, class T, class... Ts>
 		int _CallTS(CB&& cb, T& tree, Ts&&... ts) {
 			int res = cb(tree);

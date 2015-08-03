@@ -8,7 +8,7 @@ namespace spn {
 	namespace test {
 		namespace { namespace asv_inner {
 			template <class K, class V>
-			void _AddRandomKV(const K& key, const V& value) {}
+			void _AddRandomKV(const K& /*key*/, const V& /*value*/) {}
 			template <class K, class V, class A, class... Ts>
 			void _AddRandomKV(const K& key, const V& value, A& a, Ts&... ts) {
 				a.insert(std::make_pair(key, value));
@@ -16,14 +16,14 @@ namespace spn {
 			}
 
 			template <class V>
-			void _AddRandomV(const V& value) {}
+			void _AddRandomV(const V& /*value*/) {}
 			template <class V, class A, class... Ts>
 			void _AddRandomV(const V& value, A& a, Ts&... ts) {
 				a.insert(value);
 				_AddRandomV(value, ts...);
 			}
 
-			bool _RemRandom(int idx) { return true; }
+			bool _RemRandom(int /*idx*/) { return true; }
 			template <class A, class... Ts>
 			bool _RemRandom(int idx, A& a, Ts&... ts) {
 				if(a.empty())

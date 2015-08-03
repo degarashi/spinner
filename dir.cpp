@@ -132,8 +132,8 @@ namespace spn {
 			}
 		});
 	}
-	void Dir::_EnumEntry(const std::string& s, const std::string& path, EnumCB cb) {
-		DirDep::EnumEntry(path, [&cb](const PathCh* name, bool bDir) {
+	void Dir::_EnumEntry(const std::string& /*s*/, const std::string& path, EnumCB cb) {
+		DirDep::EnumEntry(path, [&cb](const PathCh* name, bool /*bDir*/) {
 			PathStr s(ToPathStr(name).moveTo());
 			if(s == name)
 				cb(Dir(s));

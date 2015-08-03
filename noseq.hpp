@@ -382,7 +382,7 @@ namespace spn {
 			}
 			//! 主にライブラリ内部用途
 			const OPValue& getValueOP(int index) const {
-				AssertP(Trap, _array.size() > index)
+				AssertP(Trap, static_cast<int>(_array.size()) > index)
 				return _array[index].udata.value;
 			}
 			//! IDが有効か判定

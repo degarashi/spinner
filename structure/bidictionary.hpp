@@ -141,7 +141,7 @@ namespace spn {
 						& BOOST_SERIALIZATION_NVP(key1);
 				}
 				template <class Ar>
-				void load(Ar& ar, const unsigned int) {}
+				void load(Ar& /*ar*/, const unsigned int) {}
 
 				EntrySave(const Entry* e):
 					value(e->value),
@@ -155,7 +155,7 @@ namespace spn {
 
 				BOOST_SERIALIZATION_SPLIT_MEMBER();
 				template <class Ar>
-				void save(Ar& ar, const unsigned int) const {}
+				void save(Ar& /*ar*/, const unsigned int) const {}
 				template <class Ar>
 				void load(Ar& ar, const unsigned int) {
 					ar	& BOOST_SERIALIZATION_NVP(value)
