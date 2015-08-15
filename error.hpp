@@ -155,6 +155,7 @@ namespace spn {
 		}
 		template <class RT, class Act, class Chk, class Func, class... TsA>
 		void EChk_base(std::true_type, Act&& act, Chk&& chk, const SourcePos& pos, const Func& func, TsA&&... ts) {
+			chk.reset();
 			func(std::forward<TsA>(ts)...);
 			EChk(std::forward<Act>(act), std::forward<Chk>(chk), pos);
 		}
