@@ -37,6 +37,10 @@ namespace spn {
 	void* ResMgrBase::GetPtr(SHandle sh) {
 		return GetManager(sh.getResID())->getPtr(sh);
 	}
+	const std::string& ResMgrBase::getResourceName(SHandle /*sh*/) const {
+		static std::string emptyName;
+		return emptyName;
+	}
 	LHandle ResMgrBase::LoadResource(const URI& uri) {
 		UP_Adapt u(s_handler.procHandler(uri));
 		auto name = uri.getLast_utf8(),

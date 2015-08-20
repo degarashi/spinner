@@ -72,6 +72,7 @@ namespace spn {
 
 			ResMgrBase* getManager();
 			const ResMgrBase* getManager() const;
+			const std::string& getResourceName() const;
 	};
 
 	//! 型を保持しない弱参照ハンドル値
@@ -505,6 +506,7 @@ namespace spn {
 			virtual void* getPtr(SHandle sh) = 0;
 			virtual SHandle lock(WHandle wh) = 0;
 			virtual WHandle weak(SHandle sh) = 0;
+			virtual const std::string& getResourceName(SHandle sh) const;
 			virtual ~ResMgrBase() {}
 			//! 対応する拡張子か判定し、もしそうなら読み込む
 			virtual LHandle loadResource(AdaptStream& ast, const URI& uri);

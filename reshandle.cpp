@@ -64,6 +64,9 @@ namespace spn {
 	const ResMgrBase* SHandle::getManager() const {
 		return ResMgrBase::GetManager(getResID());
 	}
+	const std::string& SHandle::getResourceName() const {
+		return getManager()->getResourceName(*this);
+	}
 
 	// ------------------ WHandle ------------------
 	WHandle::WHandle(): _value(~0) {}
