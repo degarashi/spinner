@@ -15,6 +15,8 @@
 #include <boost/serialization/binary_object.hpp>
 #include "adaptstream.hpp"
 #include "singleton.hpp"
+#include "check_smartptr.hpp"
+#include "alignedalloc.hpp"
 
 namespace spn {
 	class WHandle;
@@ -882,6 +884,28 @@ namespace spn {
 			template <class... Ts>
 			LHdl emplace(Ts&&... args) {
 				return _acquire(DAT(std::forward<Ts>(args)...));
+			}
+			//! 任意の引数からリソースハンドル作成
+			/*! データが非スマートポインタの場合はemplaceと同じ */
+			template <class... Ts,
+					 class TF = DAT,
+					 typename std::enable_if<!IsSmartPointer<TF>::value>::type*& =Enabler>
+			LHdl makeHandle(Ts&&... args) {
+				return emplace(std::forward<Ts>(args)...);
+			}
+			//! AlignedNewしたポインタをacquireして返す (unique_ptr用)
+			template <class... Ts,
+					 class TF = DAT,
+					 typename std::enable_if<IsUniquePointer<TF>::value>::type*& =Enabler>
+			LHdl makeHandle(Ts&&... args) {
+				return _acquire(AAllocator<typename DAT::element_type>::NewUF(std::forward<Ts>(args)...));
+			}
+			//! AlignedNewしたポインタをacquireして返す (shared_ptr用)
+			template <class... Ts,
+					 class TF = DAT,
+					 typename std::enable_if<IsSharedPointer<TF>::value>::type*& =Enabler>
+			LHdl makeHandle(Ts&&... args) {
+				return _acquire(AAllocator<typename DAT::element_type>::NewS(std::forward<Ts>(args)...));
 			}
 			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
