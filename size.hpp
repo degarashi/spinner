@@ -1,6 +1,7 @@
 #pragma once
 #include "bits.hpp"
 #include <algorithm>
+#include <iostream>
 
 namespace spn {
 	//! 任意の型の縦横サイズ
@@ -57,6 +58,10 @@ namespace spn {
 					height <= s.height;
 		}
 	};
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const spn::_Size<T>& s) {
+		return os << "Size {width=" << s.width << ", height=" << s.height << "}";
+	}
 	using Size = _Size<uint32_t>;
 	using SizeF = _Size<float>;
 
@@ -113,6 +118,11 @@ namespace spn {
 	};
 	using Rect = _Rect<int>;
 	using RectF = _Rect<float>;
+	template <class T>
+	std::ostream& operator << (std::ostream& os, const spn::_Rect<T>& r) {
+		return os << "Rect {x0=" << r.x0 << ", x1=" << r.x1 <<
+				", y0=" << r.y0 << ", y1=" << r.y1 << "}";
+	}
 
 	//! 値の低い方に補正
 	template <class T>
@@ -156,4 +166,8 @@ namespace spn {
 	};
 	using PowInt = PowValue<uint32_t, PP_Higher>;
 	using PowSize = _Size<PowInt>;
+	template <class... Ts>
+	std::ostream& operator << (std::ostream& os, const spn::PowValue<Ts...>& p) {
+		return os << p.get();
+	}
 }
