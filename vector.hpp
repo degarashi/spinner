@@ -95,6 +95,15 @@
 				DEF_PRE(*, reg_mul_ps)
 				DEF_PRE(/, _mmDivPs)
 
+				// -------- Luaへのエクスポート用 --------
+				VecT addV(const UVec& v) const;
+				VecT subV(const UVec& v) const;
+				VecT mulF(float s) const;
+				VecT mulM(const MatT<DIM,DIM,align>& m) const;
+				VecT divF(float s) const;
+				VecT invert() const;
+				bool equal(const UVec& v) const;
+
 				friend std::ostream& operator << (std::ostream& os, const VT& v);
 				// -------------------- others --------------------
 				static float _sumup(reg128 xm);
@@ -206,6 +215,8 @@
 					VecT&& operator * (QuatT<ALIGNB>&& q) const;
 					/*! \return x,y 成分 */
 					const VecT<2,ALIGNB>& asVec2() const;
+					// -------- Luaへのエクスポート用 --------
+					VecT modV(const UVec& v) const;
 				#elif DIM==2
 					float ccw(const VecT<DIM,false>& v) const;
 					float cw(const VecT<DIM,false>& v) const;
@@ -354,6 +365,20 @@
 			DEF_OP(-, reg_sub_ps)
 			DEF_OP(*, reg_mul_ps)
 			DEF_OP(/, _mmDivPs)
+			VT VT::addV(const UVec& v) const {
+				return *this + v; }
+			VT VT::subV(const UVec& v) const {
+				return *this - v; }
+			VT VT::mulF(float s) const {
+				return *this * s; }
+			VT VT::mulM(const MatT<DIM,DIM,align>& m) const {
+				return *this * m; }
+			VT VT::divF(float s) const {
+				return *this / s; }
+			VT VT::invert() const {
+				return -(*this); }
+			bool VT::equal(const UVec& v) const {
+				return *this == v; }
 
 			std::ostream& operator << (std::ostream& os, const VT& v) {
 				os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Vec" << DIM << '[';
@@ -571,6 +596,8 @@
 				template VT VT::operator % (const VecT<DIM,false>&) const;
 				template VT VT::operator % (const VecT<DIM,true>&) const;
 
+				VT VT::modV(const UVec& v) const {
+					return *this % v; }
 				#define _Vec4 VecT<4,ALIGNB>
 				_Vec4 VT::asVec4(float w) const {
 					return _Vec4(x,y,z,w);
