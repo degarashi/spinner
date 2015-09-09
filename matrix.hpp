@@ -264,7 +264,18 @@
 					bool inversion(MatT& dst) const;
 					bool inversion(MatT& dst, float det) const;
 					bool invert();
+					// -------- Luaへのエクスポート用 --------
+					MatT addF(float s) const;
+					MatT addM(const MatT& m) const;
+					MatT subF(float s) const;
+					MatT subM(const MatT& m) const;
+					VecT<DIM_N,align> mulV(const VecT<DIM_N,align>& v) const;
+					MatT mulF(float s) const;
+					MatT mulM(const MatT& m) const;
+					MatT divF(float s) const;
+					MatT lua_invert() const;
 				#endif
+				std::string toString() const;
 				MatT<DIM_N,DIM_M,ALIGNB> transposition() const;
 
 				#if DMIN > 2
@@ -764,6 +775,33 @@
 						*this = tmp;
 					return b;
 				}
+				// -------- Luaへのエクスポート用 --------
+				MT MT::addF(float s) const {
+					return *this + s;
+				}
+				MT MT::addM(const MT& m) const {
+					return *this * m;
+				}
+				MT MT::subF(float s) const {
+					return *this - s;
+				}
+				MT MT::subM(const MT& m) const {
+					return *this - m;
+				}
+				MT MT::mulF(float s) const {
+					return *this * s;
+				}
+				MT MT::mulM(const MT& m) const {
+					return *this * m;
+				}
+				MT MT::divF(float s) const {
+					return *this / s;
+				}
+				MT MT::lua_invert() const {
+					MT ret;
+					inversion(ret);
+					return ret;
+				}
 			#endif
 			#if DMIN > 2
 				//! 指定した行と列を省いた物を出力
@@ -1033,6 +1071,12 @@
 					return v * tmpM; }
 			BOOST_PP_REPEAT(1, DEF_MULOP, NOTHING)
 			#undef DEF_MULOP
+			#if DIM_M==DIM_N
+				VecT<DIM_N,MT::align> MT::mulV(const VecT<DIM_N,align>& v) const {
+					auto tmpM = transposition();
+					return v * tmpM;
+				}
+			#endif
 		}
 	#endif
 	#include "local_unmacro.hpp"
