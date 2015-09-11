@@ -103,6 +103,7 @@
 				VecT divF(float s) const;
 				VecT invert() const;
 				bool equal(const UVec& v) const;
+				std::string toString() const;
 
 				friend std::ostream& operator << (std::ostream& os, const VT& v);
 				// -------------------- others --------------------
@@ -379,6 +380,11 @@
 				return -(*this); }
 			bool VT::equal(const UVec& v) const {
 				return *this == v; }
+			std::string VT::toString() const {
+				std::stringstream ss;
+				ss << *this;
+				return ss.str();
+			}
 
 			std::ostream& operator << (std::ostream& os, const VT& v) {
 				os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Vec" << DIM << '[';
