@@ -97,6 +97,14 @@
 			#undef DEF_OP
 			#undef DEF_OPS
 			#undef DEF_OP0
+			// -------- Luaへのエクスポート用 --------
+			QuatT addQ(const QuatT& q) const;
+			QuatT subQ(const QuatT& q) const;
+			QuatT mulQ(const QuatT& q) const;
+			QuatT mulF(float s) const;
+			QuatT divF(float s) const;
+			bool equal(const QuatT& q) const;
+			std::string toString() const;
 
 			// return This * Quat::rotateX(ang)
 			QuatT rotationX(RadF ang) const;
@@ -328,6 +336,30 @@
 		}
 		bool QT::operator != (const QuatT& q) const {
 			return !(this->operator == (q));
+		}
+
+		QT QT::addQ(const QuatT& q) const {
+			return *this + q;
+		}
+		QT QT::subQ(const QuatT& q) const {
+			return *this - q;
+		}
+		QT QT::mulQ(const QuatT& q) const {
+			return *this * q;
+		}
+		QT QT::mulF(float s) const {
+			return *this * s;
+		}
+		QT QT::divF(float s) const {
+			return *this / s;
+		}
+		bool QT::equal(const QuatT& q) const {
+			return *this == q;
+		}
+		std::string QT::toString() const {
+			std::stringstream ss;
+			ss << *this;
+			ss.str();
 		}
 
 		/*
