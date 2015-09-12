@@ -58,6 +58,14 @@
 			VEC3 placeOnPlane(const VEC3& src, float offset) const;
 			spn::Optional<float> placeOnPlaneDirDist(const VEC3& dir, const VEC3& src) const;
 			VEC3 getOrigin() const;
+			bool operator == (const PlaneT& p) const;
+			bool operator != (const PlaneT& p) const;
+			friend std::ostream& operator << (std::ostream& os, const PlaneT& v);
+
+			// -------- Luaへのエクスポート用 --------
+			PlaneT mulM(const MatT<4,4,ALIGNB>& m) const;
+			bool equal(const PlaneT& p) const;
+			std::string toString() const;
 		};
 
 		using BOOST_PP_CAT(ALIGNA, Plane) = PlaneT<ALIGNB>;
@@ -161,6 +169,31 @@
 		template PT PT::operator * (const MatT<4,3,true>& m) const;
 		template PT& PT::operator *= (const MatT<4,3,false>& m);
 		template PT& PT::operator *= (const MatT<4,3,true>& m);
+		bool PT::operator == (const PlaneT& p) const {
+			return a==p.a
+				&& b==p.b
+				&& c==p.c
+				&& d==p.d;
+		}
+		bool PT::operator != (const PlaneT& p) const {
+			return !(*this == p);
+		}
+
+		PT PT::mulM(const MatT<4,4,ALIGNB>& m) const {
+			return *this * m.convertA43();
+		}
+		bool PT::equal(const PlaneT& p) const {
+			return *this == p;
+		}
+		std::string PT::toString() const {
+			return ToString(*this);
+		}
+		std::ostream& operator << (std::ostream& os, const PlaneT<ALIGNB>& p) {
+			os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Plane" << '[';
+			for(int i=0 ; i<countof(p.m)-1 ; i++)
+				os << p.m[i] << ',';
+			return os << p.m[3] << ']';
+		}
 	#endif
 	}
 	#include "local_unmacro.hpp"
