@@ -11,6 +11,7 @@
 		#include <boost/serialization/nvp.hpp>
 		#include <cmath>
 		#include "spn_math.hpp"
+		#include "tostring.hpp"
 		#include "random/vector.hpp"
 
 		#define DEF_ARGPAIR(index,data,elem)	(float BOOST_PP_CAT(f, elem))
@@ -381,9 +382,7 @@
 			bool VT::equal(const UVec& v) const {
 				return *this == v; }
 			std::string VT::toString() const {
-				std::stringstream ss;
-				ss << *this;
-				return ss.str();
+				return ToString(*this);
 			}
 
 			std::ostream& operator << (std::ostream& os, const VT& v) {

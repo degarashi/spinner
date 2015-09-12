@@ -10,6 +10,7 @@
 		#include <stdexcept>
 		#include <cassert>
 		#include "vector.hpp"
+		#include "tostring.hpp"
 		#include "structure/angle.hpp"
 		#include "random/matrix.hpp"
 
@@ -424,9 +425,7 @@
 				*this = MatT(1.0f, TagDiagonal);
 			}
 			std::string MT::toString() const {
-				std::stringstream ss;
-				ss << *this;
-				return ss.str();
+				return ToString(*this);
 			}
 			std::ostream& operator << (std::ostream& os, const MT& m) {
 				os << BOOST_PP_IF(ALIGN, 'A', ' ') << "Mat" << DIM_M << DIM_N << '[';

@@ -4,6 +4,7 @@
 		#include "matrix.hpp"
 		#include "error.hpp"
 		#include "structure/angle.hpp"
+		#include "tostring.hpp"
 		#include "random/quat.hpp"
 		#include <boost/serialization/access.hpp>
 		#include <boost/serialization/level.hpp>
@@ -357,9 +358,7 @@
 			return *this == q;
 		}
 		std::string QT::toString() const {
-			std::stringstream ss;
-			ss << *this;
-			ss.str();
+			return ToString(*this);
 		}
 
 		/*
