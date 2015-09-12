@@ -1,4 +1,5 @@
 #include "pose.hpp"
+#include "tostring.hpp"
 #include <cstdlib>
 
 namespace spn {
@@ -192,6 +193,18 @@ namespace spn {
 	}
 	void Pose2D::setUp(const Vec2& up) {
 		setAngle(AngleValue(up));
+	}
+	AMat33 Pose2D::lua_getToWorld() const {
+		return getToWorld().convertA33();
+	}
+	AMat33 Pose2D::lua_getToLocal() const {
+		return getToLocal().convertA33();
+	}
+	bool Pose2D::equal(const Pose2D& p) const {
+		return *this == p;
+	}
+	std::string Pose2D::toString() const {
+		return ToString(*this);
 	}
 
 	std::ostream& operator << (std::ostream& os, const Pose2D& ps) {
@@ -447,6 +460,18 @@ namespace spn {
 		_scale = t.scale;
 		_rot = t.rot;
 		_setAsChanged();
+	}
+	AMat44 Pose3D::lua_getToWorld() const {
+		return getToWorld().convertA44();
+	}
+	AMat44 Pose3D::lua_getToLocal() const {
+		return getToLocal().convertA44();
+	}
+	bool Pose3D::equal(const Pose3D& p) const {
+		return *this == p;
+	}
+	std::string Pose3D::toString() const {
+		return ToString(*this);
 	}
 	Pose3D& Pose3D::operator = (const AMat43& m) {
 		return *this = Pose3D(m);

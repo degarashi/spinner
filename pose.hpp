@@ -68,6 +68,11 @@ namespace spn {
 			Pose2D(const TValue& tv);
 			void identity();
 
+			// ---- Lua互換用メソッド ----
+			AMat33 lua_getToWorld() const;
+			AMat33 lua_getToLocal() const;
+			bool equal(const Pose2D& ps) const;
+			std::string toString() const;
 			// ---- getter method ----
 			const Vec2& getOffset() const;
 			const Vec2& getScale() const;
@@ -165,6 +170,11 @@ namespace spn {
 			Pose3D(const AMat43& m);
 			void identity();
 
+			// ---- Lua互換用メソッド ----
+			AMat44 lua_getToWorld() const;
+			AMat44 lua_getToLocal() const;
+			bool equal(const Pose3D& p) const;
+			std::string toString() const;
 			// ---- helper function ----
 			//! 前方への移動(XZ平面限定)
 			void moveFwd2D(float speed);
