@@ -181,6 +181,49 @@ namespace spn {
 			DEF_ANGLE_OPERATOR(>)
 			DEF_ANGLE_OPERATOR(>=)
 			#undef DEF_ANGLE_OPERATOR
+
+			// -------- Luaへのエクスポート用 --------
+			using Deg_t = Angle<Degree_t, value_type>;
+			using Rad_t = Angle<Radian_t, value_type>;
+			Angle luaAddD(const Deg_t& a) const {
+				return *this + a;
+			}
+			Angle luaAddR(const Rad_t& a) const {
+				return *this + a;
+			}
+			Angle luaSubD(const Deg_t& a) const {
+				return *this - a;
+			}
+			Angle luaSubR(const Rad_t& a) const {
+				return *this - a;
+			}
+			Deg_t luaToDegree() const {
+				return *this;
+			}
+			Rad_t luaToRadian() const {
+				return *this;
+			}
+			Angle luaMulF(float s) const {
+				return *this * s;
+			}
+			Angle luaDivF(float s) const {
+				return *this / s;
+			}
+			Angle luaInvert() const {
+				return -*this;
+			}
+			bool luaLessthan(const Angle& a) const {
+				return *this < a;
+			}
+			bool luaLessequal(const Angle& a) const {
+				return *this <= a;
+			}
+			bool luaEqual(const Angle& a) const {
+				return *this == a;
+			}
+			std::string luaToString() const {
+				return ToString(*this);
+			}
 	};
 
 	template <class T>
