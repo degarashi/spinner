@@ -72,6 +72,11 @@
 			static QuatT LookAt(const VEC3& dir, const VEC3& up);
 			static QuatT Rotation(const VEC3& from, const VEC3& to);
 			static QuatT SetLookAt(AXIS_FLAG targetAxis, AXIS_FLAG baseAxis, const VEC3& baseVec, const VEC3& at, const VEC3& pos);
+			// -------- Luaへのエクスポート用(static) --------
+			static QuatT Lua_FromMat33(const MatT<3,3,false>& m);
+			static QuatT Lua_FromMat44(const MatT<4,4,false>& m);
+			static QuatT Lua_Rotation(const VEC3& axis, RadF ang);
+			static QuatT Lua_RotationFromTo(const VEC3& from, const VEC3& to);
 
 			// This *= Quat::rotateX(ang)
 			void rotateX(RadF ang);
@@ -240,6 +245,19 @@
 										template QT QT::FromMat(const MatT<n0,n1,false>&);
 		#define DEF_FROMMAT0(z,n0,dummy)	BOOST_PP_REPEAT_FROM_TO_##z(3, 5, DEF_FROMMAT1, n0)
 		BOOST_PP_REPEAT_FROM_TO(3,5, DEF_FROMMAT0, NOTHING)
+
+		QT QT::Lua_FromMat33(const MatT<3,3,false>& m) {
+			return FromMat(m);
+		}
+		QT QT::Lua_FromMat44(const MatT<4,4,false>& m) {
+			return FromMat(m);
+		}
+		QT QT::Lua_Rotation(const VEC3& axis, RadF ang) {
+			return Rotation(axis, ang);
+		}
+		QT QT::Lua_RotationFromTo(const VEC3& from, const VEC3& to) {
+			return Rotation(from, to);
+		}
 
 		void QT::identity() {
 			STORETHIS(reg_setr_ps(0,0,0,1));
