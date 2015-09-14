@@ -75,6 +75,11 @@ namespace spn {
 			T getUniformMin(const T& vmin) {
 				return getUniform<T>({vmin, L<T>::max()});
 			}
+
+			// -------- Luaへのエクスポート用 --------
+			template <class T>
+			T luaGetUniform(const Range<T>& r) {
+				return getUniform<T>(r); }
 	};
 	#define mgr_random (::spn::MTRandomMgr::_ref())
 	//! MTRandomマネージャ
