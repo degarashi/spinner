@@ -42,6 +42,7 @@
 	#if BOOST_PP_ITERATION_FLAGS() == 0
 		// クラスのコンストラクタとメソッドのプロトタイプだけ定義
 		namespace spn {
+			class MTRandom;
 			template <>
 			struct Vec {
 				constexpr static int width = DIM;
@@ -182,6 +183,10 @@
 				static VecT RandomDir(const RDF& rdf) {
 					return random::GenRDir<VecT>(rdf);
 				}
+				// -------- Luaへのエクスポート用 --------
+				static VecT luaRandom(MTRandom& mt, const RangeF& r);
+				static VecT luaRandomWithLength(MTRandom& mt, float th, const RangeF& r);
+				static VecT luaRandomWithAbs(MTRandom& mt, const RangeF& rTh, const RangeF& r);
 				#if ALIGN==1
 					//! AVec -> Vec へ暗黙変換
 					operator VecT<DIM,false>& ();
@@ -640,6 +645,7 @@
 			#endif
 		}
 	#else
+		#include "random.hpp"
 		namespace spn {
 			/*	Pseudo-code:
 				template <int N, bool A>
@@ -704,6 +710,16 @@
 				template std::tuple<VT,bool> VT::planeDivide(const VecT<DIM,true>&,const PlaneT<false>&) const;
 				template std::tuple<VT,bool> VT::planeDivide(const VecT<DIM,false>&,const PlaneT<false>&) const;
 			#endif
+
+			VT VT::luaRandom(MTRandom& mt, const RangeF& r) {
+				return Random(mt.getUniformF<float>(), r);
+			}
+			VT VT::luaRandomWithLength(MTRandom& mt, float th, const RangeF& r) {
+				return RandomWithLength(mt.getUniformF<float>(), th, r);
+			}
+			VT VT::luaRandomWithAbs(MTRandom& mt, const RangeF& rTh, const RangeF& r) {
+				return RandomWithAbs(mt.getUniformF<float>(), rTh, r);
+			}
 		}
 	#endif
 	#include "local_unmacro.hpp"
