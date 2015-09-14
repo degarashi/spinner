@@ -225,7 +225,7 @@
 					// -------- Luaへのエクスポート用 --------
 					VecT modV(const UVec& v) const;
 					VecT mulQ(const QuatT<ALIGNB>& q) const;
-					std::tuple<VecT,bool> lua_planeDivide(const VecT<DIM,false>& v, const PlaneT<false>& p) const;
+					std::tuple<VecT,bool> luaPlaneDivide(const VecT<DIM,false>& v, const PlaneT<false>& p) const;
 				#elif DIM==2
 					float ccw(const VecT<DIM,false>& v) const;
 					float cw(const VecT<DIM,false>& v) const;
@@ -612,7 +612,7 @@
 					return *this % v; }
 				VT VT::mulQ(const QuatT<ALIGNB>& q) const {
 					return *this * q; }
-				std::tuple<VT,bool> VT::lua_planeDivide(const VecT<DIM,false>& v, const PlaneT<false>& p) const {
+				std::tuple<VT,bool> VT::luaPlaneDivide(const VecT<DIM,false>& v, const PlaneT<false>& p) const {
 					return planeDivide(v, p);
 				}
 				#define _Vec4 VecT<4,ALIGNB>

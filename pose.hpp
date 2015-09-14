@@ -69,8 +69,8 @@ namespace spn {
 			void identity();
 
 			// ---- Lua互換用メソッド ----
-			AMat33 lua_getToWorld() const;
-			AMat33 lua_getToLocal() const;
+			AMat33 luaGetToWorld() const;
+			AMat33 luaGetToLocal() const;
 			bool equal(const Pose2D& ps) const;
 			std::string toString() const;
 			// ---- getter method ----
@@ -171,8 +171,8 @@ namespace spn {
 			void identity();
 
 			// ---- Lua互換用メソッド ----
-			AMat44 lua_getToWorld() const;
-			AMat44 lua_getToLocal() const;
+			AMat44 luaGetToWorld() const;
+			AMat44 luaGetToLocal() const;
 			bool equal(const Pose3D& p) const;
 			std::string toString() const;
 			// ---- helper function ----

@@ -274,7 +274,7 @@
 					MatT mulF(float s) const;
 					MatT mulM(const MatT& m) const;
 					MatT divF(float s) const;
-					MatT lua_invert() const;
+					MatT luaInvert() const;
 				#endif
 				std::string toString() const;
 				MatT<DIM_N,DIM_M,ALIGNB> transposition() const;
@@ -801,7 +801,7 @@
 				MT MT::divF(float s) const {
 					return *this / s;
 				}
-				MT MT::lua_invert() const {
+				MT MT::luaInvert() const {
 					MT ret;
 					inversion(ret);
 					return ret;

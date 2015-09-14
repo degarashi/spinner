@@ -194,10 +194,10 @@ namespace spn {
 	void Pose2D::setUp(const Vec2& up) {
 		setAngle(AngleValue(up));
 	}
-	AMat33 Pose2D::lua_getToWorld() const {
+	AMat33 Pose2D::luaGetToWorld() const {
 		return getToWorld().convertA33();
 	}
-	AMat33 Pose2D::lua_getToLocal() const {
+	AMat33 Pose2D::luaGetToLocal() const {
 		return getToLocal().convertA33();
 	}
 	bool Pose2D::equal(const Pose2D& p) const {
@@ -461,10 +461,10 @@ namespace spn {
 		_rot = t.rot;
 		_setAsChanged();
 	}
-	AMat44 Pose3D::lua_getToWorld() const {
+	AMat44 Pose3D::luaGetToWorld() const {
 		return getToWorld().convertA44();
 	}
-	AMat44 Pose3D::lua_getToLocal() const {
+	AMat44 Pose3D::luaGetToLocal() const {
 		return getToLocal().convertA44();
 	}
 	bool Pose3D::equal(const Pose3D& p) const {
