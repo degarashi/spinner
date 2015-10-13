@@ -115,6 +115,10 @@ namespace spn {
 				a *= t;
 			return *this;
 		}
+		template <class V>
+		auto toRect() const {
+			return _Rect<V>(x0, x1, y0,y1);
+		}
 	};
 	using Rect = _Rect<int>;
 	using RectF = _Rect<float>;
