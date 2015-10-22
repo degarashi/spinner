@@ -862,6 +862,9 @@ namespace spn {
 
 				_remManager(_resID);
 			}
+			auto getResourceId() const {
+				return _resID;
+			}
 			//! シリアライズフラグをリセット
 			void resetSerializeFlag() {
 				AssertP(Trap, _bSerializing, "serialize flag has already reset")
