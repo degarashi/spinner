@@ -65,8 +65,9 @@ namespace spn {
 			bool operator != (const SHandle& sh) const;
 			bool operator < (const SHandle& sh) const;
 			void swap(SHandle& sh) noexcept;
-			/*! ResourceIDから対応マネージャを特定して解放 */
-			void release();
+			/*! ResourceIDから対応マネージャを特定して解放
+				\return この呼び出しでリソースが開放された場合はtrue */
+			bool release();
 			void increment();
 			uint32_t count() const;
 			WHandle weak() const;
@@ -137,13 +138,13 @@ namespace spn {
 	namespace {
 		namespace resmgr_tmp {
 			template <class HDL>
-			void ReleaseHB(HDL& hdl, std::integral_constant<bool,true>) {
-				hdl.release();
+			auto ReleaseHB(HDL& hdl, std::integral_constant<bool,true>) {
+				return hdl.release();
 			}
 			template <class HDL>
-			void ReleaseHB(HDL& hdl, std::integral_constant<bool,false>) {
+			auto ReleaseHB(HDL& hdl, std::integral_constant<bool,false>) {
 				SHandle sh(hdl);
-				sh.release();
+				return sh.release();
 			}
 		}
 	}
@@ -183,11 +184,13 @@ namespace spn {
 			~HdlLockB() {
 				release();
 			}
-			void release() {
+			bool release() {
 				if(_hdl.valid()) {
-					resmgr_tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
+					auto ret = resmgr_tmp::ReleaseHB(_hdl, std::integral_constant<bool,DIRECT>());
 					_hdl.setNull();
+					return ret;
 				}
+				return false;
 			}
 			//! 解放せずにハンドルを無効化する
 			void setNull() {
@@ -340,7 +343,7 @@ namespace spn {
 					class = typename std::enable_if<std::is_convertible<DAT, DATA>::value>::type>
 			SHandleT(const SHandleT<MGR, DAT>& hdl): SHandle(hdl) {}
 			// ResMgrBaseから探してメソッド呼ぶのと同じだが、こちらのほうが幾分効率が良い
-			void release() { MGR::_ref().release(*this); }
+			bool release() { return MGR::_ref().release(*this); }
 			void increment() { MGR::_ref().increment(*this); }
 			data_type& ref() {
 				// Managerの保管している型とこのハンドルが返す型が異なる場合があるので明示的にキャストする

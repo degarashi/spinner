@@ -46,8 +46,8 @@ namespace spn {
 	void SHandle::swap(SHandle& sh) noexcept {
 		std::swap(_value, sh._value);
 	}
-	void SHandle::release() {
-		ResMgrBase::Release(*this);
+	bool SHandle::release() {
+		return ResMgrBase::Release(*this);
 	}
 	void SHandle::increment() {
 		ResMgrBase::Increment(*this);
