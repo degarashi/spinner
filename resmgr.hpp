@@ -162,6 +162,7 @@ namespace spn {
 				ar & BOOST_SERIALIZATION_NVP(_hdl);
 			}
 		public:
+			static struct tagAsLocked {} AsLocked;
 			using handle_type = HDL;
 			using WHdl = typename HDL::WHdl;
 			HdlLockB() = default;
@@ -174,6 +175,8 @@ namespace spn {
 			HdlLockB(HdlLockB<HDL,D>&& hdl): HdlLockB(reinterpret_cast<HdlLockB&&>(hdl)) {}
 			template <bool D>
 			HdlLockB(const HdlLockB<HDL,D>& hdl): HdlLockB(reinterpret_cast<const HdlLockB&>(hdl)) {}
+			//! ハンドルを既にロック済みとして扱う
+			HdlLockB(HDL hdl, tagAsLocked): _hdl(hdl) {}
 			//! 参照インクリメント
 			HdlLockB(HDL hdl): _hdl(hdl) {
 				if(_hdl.valid())
@@ -956,10 +959,7 @@ namespace spn {
 			}
 			//! 弱参照ハンドルから実体を得る
 			LHdl lockLH(WHandle wh) {
-				SHandle sh = lock(wh);
-				if(sh.valid())
-					release(sh);
-				return LHdl(sh);
+				return LHdl(lock(wh), LHdl::AsLocked);
 			}
 			//! 弱参照ハンドルが有効かどうかを判定
 			bool isHandleValid(WHandle wh) const {
