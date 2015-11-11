@@ -198,16 +198,12 @@ namespace spn {
 			DirDep::Chdir(SC_P);
 		mode |= FStatus::UserRWX;
 
-		auto path32 = plain_utf32(false);
-		const char32_t* ptr = &path32[0];
 		int nsg = segments();
 		std::string ns;
 		int i;
 		// 最初のパスから1つずつ存在確認
 		for(i=0 ; i<nsg ; i++) {
-			int seg = _segment[i];
-			ns = Text::UTFConvertTo8(c32Str(ptr, seg));
-			ptr += seg+1;
+			ns = getSegment_utf8(i,i+1);
 			if(!DirDep::Chdir_nt(ns))
 				break;
 		}
@@ -221,9 +217,7 @@ namespace spn {
 			DirDep::Chdir(ns);
 			if(++i == nsg)
 				break;
-			int seg = _segment[i] + 1;
-			ns = Text::UTFConvertTo8(c32Str(ptr, seg));
-			ptr += seg;
+			ns = getSegment_utf8(i,i+1);
 		}
 	}
 	void Dir::_chmod(PathBlock& lpath, ModCB cb) {
