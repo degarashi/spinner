@@ -35,7 +35,7 @@ namespace spn {
 		//! 下層のエントリ全てに対し作成イベントを送出
 		static void ThrowCreateEvent(FRecvNotify& visitor, const SPString& base, const IFTFile* ft, PathBlock& pblock);
 		//! ファイルツリー差分を巡ってコールバック関数を呼ぶ
-		static void VisitDifference(FRecvNotify& visitor, const SPString& base, const IFTFile* f0, const IFTFile* f1, PathBlock& pblock);
+		static bool VisitDifference(FRecvNotify& visitor, const SPString& base, const IFTFile* f0, const IFTFile* f1, PathBlock& pblock);
 	};
 
 	struct IFTFile {

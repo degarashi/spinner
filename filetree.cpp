@@ -124,42 +124,62 @@ namespace spn {
 			visitor.event(FEv_Remove(base, str, ft->isDirectory()), SPData());
 		}, pblock);
 	}
-	void FileTree::VisitDifference(FRecvNotify& visitor, const SPString& base, const IFTFile* f0, const IFTFile* f1, PathBlock& pblock) {
+	bool FileTree::VisitDifference(FRecvNotify& visitor, const SPString& base, const IFTFile* f0, const IFTFile* f1, PathBlock& pblock) {
 		AssertP(Trap, f0->isDirectory() && f1->isDirectory())
-		auto *fd0 = reinterpret_cast<const DirInfo*>(f0),
-			*fd1 = reinterpret_cast<const DirInfo*>(f1);
+		auto *fd0 = static_cast<const DirInfo*>(f0),
+			*fd1 = static_cast<const DirInfo*>(f1);
+		// ディレクトリのノード構造が変わった時にtrueにする
+		bool bNodeChanged = false;
 		for(auto& ent : fd0->fmap) {
 			auto itr = fd1->fmap.find(ent.first);
 			pblock <<= ent.first;
-			// 同名のエントリがFile -> Directory等と種別が変わっていたらRemove, Createと解釈
 			bool bDir = ent.second->isDirectory();
-			if(itr == fd1->fmap.end()) {
-				// エントリが削除された
+			// エントリが削除された時の処理
+			auto onRemove = [&](){
 				visitor.event(FEv_Remove(base, pblock.plain_utf8(), bDir), SPData());
 				// Directoryならば下層のエントリが全部イベント呼び出し対象 -> FEv_Remove
 				if(bDir)
 					ThrowRemoveEvent(visitor, base, ent.second.get(), pblock);
+				bNodeChanged = true;
+			};
+			if(itr == fd1->fmap.end()) {
+				onRemove();
 			} else {
-				FStatus fs0 = ent.second->getStatus();
-				const FStatus& fs1 = itr->second->getStatus();
+				bool bDir2 = itr->second->isDirectory();
 				std::string path8(pblock.plain_utf8());
-				// アクセス時刻チェック => FEv_Access
-				// ディレクトリのアクセスチェックはしない
-				if(!bDir && fs0.ftime.tmAccess != fs1.ftime.tmAccess)
-					visitor.event(FEv_Access(base, path8, bDir), SPData());
-				// ファイル編集時刻チェック => FEv_Modify
-				if(fs0.ftime.tmModify != fs1.ftime.tmModify ||
-					fs0.ftime.tmCreated != fs1.ftime.tmCreated ||
-					fs0.size != fs1.size)
-					visitor.event(FEv_Modify(base, path8, bDir), SPData());
-				// アトリビュート変更チェック => FEv_Attr
-				fs0.ftime = fs1.ftime;
-				fs0.size = fs1.size;
-				if(fs0 != fs1)
-					visitor.event(FEv_Attr(base, path8, bDir), SPData());
+				// 同名のエントリがFile -> Directory等と種別が変わっていたらRemove, Createと解釈
+				if(bDir != bDir2) {
+					onRemove();
+					visitor.event(FEv_Create(base, path8, bDir2), SPData());
+					if(bDir2) {
+						// 下層のディレクトリは全てCreateを呼ぶ
+						ThrowCreateEvent(visitor, base, itr->second.get(), pblock);
+					}
+				} else {
+					FStatus fs0 = ent.second->getStatus();
+					const FStatus& fs1 = itr->second->getStatus();
+					// アクセス時刻チェック => FEv_Access
+					// ディレクトリのアクセスチェックはしない
+					if(!bDir) {
+						if(fs0.ftime.tmAccess != fs1.ftime.tmAccess)
+							visitor.event(FEv_Access(base, path8, bDir), SPData());
+						// ファイル編集時刻チェック => FEv_Modify
+						if(fs0.ftime.tmModify != fs1.ftime.tmModify ||
+							fs0.ftime.tmCreated != fs1.ftime.tmCreated ||
+							fs0.size != fs1.size)
+							visitor.event(FEv_Modify(base, path8, bDir), SPData());
+					}
+					// アトリビュート変更チェック => FEv_Attr
+					fs0.ftime = fs1.ftime;
+					fs0.size = fs1.size;
+					if(fs0 != fs1)
+						visitor.event(FEv_Attr(base, path8, bDir), SPData());
 
-				if(bDir)
-					VisitDifference(visitor, base, ent.second.get(), itr->second.get(), pblock);
+					if(bDir) {
+						// 下層のディレクトリ比較
+						bNodeChanged |= VisitDifference(visitor, base, ent.second.get(), itr->second.get(), pblock);
+					}
+				}
 			}
 			pblock.popBack();
 		}
@@ -173,7 +193,11 @@ namespace spn {
 				if(bDir)
 					ThrowCreateEvent(visitor, base, ent.second.get(), pblock);
 				pblock.popBack();
+				bNodeChanged = true;
 			}
 		}
+		if(bNodeChanged)
+			visitor.event(FEv_Modify(base, pblock.plain_utf8(), true), SPData());
+		return bNodeChanged;
 	}
 }
