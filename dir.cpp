@@ -255,6 +255,19 @@ namespace spn {
 	FStatus Dir::status() const {
 		return DirDep::Status(plain_utf8());
 	}
+	void Dir::RemoveAll(const std::string& path) {
+		if(DirDep::IsDirectory(path)) {
+			auto prev = Dir::GetCurrentDir();
+			Dir::SetCurrentDir(path);
+			// 下層のファイルやディレクトリを削除
+			EnumEntryWildCard("*", [](const Dir& d){
+				RemoveAll(d.plain_utf8(true));
+			});
+			DirDep::Rmdir(path);
+			Dir::SetCurrentDir(prev);
+		} else
+			DirDep::Remove(path);
+	}
 	std::string Dir::plain_utf8(bool bAbs) const {
 		if(bAbs) {
 			if(!PathBlock::isAbsolute()) {
