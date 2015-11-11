@@ -21,9 +21,11 @@ namespace spn {
 	}
 	void Dir::SetCurrentDir(const std::string& path) {
 		PathStr ps;
-		if(path.length() > 1) {
-			if(::isalpha(path[0]) && path[1] == ':')
-				ps = ToPathStr(path.substr(2)).moveTo();
+		// Windows環境において先頭のドライブ文字を削る
+		if(path.length() > 1 &&
+			::isalpha(path[0]) && path[1] == ':')
+		{
+			ps = ToPathStr(path.substr(2)).moveTo();
 		} else
 			ps = ToPathStr(path).moveTo();
 		DirDep::SetCurrentDir(ps);
