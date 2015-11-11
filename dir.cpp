@@ -255,6 +255,26 @@ namespace spn {
 	FStatus Dir::status() const {
 		return DirDep::Status(plain_utf8());
 	}
+	std::string Dir::plain_utf8(bool bAbs) const {
+		if(bAbs) {
+			if(!PathBlock::isAbsolute()) {
+				PathBlock pb(GetCurrentDir());
+				pb <<= static_cast<const PathBlock&>(*this);
+				return pb.plain_utf8(true);
+			}
+		}
+		return PathBlock::plain_utf8(true);
+	}
+	std::u32string Dir::plain_utf32(bool bAbs) const {
+		if(bAbs) {
+			if(!PathBlock::isAbsolute()) {
+				PathBlock pb(GetCurrentDir());
+				pb <<= static_cast<const PathBlock&>(*this);
+				return pb.plain_utf32(true);
+			}
+		}
+		return PathBlock::plain_utf32(true);
+	}
 
 	// -------------------------- URI --------------------------
 	const std::string URI::SEP(u8"://");

@@ -76,5 +76,7 @@ namespace spn {
 			static std::string GetCurrentDir();
 			static std::string GetProgramDir();
 			static void SetCurrentDir(const std::string& path);
+			std::string plain_utf8(bool bAbs=true) const;
+			std::u32string plain_utf32(bool bAbs=true) const;
 	};
 }
