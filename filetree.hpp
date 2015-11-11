@@ -44,17 +44,13 @@ namespace spn {
 
 		virtual bool isDirectory() const = 0;
 		virtual FileTree::Type getType() const = 0;
+		virtual bool equal(const IFTFile& f) const;
 
-		IFTFile(const std::string& name, const FStatus& fs): fname(name), fstat(fs) {}
-		const std::string& getName() const { return fname; }
-		const FStatus& getStatus() const { return fstat; }
-		virtual bool operator == (const IFTFile& f) const {
-			return getType() == f.getType() &&
-					fname == f.fname &&
-					fstat == f.fstat;
-		}
-		bool operator != (const IFTFile& f) const {
-			return !(*this == f); }
+		IFTFile(const std::string& name, const FStatus& fs);
+		const std::string& getName() const;
+		const FStatus& getStatus() const;
+		bool operator == (const IFTFile& f) const;
+		bool operator != (const IFTFile& f) const;
 
 		//! デバッグ用プリント関数
 		virtual void print(std::ostream& os, int indent=0) const = 0;
@@ -65,6 +61,7 @@ namespace spn {
 		using IFTFile::IFTFile;
 		FileTree::Type getType() const override;
 		bool isDirectory() const override;
+		bool equal(const IFTFile& f) const override;
 		void print(std::ostream& os, int indent) const override;
 	};
 	//! ディレクトリに該当
@@ -75,7 +72,7 @@ namespace spn {
 		using IFTFile::IFTFile;
 		FileTree::Type getType() const override;
 		bool isDirectory() const override;
-		bool operator == (const IFTFile& f) const override;
+		bool equal(const IFTFile& f) const override;
 		void print(std::ostream& os, int indent) const override;
 	};
 }

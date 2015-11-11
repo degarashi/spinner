@@ -9,6 +9,27 @@ namespace spn {
 				os << '\t';
 		}
 	}
+
+	// ------------------- IFTFile -------------------
+	IFTFile::IFTFile(const std::string& name, const FStatus& fs):
+		fname(name), fstat(fs) {}
+	const std::string& IFTFile::getName() const {
+		return fname;
+	}
+	const FStatus& IFTFile::getStatus() const {
+		return fstat;
+	}
+	bool IFTFile::equal(const IFTFile& f) const {
+		return	fname == f.fname &&
+				fstat == f.fstat;
+	}
+	bool IFTFile::operator == (const IFTFile& f) const {
+		return equal(f);
+	}
+	bool IFTFile::operator != (const IFTFile& f) const {
+		return !(*this == f);
+	}
+
 	// ------------------- FileInfo -------------------
 	FileTree::Type FileInfo::getType() const { return FileTree::Type::File; }
 	bool FileInfo::isDirectory() const { return false; }
@@ -16,30 +37,37 @@ namespace spn {
 		InsertIndent(os, indent);
 		os << "File: " << fname << std::endl;
 	}
+	bool FileInfo::equal(const IFTFile& f) const {
+		return f.getType() == getType() &&
+				IFTFile::equal(f);
+	}
 
 	// ------------------- DirInfo -------------------
 	FileTree::Type DirInfo::getType() const { return FileTree::Type::Directory; }
 	bool DirInfo::isDirectory() const { return true; }
-	bool DirInfo::operator == (const IFTFile& f) const {
-		if(static_cast<const IFTFile&>(*this) == f) {
-			auto& fd = reinterpret_cast<const DirInfo&>(f);
-			if(fmap.size() == fd.fmap.size()) {
-				for(auto& e : fmap) {
-					auto itr = fd.fmap.find(e.first);
-					if(itr == fd.fmap.end())
-						return false;
-					if(*e.second != *itr->second)
-						return false;
-				}
-			}
-		}
-		return false;
-	}
 	void DirInfo::print(std::ostream& os, int indent) const {
 		InsertIndent(os, indent);
 		os << "Dir: " << fname << std::endl;
 		for(auto& p : fmap)
 			p.second->print(os, indent+1);
+	}
+	bool DirInfo::equal(const IFTFile& f) const {
+		if(f.getType() == getType() &&
+			IFTFile::equal(f))
+		{
+			auto& f2 = static_cast<const DirInfo&>(f);
+			auto& fmap2 = f2.fmap;
+			if(fmap.size() == fmap2.size()) {
+				for(auto& p : fmap) {
+					auto itr = fmap2.find(p.first);
+					if(itr == fmap2.end() ||
+						!p.second->equal(*itr->second))
+						return false;
+				}
+				return true;
+			}
+		}
+		return false;
 	}
 
 	#define AS_LPCWSTR(path)	reinterpret_cast<const wchar_t*>(To16Str(path).getStringPtr())
