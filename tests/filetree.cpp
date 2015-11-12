@@ -30,32 +30,7 @@ namespace spn {
 			// ツリーを比較
 			EXPECT_EQ(*ft0, *ft1);
 		}
-
 		namespace {
-			//! FEvのハッシュ値を求める
-			struct FEv_hash {
-				size_t operator()(const FEv* e) const {
-					return std::hash<std::string>()(*e->basePath) -
-						std::hash<std::string>()(e->name) *
-						std::hash<bool>()(e->isDir) +
-						std::hash<uint32_t>()(e->getType());
-				}
-			};
-			//! FEvとUPFEvの比較
-			struct FEv_equal {
-				bool operator()(const UPFEv& fe, const FEv* fp) const {
-					return (*this)(fe.get(), fp);
-				}
-				bool operator()(const FEv* fp, const UPFEv& fe) const {
-					return (*this)(fp, fe.get());
-				}
-				bool operator()(const UPFEv& fe0, const UPFEv& fe1) const {
-					return (*this)(fe0.get(), fe1.get());
-				}
-				bool operator()(const FEv* fp0, const FEv* fp1) const {
-					return *fp0 == *fp1;
-				}
-			};
 			void LowerCallback(const Dir& dir, std::function<void (const Dir&)> cb) {
 				cb(dir);
 				Dir::EnumEntryWildCard(dir.plain_utf8() + "/*", [&cb](const Dir& d) {

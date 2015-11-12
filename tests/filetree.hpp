@@ -9,6 +9,8 @@ namespace spn {
 	struct IFTFile;
 	struct FStatus;
 	using UPIFile = std::unique_ptr<IFTFile>;
+	struct FEv;
+	using UPFEv = std::unique_ptr<FEv>;
 	namespace test {
 		extern const std::string c_testDir;
 		using StringSet = std::unordered_set<std::string>;
@@ -22,6 +24,18 @@ namespace spn {
 		//! テスト用にファイル・ディレクトリ構造を作る
 		Dir MakeTestDir(MTRandom& rd, int nAction, UPIFile* ft);
 
+		//! FEvのハッシュ値を求める
+		struct FEv_hash {
+			size_t operator()(const UPFEv& e) const;
+			size_t operator()(const FEv* e) const;
+		};
+		//! FEvとUPFEvの比較
+		struct FEv_equal {
+			bool operator()(const UPFEv& fe, const FEv* fp) const;
+			bool operator()(const FEv* fp, const UPFEv& fe) const;
+			bool operator()(const UPFEv& fe0, const UPFEv& fe1) const;
+			bool operator()(const FEv* fp0, const FEv* fp1) const;
+		};
 		struct ActionNotify {
 			virtual void onCreate(const Dir& /*path*/) {}
 			virtual void onModify(const Dir& /*path*/, const FStatus& /*prev*/, const FStatus& /*cur*/) {}
@@ -33,6 +47,8 @@ namespace spn {
 			virtual void onUpDir(const Dir& /*path*/) {}
 			virtual void onDownDir(const Dir& /*path*/) {}
 		};
+		//! テスト用ディレクトリ構造に対してランダムなファイル操作を行う(ディレクトリ移動を含まない操作一回分)
+		void MakeRandomActionSingle(MTRandom& rd, StringSet& orig_nameset, StringSet& nameset, const std::string& basePath, const Dir& path, ActionNotify& ntf);
 		//! テスト用ディレクトリ構造に対してランダムなファイル操作を行う
 		void MakeRandomAction(MTRandom& rd, StringSet& orig_nameset, StringSet& nameset, const Dir& path, int n, ActionNotify& ntf);
 	}
