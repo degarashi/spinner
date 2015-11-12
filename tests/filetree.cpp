@@ -10,18 +10,16 @@
 
 namespace spn {
 	namespace test {
-		namespace {
-			const std::string c_testDir = "test_dir";
-			//! テスト用にファイル・ディレクトリ構造を作る
-			Dir MakeTestDir(MTRandom& rd, int nAction, UPIFile* ft) {
-				Dir dir(g_apppath.plain_utf32());
-				dir <<= c_testDir;
-				if(dir.isFile() || dir.isDirectory())
-					Dir::RemoveAll(dir.plain_utf8());
-				MakeRandomFileTree(dir, rd, nAction, ft);
-				return dir;
-			}
+		const std::string c_testDir = "test_dir";
+		Dir MakeTestDir(MTRandom& rd, int nAction, UPIFile* ft) {
+			Dir dir(g_apppath.plain_utf32());
+			dir <<= c_testDir;
+			if(dir.isFile() || dir.isDirectory())
+				Dir::RemoveAll(dir.plain_utf8());
+			MakeRandomFileTree(dir, rd, nAction, ft);
+			return dir;
 		}
+
 		class FileTreeTest : public RandomTestInitializer {};
 		TEST_F(FileTreeTest, ConstructFileTree) {
 			auto rd = getRand();
@@ -67,6 +65,15 @@ namespace spn {
 						cb(d);
 				});
 			}
+			// 現在パスから見た親フォルダ全てに対してコールバック関数を呼ぶ
+			void UpperCallback(const Dir& dir, std::function<void (const Dir&)> cb) {
+				Dir tdir(dir);
+				while(tdir.segments() > 0) {
+					cb(tdir);
+					tdir.popBack();
+				}
+				cb(tdir);
+			};
 		}
 		TEST_F(FileTreeTest, Difference) {
 			auto rd = getRand();
@@ -85,82 +92,6 @@ namespace spn {
 				orig_nameset.emplace(d.getLast_utf8());
 			});
 
-			// 以下のアクションをランダムに起こす
-			enum Action {
-				Act_Create,		// ファイル作成
-				Act_Modify,		// ファイルデータ変更(サイズはそのまま)
-				Act_Modify_Size,// ファイルのサイズを変更
-				Act_Delete,		// ファイル又はディレクトリ削除
-				Act_Move,		// ファイル移動
-				Act_Access,		// アクセスタイムを更新
-				Act_UpDir,		// ディレクトリを1つ上がる
-				Act_DownDir,	// ディレクトリを1つ降りる(現階層にディレクトリがない場合は何もしない)
-				NumAction
-			};
-			using StringV = std::vector<std::string>;
-
-			// ランダムにファイルやディレクトリを選択(一度選んだファイルは二度と選ばない)
-			auto fnSelect = [&nameset, &rd](const Dir& dir, uint32_t flag, bool bAdd) {
-				StringV ps;
-				auto path = dir.plain_utf8() + "/*";
-				Dir::EnumEntryWildCard(path, [&nameset, &ps, flag](const Dir& dir) {
-					FStatus fs = dir.status();
-					if(fs.flag & flag) {
-						std::string name = dir.getLast_utf8();
-						if(nameset.count(name) == 0)
-							ps.push_back(std::move(name));
-					}
-				});
-				if(ps.empty())
-					return std::string();
-				int idx = rd.getUniform<int>({0, ps.size()-1});
-				if(bAdd)
-					nameset.emplace(ps[idx]);
-				return std::move(ps[idx]);
-			};
-			auto fnSelectFile = [&fnSelect](const Dir& dir, bool bAdd) {
-				return fnSelect(dir, FStatus::FileType, bAdd);
-			};
-			auto fnSelectDir = [&fnSelect](const Dir& dir, bool bAdd) {
-				return fnSelect(dir, FStatus::DirectoryType, bAdd);
-			};
-			auto fnSelectBoth = [&fnSelect](const Dir& dir, bool bAdd) {
-				return fnSelect(dir, FStatus::FileType | FStatus::DirectoryType, bAdd);
-			};
-			// ファイルツリーのランダムな場所へのパスを作成
-			auto fnGenerateRandomPath = [&orig_nameset, &nameset, &fnSelectDir, &rd](const Dir& dir) {
-				Dir tdir(dir);
-				for(;;) {
-					// 階層を降りる or 留まる
-					if(rd.getUniform<int>({0, 1}) == 0) {
-						auto ps = fnSelectDir(tdir, false);
-						if(!ps.empty()) {
-							tdir <<= ps;
-							continue;
-						}
-					}
-					for(;;) {
-						auto name = RandomName(rd, nameset);
-						if(orig_nameset.count(name) == 0) {
-							tdir <<= name;
-							break;
-						}
-					}
-					return tdir.getSegment_utf8(dir.segments(), PathBlock::End);
-				}
-			};
-			// 現在パスから見た親フォルダ全てに対してコールバック関数を呼ぶ
-			auto fnUpperCallback = [](const Dir& dir, std::function<void (const Dir&)> cb) {
-				Dir tdir(dir);
-				while(tdir.segments() > 0) {
-					cb(tdir);
-					tdir.popBack();
-				}
-				cb(tdir);
-			};
-
-			int nseg_base = dir.segments();
-			int layer = 0;
 			class History {
 				public:
 					using FEvS = std::unordered_map<const FEv*, UPFEv, FEv_hash, FEv_equal>;
@@ -200,169 +131,102 @@ namespace spn {
 						}
 					}
 			} hist(orig_pathset);
-			auto basePath = std::make_shared<std::string>(dir.plain_utf8());
 
-			auto fnAddModifyEvent = [&hist, &basePath](const Dir& d) {
-				hist.addEvent(new FEv_Modify(basePath, d.PathBlock::plain_utf8(false), true));
-			};
-			for(int j=0 ; j<20 ; j++) {
-				switch(rd.getUniform<int>({0, Action::NumAction})) {
-					case Action::Act_Create: {
-						std::string str = RandomName(rd, nameset);
-						PlaceRandomFile(rd, dir, str);
-						dir <<= str;
-						// ファイル作成イベントを記録
-						hist.addEvent(new FEv_Create(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
-						dir.popBack();
-						// 上位ディレクトリ(Modify)
-						fnUpperCallback(Dir(dir.getSegment_utf32(nseg_base, PathBlock::End)), fnAddModifyEvent);
-						break; }
-					case Action::Act_Modify: {
-						auto ps = fnSelectFile(dir, true);
-						if(!ps.empty()) {
-							dir <<= ps;
-
-							auto st = dir.status();
-							// 先頭1バイトを書き換え
-							{
-								char ch;
-								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "r+");
-								::fread(&ch, 1, 1, fp);
-								++ch;
-								::fseek(fp, 0, SEEK_SET);
-								::fwrite(&ch, 1, 1, fp);
-								#ifdef UNIX
-									::fsync(::fileno(fp));
-								#endif
-								::fclose(fp);
-							}
-							auto st2 = dir.status();
-
-
-							// 当該ファイル(Access / Write)
-							std::string relp = dir.getSegment_utf8(nseg_base, PathBlock::End);
-							if(st.ftime.tmAccess != st2.ftime.tmAccess)
-								hist.addEvent(new FEv_Access(basePath, relp, false));
-							hist.addEvent(new FEv_Modify(basePath, relp, false));
-							dir.popBack();
-						}
-						break; }
-					case Action::Act_Modify_Size: {
-						auto ps = fnSelectFile(dir, true);
-						if(!ps.empty()) {
-							dir <<= ps;
-							EXPECT_FALSE(dir.isDirectory());
-							// 末尾1バイト追加
-							{
-								char ch = 0xfe;
-								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "a");
-								::fwrite(&ch, 1, 1, fp);
-								#ifdef UNIX
-									::fsync(::fileno(fp));
-								#endif
-								::fclose(fp);
-							}
-
-							// 当該ファイル(Write)
-							hist.addEvent(new FEv_Modify(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
-							dir.popBack();
-						}
-						break; }
-					case Action::Act_Delete: {
-						auto ps = fnSelectFile(dir, true);
-						if(!ps.empty()) {
-							dir <<= ps;
-							EXPECT_FALSE(dir.isDirectory());
-							dir.remove();
-
-							// 当該ファイル(Delete)
-							hist.addEvent(new FEv_Remove(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
-							dir.popBack();
-							// 上位ディレクトリ(Modify)
-							fnUpperCallback(Dir(dir.getSegment_utf32(nseg_base, PathBlock::End)), fnAddModifyEvent);
-						}
-						break; }
-					case Action::Act_Move: {
-						auto ps = fnSelectBoth(dir, true);
-						if(!ps.empty()) {
-							dir <<= ps;
-							std::string pathFrom = dir.getSegment_utf8(nseg_base, PathBlock::End),
-										pathTo = fnGenerateRandomPath(Dir(*basePath));
-							EXPECT_NE(pathFrom, pathTo);
-							bool bDir = dir.isDirectory();
-							// 上位ディレクトリ(From / To : Modify)
-							Dir tdir(pathFrom);
-							tdir.popBack();
-							fnUpperCallback(tdir, fnAddModifyEvent);
-							tdir.setPath(pathTo);
-							tdir.popBack();
-							fnUpperCallback(tdir, fnAddModifyEvent);
-							// 当該ファイル (Remove / Create)
-							hist.removeEvent(dir);
-							if(orig_pathset.count(dir.plain_utf8()) == 1) {
-								hist.removeEvent(dir);
-								hist.addEvent(new FEv_Remove(basePath, pathFrom, bDir));
-							}
-							// 下層エントリ (Remove)
-							LowerCallback(Dir(*basePath + '/' + pathFrom), [&](const Dir& d) {
-								nameset.emplace(d.getLast_utf8());
-								hist.removeEvent(d);
-								if(orig_pathset.count(d.plain_utf8()) == 1)
-									hist.addEvent(new FEv_Remove(basePath, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
-							});
-
-							hist.addEvent(new FEv_Create(basePath, pathTo, bDir));
-							dir.move(*basePath + '/' + pathTo);
-							dir.popBack();
-
-							// 下層エントリ (Create)
-							LowerCallback(Dir(*basePath + '/' + pathTo), [&](const Dir& d) {
-								nameset.emplace(d.getLast_utf8());
-								hist.addEvent(new FEv_Create(basePath, d.getSegment_utf8(nseg_base, PathBlock::End), d.isDirectory()));
-							});
-						}
-						break; }
-					case Action::Act_Access: {
-						auto ps = fnSelectFile(dir, true);
-						if(!ps.empty()) {
-							dir <<= ps;
-							auto st = dir.status();
-							{
-								// fsyncを使いたいのでfopenでファイルを開く
-								char c;
-								FILE* fp = ::fopen(dir.plain_utf8().c_str(), "r");
-								::fread(&c, 1, 1, fp);
-								#ifdef UNIX
-									::fsync(::fileno(fp));
-								#endif
-								::fclose(fp);
-							}
-							auto st2 = dir.status();
-							// アクセス前後で時刻が変わっていたらイベントを書き込む
-							if(st.ftime.tmAccess != st2.ftime.tmAccess) {
-								// 当該ファイル (Access)
-								hist.addEvent(new FEv_Access(basePath, dir.getSegment_utf8(nseg_base, PathBlock::End), false));
-							}
-							dir.popBack();
-						}
-						break; }
-					case Action::Act_UpDir: {
-						if(layer > 0) {
-							dir.popBack();
-							--layer;
-						}
-						break; }
-					case Action::Act_DownDir: {
-						auto ps = fnSelectDir(dir, false);
-						if(!ps.empty()) {
-							dir <<= ps;
-							++layer;
-						}
-						break; }
+			struct Ntf : ActionNotify {
+				History&			_hist;
+				StringSet			&_nameset,
+									&_orig_pathset;
+				SPString			_basePath;
+				const int			_nseg;
+				Ntf(History& hist, const SPString& basePath, int nseg, StringSet& nameset, StringSet& orig_pathset):
+					_hist(hist),
+					_nameset(nameset),
+					_orig_pathset(orig_pathset),
+					_basePath(basePath),
+					_nseg(nseg)
+				{}
+				void _addModifyEvent(const Dir& d) {
+					_hist.addEvent(new FEv_Modify(_basePath, d.PathBlock::plain_utf8(false), true));
 				}
-			}
-			while(layer-- > 0)
-				dir.popBack();
+				auto _getAddModF() {
+					return [this](auto&& d){ _addModifyEvent(d); };
+				}
+
+				void onCreate(const Dir& path) override {
+					// ファイル作成イベントを記録
+					_hist.addEvent(new FEv_Create(_basePath, path.getSegment_utf8(_nseg, PathBlock::End), false));
+					// 上位ディレクトリ(Modify)
+					UpperCallback(Dir(path.getSegment_utf32(_nseg, path.segments()-1)), _getAddModF());
+				}
+				void onModify(const Dir& path, const FStatus& prev, const FStatus& cur) override {
+					// 当該ファイル(Access / Write)
+					std::string relp = path.getSegment_utf8(_nseg, PathBlock::End);
+					if(prev.ftime.tmAccess != cur.ftime.tmAccess)
+						_hist.addEvent(new FEv_Access(_basePath, relp, false));
+					_hist.addEvent(new FEv_Modify(_basePath, relp, false));
+				}
+				void onModify_Size(const Dir& path, const FStatus& /*prev*/, const FStatus& /*cur*/) override {
+					// 当該ファイル(Write)
+					_hist.addEvent(new FEv_Modify(_basePath, path.getSegment_utf8(_nseg, PathBlock::End), false));
+				}
+				void onDelete(const Dir& path) override {
+					// 当該ファイル(Delete)
+					_hist.addEvent(new FEv_Remove(_basePath, path.getSegment_utf8(_nseg, PathBlock::End), false));
+					// 上位ディレクトリ(Modify)
+					UpperCallback(Dir(path.getSegment_utf32(_nseg, path.segments()-1)), _getAddModF());
+				}
+				void onMove_Pre(const Dir& from, const Dir& to) override {
+					std::string pathFrom = from.getSegment_utf8(_nseg, Dir::End),
+								pathTo = to.getSegment_utf8(_nseg, Dir::End);
+					bool bDir = from.isDirectory();
+					// 上位ディレクトリ(From / To : Modify)
+					Dir tdir(pathFrom);
+					tdir.popBack();
+					UpperCallback(tdir, _getAddModF());
+					tdir.setPath(pathTo);
+					tdir.popBack();
+					UpperCallback(tdir, _getAddModF());
+					// 当該ファイル (Remove / Create)
+					_hist.removeEvent(from);
+					if(_orig_pathset.count(from.plain_utf8()) == 1) {
+						_hist.removeEvent(from);
+						_hist.addEvent(new FEv_Remove(_basePath, pathFrom, bDir));
+					}
+					// 下層エントリ (Remove)
+					LowerCallback(from, [this](const Dir& d) {
+						_nameset.emplace(d.getLast_utf8());
+						_hist.removeEvent(d);
+						if(_orig_pathset.count(d.plain_utf8()) == 1)
+							_hist.addEvent(new FEv_Remove(_basePath, d.getSegment_utf8(_nseg, PathBlock::End), d.isDirectory()));
+					});
+
+					_hist.addEvent(new FEv_Create(_basePath, pathTo, bDir));
+				}
+				void onMove_Post(const Dir& /*from*/, const Dir& to) override {
+					// 下層エントリ (Create)
+					LowerCallback(to, [this](const Dir& d) {
+						_nameset.emplace(d.getLast_utf8());
+						_hist.addEvent(new FEv_Create(_basePath, d.getSegment_utf8(_nseg, PathBlock::End), d.isDirectory()));
+					});
+				}
+				void onAccess(const Dir& path, const FStatus& prev, const FStatus& cur) override {
+					// アクセス前後で時刻が変わっていたらイベントを書き込む
+					if(prev.ftime.tmAccess != cur.ftime.tmAccess) {
+						// 当該ファイル (Access)
+						_hist.addEvent(new FEv_Access(_basePath, path.getSegment_utf8(_nseg, Dir::End), false));
+					}
+				}
+				void onUpDir(const Dir& /*path*/) override {}
+				void onDownDir(const Dir& /*path*/) override {}
+			};
+			auto basePath = std::make_shared<std::string>(dir.plain_utf8());
+			Ntf ntf(hist,
+					basePath,
+					dir.segments(),
+					nameset,
+					orig_pathset);
+			MakeRandomAction(rd, orig_nameset, nameset, dir, 20, ntf);
+
 			// 変更が検出できてるかチェック
 			UPIFile ft1 = FileTree::ConstructFTree(dir);
 
