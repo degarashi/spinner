@@ -171,12 +171,12 @@ namespace spn {
 			std::string plain_utf8(bool bAbs=true) const;
 			std::string getFirst_utf8(bool bAbs=true) const;
 			std::string getLast_utf8() const;
-			std::string getSegment_utf8(int beg, int end) const;
+			std::string getSegment_utf8(int beg, int end, bool bAbs=true) const;
 			std::string getHeader_utf8() const;
 			std::u32string plain_utf32(bool bAbs=true) const;
 			std::u32string getFirst_utf32(bool bAbs=true) const;
 			std::u32string getLast_utf32() const;
-			std::u32string getSegment_utf32(int beg, int end) const;
+			std::u32string getSegment_utf32(int beg, int end, bool bAbs=true) const;
 			std::u32string getHeader_utf32() const;
 
 			OPChar getDriveLetter() const;

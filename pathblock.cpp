@@ -241,8 +241,8 @@ namespace spn {
 	std::string PathBlock::getFirst_utf8(bool bAbs) const {
 		return Text::UTFConvertTo8(getFirst_utf32(bAbs));
 	}
-	std::string PathBlock::getSegment_utf8(int beg, int end) const {
-		return Text::UTFConvertTo8(getSegment_utf32(beg, end));
+	std::string PathBlock::getSegment_utf8(int beg, int end, bool bAbs) const {
+		return Text::UTFConvertTo8(getSegment_utf32(beg, end, bAbs));
 	}
 	void PathBlock::_outputHeader(std::u32string& dst, bool bAbs) const {
 		if(bAbs && _bAbsolute) {
@@ -286,8 +286,9 @@ namespace spn {
 		}
 		return s;
 	}
-	std::u32string PathBlock::getSegment_utf32(int beg, int end) const {
+	std::u32string PathBlock::getSegment_utf32(int beg, int end, bool bAbs) const {
 		std::u32string s;
+		_outputHeader(s, (beg<=Beg) & bAbs);
 		if(!_path.empty()) {
 			beg = std::max(0, beg);
 			end = std::min(int(_segment.size()), end);
