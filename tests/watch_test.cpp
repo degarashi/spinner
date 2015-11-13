@@ -101,7 +101,7 @@ namespace spn {
 			StringSet nameset,
 					  orig_nameset;
 			auto basePath = dir.plain_utf8();
-			for(;;) {
+			for(int i=0 ; i<10 ; ++i) {
 				// 何かアクションを起こし、通知と比較
 				int n = rd.getUniform<int>({1,10});
 				while(--n >= 0)
