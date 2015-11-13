@@ -9,8 +9,8 @@
 namespace spn {
 	FNotify_depLinux::FNotify_depLinux() {
 		Assert(Trap, (_fd = inotify_init()) >= 0, "failed to initialize inotify")
-		_thread = boost::thread(ASyncLoop, this);
 		::pipe(_cancelFd);
+		_thread = boost::thread(ASyncLoop, this);
 	}
 	FNotify_depLinux::~FNotify_depLinux() {
 		if(_thread) {
