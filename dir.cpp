@@ -32,17 +32,17 @@ namespace spn {
 	}
 	std::string Dir::ToRegEx(const std::string& s) {
 		// ワイルドカード記述の置き換え
-		// * -> ([_ \-\w]+)
-		// ? -> ([_ \-\w])
+		// * -> ([_ \.\-\w]+?)
+		// ? -> ([_ \.\-\w])
 		// . -> (\.)
 
 		// バックスラッシュをスラッシュに置き換え
 		// \ -> /
 		boost::regex re[4] = {boost::regex(R"(\\)"), boost::regex(R"(\*)"), boost::regex(R"(\?)"), boost::regex(R"(\.)")};
 		std::string s2 = boost::regex_replace(s, re[0], R"(/)");
-		s2 = boost::regex_replace(s2, re[1], R"([_ \\-\\w]+)");
-		s2 = boost::regex_replace(s2, re[2], R"([_ \\-\\w])");
 		s2 = boost::regex_replace(s2, re[3], R"(\\.)");
+		s2 = boost::regex_replace(s2, re[2], R"([_ \\.\\-\\w])");
+		s2 = boost::regex_replace(s2, re[1], R"([_ \\.\\-\\w]+?)");
 		return s2;
 	}
 	std::string Dir::setCurrentDir() const {
