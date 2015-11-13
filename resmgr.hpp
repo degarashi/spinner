@@ -1125,10 +1125,20 @@ namespace spn {
 		public:
 			using base_type::acquire;
 
+			const KEY& getKey(SHdl sh) const {
+				// とりあえず線形探索で実装
+				for(auto& ent : _nameMap) {
+					if(ent.second == sh) {
+						return ent.first;
+					}
+				}
+				Assert(Trap, false, "resource key not found")
+				throw 0;
+			}
 			//! 同じ要素が存在したら置き換え
 			template <class KEY2, class DATA>
 			LHdl replace(KEY2&& key, DATA&& dat) {
-				auto fn = [&](){ return base_type::acquire(std::forward<DATA>(dat)); };
+				auto fn = [&](key_t&&){ return base_type::acquire(std::forward<DATA>(dat)); };
 				return _replace(key_t(std::forward<KEY2>(key)), fn);
 			}
 			//! 名前付きリソースの作成
