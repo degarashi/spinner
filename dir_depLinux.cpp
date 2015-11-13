@@ -25,10 +25,13 @@ namespace {
 				(std::runtime_error&)(*this) = std::runtime_error(ss.str());
 			}
 	};
+	namespace {
+		const int c_buffSize = 2048;
+	}
 }
 namespace spn {
 	std::string Dir_depLinux::Getcwd() {
-		char tmp[512];
+		char tmp[c_buffSize];
 		::getcwd(tmp, sizeof(tmp));
 		return std::string(tmp);
 	}
@@ -67,7 +70,7 @@ namespace spn {
 		Size sz = ifs.tellg();
 		ifs.seekg(std::ios::beg);
 
-		char buff[1024];
+		char buff[c_buffSize];
 		for(;;) {
 			Size nt = std::min(Size(sizeof(buff)), sz);
 			ifs.read(buff, nt);
@@ -165,7 +168,8 @@ namespace spn {
 		return stat(path.getStringPtr(), &st) >= 0 && S_ISDIR(st.st_mode);
 	}
 	PathStr Dir_depLinux::GetCurrentDir() {
-		char buff[512];
+		char buff[c_buffSize];
+		buff[0] = '\0';
 		AssertT(Throw, ::getcwd(buff, sizeof(buff)), (PError)(const char*), "GetCurrentDir");
 		return PathStr(buff);
 	}
@@ -173,7 +177,8 @@ namespace spn {
 		Chdir(path.c_str());
 	}
 	PathStr Dir_depLinux::GetProgramDir() {
-		char buff[512] = {};
+		char buff[c_buffSize];
+		buff[0] = '\0';
 		AssertT(Throw, ::readlink("/proc/self/exe", buff, sizeof(buff)-1) != -1, (PError)(const char*), "GetProgramDir")
 		PathBlock pb(buff);
 		pb.popBack();
