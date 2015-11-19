@@ -1132,8 +1132,7 @@ namespace spn {
 						return ent.first;
 					}
 				}
-				Assert(Trap, false, "resource key not found")
-				throw 0;
+				AssertF(Trap, "resource key not found")
 			}
 			//! 同じ要素が存在したら置き換え
 			template <class KEY2, class DATA>

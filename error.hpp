@@ -39,13 +39,16 @@
 #define Assert(act, ...)						BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _Assert, _AssertArg)(act, __VA_ARGS__)
 // 必ず失敗するアサート文 (到達してはいけない場所に処理が来たなど)
 #define AssertF(act, ...)						{ Assert(act, false, __VA_ARGS__) throw 0; }
+#define AssertFT(act, throwtype, ...)			{ AssertT(act, false, throwtype, __VA_ARGS__) throw 0; }
 
 #ifdef DEBUG
 	#define AssertFP(act, ...)						AssertF(act, __VA_ARGS__)
+	#define AssertFTP(act, throwtype, ...)			AssertFT(act, throwtype, __VA_ARGS__)
 	#define AssertP(act, ...)						Assert(act, __VA_ARGS__)
 	#define AssertTP(act, expr, throwtype, ...)		AssertT(act,expr,throwtype, __VA_ARGS__)
 #else
 	#define AssertFP(act, ...)
+	#define AssertFTP(act, throwtype, ...)
 	#define AssertP(act, ...)
 	#define AssertTP(act, expr, throwtype, ...)
 #endif
