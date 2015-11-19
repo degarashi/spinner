@@ -37,11 +37,15 @@
 // Act,Exprに続く引数が無いときは_Assert(), あるなら_AssertArg()を呼ぶ
 // 例外形式はstd::runtime_errorとして与えられた引数でエラーメッセージを生成
 #define Assert(act, ...)						BOOST_PP_IF(BOOST_PP_EQUAL(1, BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)), _Assert, _AssertArg)(act, __VA_ARGS__)
+// 必ず失敗するアサート文 (到達してはいけない場所に処理が来たなど)
+#define AssertF(act, ...)						{ Assert(act, false, __VA_ARGS__) throw 0; }
 
 #ifdef DEBUG
+	#define AssertFP(act, ...)						AssertF(act, __VA_ARGS__)
 	#define AssertP(act, ...)						Assert(act, __VA_ARGS__)
 	#define AssertTP(act, expr, throwtype, ...)		AssertT(act,expr,throwtype, __VA_ARGS__)
 #else
+	#define AssertFP(act, ...)
 	#define AssertP(act, ...)
 	#define AssertTP(act, expr, throwtype, ...)
 #endif
