@@ -129,7 +129,7 @@ namespace spn {
 				z.zfree = Z_NULL;
 				z.opaque = Z_NULL;
 				int flag = inflateInit(&z);
-				AssertT(Throw, flag == Z_OK, (InitException)(int)(const char*), flag, z.msg)
+				AssertTArg(Throw, flag == Z_OK, (InitException)(int)(const char*), flag, z.msg)
 
 				constexpr size_t TMP_BUFFSIZE = 4096;
 				char tmp[TMP_BUFFSIZE];
@@ -149,7 +149,7 @@ namespace spn {
 					size_t nRead = z.avail_in,
 							nWrite = z.avail_out;
 					flag = inflate(&z, Z_NO_FLUSH);
-					AssertT(Throw, flag == Z_OK, (ProcException)(int)(const char*), flag, z.msg)
+					AssertTArg(Throw, flag == Z_OK, (ProcException)(int)(const char*), flag, z.msg)
 					nRead -= z.avail_in;
 					nWrite -= z.avail_out;
 
@@ -167,7 +167,7 @@ namespace spn {
 					}
 				}
 				flag = inflateEnd(&z);
-				AssertT(Throw, flag == Z_OK, (EndException)(int)(const char*), flag, z.msg)
+				AssertTArg(Throw, flag == Z_OK, (EndException)(int)(const char*), flag, z.msg)
 			}
 			using SizePair = std::pair<size_t, size_t>;
 			SizePair LoadHeader(AdaptStream& as) {

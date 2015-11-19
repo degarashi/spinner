@@ -34,33 +34,33 @@ namespace spn {
 	}
 	void Dir_depWin::Chdir(ToPathStr path) {
 		AssertT(Throw, SetCurrentDirectoryW(AS_LPCWSTR_PATH(path)),
-				(WError)(const char*), "chdir")
+				WError, "chdir")
 	}
 	bool Dir_depWin::Chdir_nt(ToPathStr path) {
 		return SetCurrentDirectoryW(AS_LPCWSTR_PATH(path)) != FALSE;
 	}
 	void Dir_depWin::Mkdir(ToPathStr path, uint32_t mode) {
 		AssertT(Throw, CreateDirectoryW(AS_LPCWSTR_PATH(path), nullptr) != 0,
-				(WError)(const char*), "mkdir")
+				WError, "mkdir")
 	}
 	void Dir_depWin::Chmod(ToPathStr path, uint32_t mode) {
 		// Windowsだとファイルにデフォルトで実行権限がついてるので何もしない
 	}
 	void Dir_depWin::Rmdir(ToPathStr path) {
 		AssertT(Throw, RemoveDirectoryW(AS_LPCWSTR_PATH(path)) != 0,
-				(WError)(const char*), "rmdir")
+				WError, "rmdir")
 	}
 	void Dir_depWin::Remove(ToPathStr path) {
 		AssertT(Throw, DeleteFileW(AS_LPCWSTR_PATH(path)) != 0,
-				(WError)(const char*), "remove")
+				WError, "remove")
 	}
 	void Dir_depWin::Move(ToPathStr from, ToPathStr to) {
 		AssertT(Throw, MoveFileW(AS_LPCWSTR_PATH(from), AS_LPCWSTR_PATH(to)) != 0,
-				(WError)(const char*), "move")
+				WError, "move")
 	}
 	void Dir_depWin::Copy(ToPathStr from, ToPathStr to) {
 		AssertT(Throw, CopyFileW(AS_LPCWSTR_PATH(from), AS_LPCWSTR_PATH(to), TRUE) != 0,
-				(WError)(const char*), "copy")
+				WError, "copy")
 	}
 	void Dir_depWin::EnumEntry(ToPathStr path, EnumCBD cb) {
 		WIN32_FIND_DATAW tfd;
@@ -160,7 +160,7 @@ namespace spn {
 	PathStr Dir_depWin::GetProgramDir() {
 		PathCh buff[512];
 		DWORD ret = GetModuleFileNameW(NULL, reinterpret_cast<wchar_t*>(buff), sizeof(buff)/sizeof(buff[0]));
-		AssertT(Throw, ret!=0, (WError)(const char*), "GetProgramDir")
+		AssertT(Throw, ret!=0, WError, "GetProgramDir")
 		PathBlock pb(buff);
 		pb.popBack();
 		return PathStr(To16Str(pb.plain_utf32()).getStringPtr());

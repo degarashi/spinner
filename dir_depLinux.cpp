@@ -36,31 +36,31 @@ namespace spn {
 		return std::string(tmp);
 	}
 	void Dir_depLinux::Chdir(ToPathStr path) {
-		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
-				std::string("chdir: ") + path.getStringPtr())
+		AssertT(Throw, ::chdir(path.getStringPtr()) >= 0, PError,
+				"chdir: %1%", path.getStringPtr())
 	}
 	bool Dir_depLinux::Chdir_nt(ToPathStr path) {
 		return ::chdir(path.getStringPtr()) >= 0;
 	}
 	void Dir_depLinux::Mkdir(ToPathStr path, uint32_t mode) {
-		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
-				std::string("mkdir: ") + path.getStringPtr())
+		AssertT(Throw, ::mkdir(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, PError,
+				"mkdir: %1%", path.getStringPtr())
 	}
 	void Dir_depLinux::Chmod(ToPathStr path, uint32_t mode) {
-		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, (PError)(const std::string&),
-				std::string("chmod: ") + path.getStringPtr())
+		AssertT(Throw, ::chmod(path.getStringPtr(), ConvertFlag_S2L(mode)) >= 0, PError,
+				"chmod: %1%", path.getStringPtr())
 	}
 	void Dir_depLinux::Rmdir(ToPathStr path) {
-		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, (PError)(const std::string&),
-				std::string("rmdir: ") + path.getStringPtr())
+		AssertT(Throw, ::rmdir(path.getStringPtr()) >= 0, PError,
+				"rmdir: %1%", path.getStringPtr())
 	}
 	void Dir_depLinux::Remove(ToPathStr path) {
-		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, (PError)(const std::string&),
-				std::string("remove: ") + path.getStringPtr())
+		AssertT(Throw, ::unlink(path.getStringPtr()) >= 0, PError,
+				"remove: %1%", path.getStringPtr())
 	}
 	void Dir_depLinux::Move(ToPathStr from, ToPathStr to) {
-		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, (PError)(const std::string&),
-				std::string("move: ") + from.getStringPtr() + " -> " + to.getStringPtr())
+		AssertT(Throw, ::rename(from.getStringPtr(), to.getStringPtr()) >= 0, PError,
+				"move: %1% -> %2%", from.getStringPtr(), to.getStringPtr())
 	}
 	void Dir_depLinux::Copy(ToPathStr from, ToPathStr to) {
 		using Size = std::streamsize;
@@ -100,8 +100,8 @@ namespace spn {
 	}
 	FTime Dir_depLinux::Filetime(ToPathStr path) {
 		struct stat st;
-		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, (PError)(const std::string&),
-				std::string("filetime: ") + path.getStringPtr())
+		AssertT(Throw, ::stat(path.getStringPtr(), &st) >= 0, PError,
+				"filetime: %1%", path.getStringPtr())
 		FTime ft;
 		ft.tmAccess = UnixTime2WinTime(st.st_atime);
 		ft.tmCreated = UnixTime2WinTime(st.st_ctime);
@@ -170,7 +170,7 @@ namespace spn {
 	PathStr Dir_depLinux::GetCurrentDir() {
 		char buff[c_buffSize];
 		buff[0] = '\0';
-		AssertT(Throw, ::getcwd(buff, sizeof(buff)), (PError)(const char*), "GetCurrentDir");
+		AssertT(Throw, ::getcwd(buff, sizeof(buff)), PError, "GetCurrentDir")
 		return PathStr(buff);
 	}
 	void Dir_depLinux::SetCurrentDir(const PathStr& path) {
@@ -179,7 +179,7 @@ namespace spn {
 	PathStr Dir_depLinux::GetProgramDir() {
 		char buff[c_buffSize];
 		buff[0] = '\0';
-		AssertT(Throw, ::readlink("/proc/self/exe", buff, sizeof(buff)-1) != -1, (PError)(const char*), "GetProgramDir")
+		AssertT(Throw, ::readlink("/proc/self/exe", buff, sizeof(buff)-1) != -1, PError, "GetProgramDir")
 		PathBlock pb(buff);
 		pb.popBack();
 		return PathStr(pb.plain_utf8());

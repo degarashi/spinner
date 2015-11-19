@@ -169,7 +169,7 @@ namespace spn {
 				dst[wcur++] = '=';
 		}
 
-		AssertT(Trap, wcur < (int)n_dst, (std::length_error)(const char*), "base64(): buffer overflow")
+		AssertT(Trap, wcur < (int)n_dst, std::length_error, "base64(): buffer overflow")
 
 		dst[wcur] = 0;
 		return wcur;
@@ -194,7 +194,7 @@ namespace spn {
 				buff &= (1<<nlen)-1;
 			}
 		}
-		AssertT(Trap, wcur <= (int)n_dst, (std::length_error)(const char*), "base64toNum(): buffer overflow")
+		AssertT(Trap, wcur <= (int)n_dst, std::length_error, "base64toNum(): buffer overflow")
 
 		return wcur;
 	}
@@ -235,7 +235,7 @@ namespace spn {
 			}
 		}
 		dst[wcur] = '\0';
-		AssertT(Trap, wcur < (int)n_dst, (std::length_error)(const char*), "url_encode_OAUTH(): buffer overflow")
+		AssertT(Trap, wcur < (int)n_dst, std::length_error, "url_encode_OAUTH(): buffer overflow")
 		return wcur;
 	}
 	int Text::url_encode(char* dst, size_t n_dst, const char* src, int n) {
@@ -256,7 +256,7 @@ namespace spn {
 			}
 		}
 		dst[wcur] = '\0';
-		AssertT(Trap, wcur < (int)n_dst, (std::length_error)(const char*), "url_encode(): buffer overflow")
+		AssertT(Trap, wcur < (int)n_dst, std::length_error, "url_encode(): buffer overflow")
 		return wcur;
 	}
 	bool Text::utf16_isSurrogate(char16_t c) {
@@ -331,7 +331,7 @@ namespace spn {
 					((src&0x3f000000)>>24);
 			ret.nread = 4;
 		} else
-			AssertT(Trap, false, (std::invalid_argument)(const char*), "unknown unicode char")
+			AssertT(Trap, false, std::invalid_argument, "unknown unicode char")
 		return ret;
 	}
 	Text::Code Text::UTF8To32_s(char32_t src) {
@@ -341,7 +341,7 @@ namespace spn {
 
 		if((ret.code & mask[ret.nread]) | ormask[ret.nread]) {}
 		else
-			AssertT(Trap, false, (std::invalid_argument)(const char*), "invalid unicode sequence")
+			AssertT(Trap, false, std::invalid_argument, "invalid unicode sequence")
 		return ret;
 	}
 	Text::Code Text::UTF32To8(char32_t src) {
