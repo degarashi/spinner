@@ -849,7 +849,7 @@
 					reg128	xm[4], xmt[4];
 					#define LOADROWE(n) BOOST_PP_IF(BOOST_PP_GREATER_EQUAL(n, DIM_M), xmm_matI[n], LOADTHIS(n))
 					#define BOOST_PP_LOCAL_MACRO(n)	xm[n] = LOADROWE(n);
-					#define BOOST_PP_LOCAL_LIMITS (0,DMAX)
+					#define BOOST_PP_LOCAL_LIMITS (0,BOOST_PP_SUB(DMAX, 1))
 					#include BOOST_PP_LOCAL_ITERATE()
 
 					xmt[0] = reg_unpacklo_ps(xm[0], xm[2]);
@@ -862,7 +862,7 @@
 					xm[2] = reg_unpacklo_ps(xmt[2], xmt[3]);
 					xm[3] = reg_unpackhi_ps(xmt[2], xmt[3]);
 					#define BOOST_PP_LOCAL_MACRO(n) STORETHISPS(ret.ma[n], xm[n]);
-					#define BOOST_PP_LOCAL_LIMITS (0,DIM_N)
+					#define BOOST_PP_LOCAL_LIMITS (0,BOOST_PP_SUB(DIM_N,1))
 					#include BOOST_PP_LOCAL_ITERATE()
 					#undef LOADROWE
 				#endif

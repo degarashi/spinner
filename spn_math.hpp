@@ -4,6 +4,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/traits.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <functional>
 
 #if !defined(SSE_LEVEL) || SSE_LEVEL <= 2
 	#define SUMVEC(r)	{ reg128 tmp = reg_shuffle_ps(r, r, _REG_SHUFFLE(0,1,2,3)); \
