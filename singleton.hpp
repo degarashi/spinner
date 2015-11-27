@@ -23,6 +23,9 @@ namespace spn {
 				assert(ms_singleton || !"reference error");
 				return *ms_singleton;
 			}
+			static bool Initialized() {
+				return ms_singleton;
+			}
 	};
 	template <typename T>
 	T* Singleton<T>::ms_singleton = nullptr;
