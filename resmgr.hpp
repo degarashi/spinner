@@ -759,6 +759,7 @@ namespace spn {
 				}
 			};
 			static MergeType s_merge;
+			bool _bInDtor = false;
 
 		protected:
 			/*! DEBUG時は簡易マジックナンバーのチェックをする */
@@ -851,6 +852,8 @@ namespace spn {
 				_resID = _addManager(this);
 			}
 			~ResMgrA() {
+				// デストラクタフラグを立てる
+				_bInDtor = true;
 				// 全ての現存リソースに対して1回ずつデクリメントすれば全て解放される筈
 				int count = 0;
 				_dataVec.iterate([&count](Optional<Entry>& ent){
@@ -865,7 +868,10 @@ namespace spn {
 				int remain = static_cast<int>(_dataVec.size()) - count;
 				if(remain > 0)
 					std::cerr << "ResMgr: there are some unreleased resources...(remaining " << remain << ')' << std::endl;
-
+				// 強制的な解放処理
+				_dataVec.iterate([](Optional<Entry>& ent){
+					ent = none;
+				});
 				_remManager(_resID);
 			}
 			auto getResourceId() const {
@@ -926,6 +932,9 @@ namespace spn {
 			const static std::function<void (Entry&)> cs_defCB;
 			template <class CB>
 			bool releaseWithCallback(SHandle sh, CB cb=cs_defCB) {
+				// デストラクタ内での削除処理は何もしない(配列が変わってしまうため)
+				if(_bInDtor)
+					return false;
 				auto& ent = _refSH(sh);
 				// 簡易マジックナンバーチェック
 				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
