@@ -203,17 +203,20 @@ namespace spn {
 			}
 			//! 指定した変数型を更新しつつ、キャッシュがrefreshされた時にコールバック関数を呼ぶ
 			template <class CB, class... TsA>
-			void refresh(const Class* /*self*/, CB&& /*cb*/, CType<TsA...>) const {}
+			RFlagValue_t refresh(const Class* /*self*/, CB&& /*cb*/, CType<TsA...>) const { return 0; }
 			template <class CB, class TA, class... TsA>
-			void refresh(const Class* self, CB&& cb, CType<TA, TsA...>) const {
-				if(_rflag & Get<TA>())
+			RFlagValue_t refresh(const Class* self, CB&& cb, CType<TA, TsA...>) const {
+				RFlagValue_t ret(0);
+				if(_rflag & Get<TA>()) {
+					ret |= Get<TA>();
 					_refresh<TA>(self, std::forward<CB>(cb));
-				refresh(self, std::forward<CB>(cb), CType<TsA...>());
+				}
+				return ret | refresh(self, std::forward<CB>(cb), CType<TsA...>());
 			}
 			//! リフレッシュコールだけをする (複数同時指定可能)
 			template <class... TsA>
-			void refresh(const Class* self, CType<TsA...> t) const {
-				refresh(self, [](auto...){}, t);
+			RFlagValue_t refresh(const Class* self, CType<TsA...> t) const {
+				return refresh(self, [](auto...){}, t);
 			}
 	};
 
