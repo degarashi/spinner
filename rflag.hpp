@@ -28,69 +28,124 @@ namespace spn {
 	};
 	using RFlagValue_t = uint_fast32_t;
 	struct RFlagRet {
-		RFlagValue_t	flagOr;		//!< FlagValueのOr差分 (一緒に更新された変数を伝達する時に使用)
-		bool			bCancel;	//!< trueなら自身の更新フラグを取り下げる (次回も更新がかかる)
+		bool			bRefreshed;		//!< 変数値の更新がされた時はtrue
+		RFlagValue_t	flagOr;			//!< FlagValueのOr差分 (一緒に更新された変数を伝達する時に使用)
 	};
 	using AcCounter_t = uint_fast32_t;
 	//! 変数が更新された時の累積カウンタの値を後で比較するためのラッパークラス
-	template <class T>
-	struct AcWrapper : T {
-		mutable AcCounter_t	ac_counter = ~0;
-		using T::T;
-		using T::operator =;
+	template <class T, class... Ts>
+	class AcWrapper {
+		private:
+			using CT = CType<Ts...>;
+			mutable T ac_counter[sizeof...(Ts)];
+			using Holder = ValueHolder<typename std::add_pointer<Ts>::type...>;
+			Holder _holder;
+		public:
+			AcWrapper() {
+				for(auto& a : ac_counter)
+					a = ~0;
+			}
+			template <class Type>
+			AcCounter_t& refAc() const {
+				return ac_counter[CT::template Find<Type>::result];
+			}
+			template <class Type>
+			bool checkAndSet(AcCounter_t a) const {
+				return spn::CompareAndSet(refAc<Type>(), a);
+			}
 	};
+	//! TがAcWrapperテンプレートクラスかをチェック
+	template <class T>
+	struct IsAcWrapper : std::false_type {};
+	template <class... Ts>
+	struct IsAcWrapper<AcWrapper<Ts...>> : std::true_type {};
+
 	//! キャッシュ変数の自動管理クラス
 	template <class Class, class... Ts>
 	class RFlag : public ValueHolder<Ts...> {
 		private:
 			//! 更新処理がかかる度にインクリメントされるカウンタ
 			mutable AcCounter_t _accum[sizeof...(Ts)];
+
 			using base = ValueHolder<Ts...>;
 			using ct_base = spn::CType<Ts...>;
 			template <class T>
 			static T* _NullPtr() { return reinterpret_cast<T*>(0); }
+			// タグを引数として実際の変数型を取り出す
 			template <class T>
 			using cref_type = decltype(std::declval<base>().cref(_NullPtr<T>()));
 			template <class T>
 			using ref_type = typename std::decay<cref_type<T>>::type&;
-
+			template <class T>
+			using cptr_type = const typename std::decay<cref_type<T>>::type*;
+			template <class T>
+			using CRef_p = std::pair<cref_type<T>, RFlagValue_t>;
+			//! キャッシュフラグを格納する変数
 			mutable RFlagValue_t _rflag;
+
+			//! 整数const型
+			template <int N>
+			using IConst = std::integral_constant<int,N>;
 			//! integral_constantの値がtrueなら引数テンプレートのOr()を返す
 			template <class T0>
-			static constexpr RFlagValue_t _Add_If(std::integral_constant<bool,false>) { return 0; }
+			static constexpr RFlagValue_t _Add_If(std::false_type) { return 0; }
 			template <class T0>
-			static constexpr RFlagValue_t _Add_If(std::integral_constant<bool,true>) { return OrLH<T0>(); }
+			static constexpr RFlagValue_t _Add_If(std::true_type) { return OrLH<T0>(); }
+			//! 下位の変数に影響される上位の変数のフラグを計算
 			template <class T, int N>
-			static constexpr RFlagValue_t _IterateLH(std::integral_constant<int,N>) {
+			static constexpr RFlagValue_t __IterateLH(IConst<N>) {
 				using T0 = typename ct_base::template At<N>::type;
 				using T0Has = typename T0::template Has<T>;
 				return _Add_If<T0>(T0Has()) |
-						_IterateLH<T>(std::integral_constant<int,N+1>());
+						__IterateLH<T>(IConst<N+1>());
 			}
 			template <class T>
-			static constexpr RFlagValue_t _IterateLH(std::integral_constant<int,ct_base::size>) { return 0; }
+			static constexpr RFlagValue_t __IterateLH(IConst<ct_base::size>) { return 0; }
+			template <class T>
+			static constexpr RFlagValue_t _IterateLH() { return __IterateLH<T>(IConst<0>()); }
 
+			//! 上位の変数が使用する下位の変数のフラグを計算
 			template <class T, int N>
-			static constexpr RFlagValue_t _IterateHL(std::integral_constant<int,N>) {
+			static constexpr RFlagValue_t __IterateHL(IConst<N>) {
 				using T0 = typename T::template At<N>::type;
-				return OrHL<T0>() | _IterateHL<T>(std::integral_constant<int,N-1>());
+				return OrHL<T0>() | __IterateHL<T>(IConst<N-1>());
 			}
 			template <class T>
-			static constexpr RFlagValue_t _IterateHL(std::integral_constant<int,-1>) { return 0; }
+			static constexpr RFlagValue_t __IterateHL(IConst<-1>) { return 0; }
+			template <class T>
+			static constexpr RFlagValue_t _IterateHL() { return __IterateHL<T>(IConst<T::size-1>()); }
 
-			template <class T, class CB>
-			cref_type<T> _refresh(const Class* self, CB&& callback) const {
+			//! 上位の変数が使用する下位の変数のフラグを計算 (直下のノードのみ)
+			template <class T, int N>
+			static constexpr RFlagValue_t __IterateHL0(IConst<N>) {
+				using T0 = typename T::template At<N>::type;
+				return Get<T0>() | __IterateHL0<T>(IConst<N-1>());
+			}
+			template <class T>
+			static constexpr RFlagValue_t __IterateHL0(IConst<-1>) { return 0; }
+			template <class T>
+			static constexpr RFlagValue_t _IterateHL0() { return __IterateHL0<T>(IConst<T::size-1>()); }
+
+			//! キャッシュ変数Tを更新
+			template <class T>
+			CRef_p<T> _refreshSingle(const Class* self) const {
 				const base* ptrC = this;
 				base* ptr = const_cast<base*>(ptrC);
 				constexpr auto TFlag = Get<T>();
+				// 親クラスのRefresh関数を呼ぶ
 				RFlagRet ret = self->_refresh(ptr->ref(_NullPtr<T>()), _NullPtr<T>());
+				// 一緒に更新された変数フラグを立てる
 				_rflag |= ret.flagOr;
-				_rflag &= ret.bCancel ? ~0 : ~TFlag;
-				callback(GetFlagIndex<T>());
-				AssertP(Trap, !(_rflag & (OrHL<T>() & ~TFlag)), "refresh flag was not cleared correctly")
+				_rflag &= ~TFlag;
+				AssertP(Trap, !(_rflag & (OrHL0<T>() & ~TFlag)), "refresh flag was not cleared correctly")
+				//TODO: Accum Or
 				// 累積カウンタをインクリメント
 				++_accum[GetFlagIndex<T>()];
-				return ptrC->cref(_NullPtr<T>());
+				// 変数が更新された場合にはsecondに当該変数のフラグを返す
+				return CRef_p<T>(
+							ptrC->cref(_NullPtr<T>()),
+							ret.bRefreshed ? TFlag : 0
+						);
 			}
 			//! 変数型の格納順インデックス
 			template <class TA>
@@ -104,24 +159,38 @@ namespace spn {
 			}
 			//! 引数の変数フラグをORで合成
 			template <class... TsA>
-			static constexpr RFlagValue_t _Sum(std::integral_constant<int,0>) { return 0; }
+			static constexpr RFlagValue_t _Sum(IConst<0>) { return 0; }
 			template <class TA, class... TsA, int N>
-			static constexpr RFlagValue_t _Sum(std::integral_constant<int,N>) {
-				return GetFlagSingle<TA>() | _Sum<TsA...>(std::integral_constant<int,N-1>());
+			static constexpr RFlagValue_t _Sum(IConst<N>) {
+				return GetFlagSingle<TA>() | _Sum<TsA...>(IConst<N-1>());
 			}
 
 			//! 変数に影響するフラグを立てる
 			template <class... TsA>
-			void _setFlag(std::integral_constant<int,0>) {}
+			void __setFlag(IConst<0>) {}
 			template <class T, class... TsA, int N>
-			void _setFlag(std::integral_constant<int,N>) {
-				// 自分以下の階層はフラグを下ろす
-				_rflag &= ~OrHL<T>();
+			void __setFlag(IConst<N>) {
 				// 自分の階層より上の変数は全てフラグを立てる
-				_rflag |= OrLH<T>() & ~Get<T>();
+				_rflag |= OrLH<T>();
+				_rflag &= ~Get<T>();
+				//TODO: Accum Or
 				// 累積カウンタをインクリメント
 				++_accum[GetFlagIndex<T>()];
-				_setFlag<TsA...>(std::integral_constant<int,N-1>());
+				__setFlag<TsA...>(IConst<N-1>());
+			}
+			template <class... TsA>
+			void _setFlag() {
+				__setFlag<TsA...>(IConst<sizeof...(TsA)>());
+			}
+
+			//! キャッシュ変数ポインタをstd::tupleにして返す
+			template <int N, class Tup>
+			RFlagValue_t _getAsTuple(const Class* /*self*/, const Tup& /*dst*/) const { return 0; }
+			template <int N, class... Tup, class T, class... TsA>
+			RFlagValue_t _getAsTuple(const Class* self, std::tuple<Tup...>& dst, T*, TsA*... remain) const {
+				auto ret = refresh<T>(self);
+				std::get<N>(dst) = &ret.first;
+				return ret.second | _getAsTuple<N+1>(self, dst, remain...);
 			}
 
 		public:
@@ -137,51 +206,48 @@ namespace spn {
 			//! 引数の変数を示すフラグ
 			template <class... TsA>
 			static constexpr RFlagValue_t Get() {
-				return _Sum<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
+				return _Sum<TsA...>(IConst<sizeof...(TsA)>());
 			}
 			//! 変数全てを示すフラグ値
 			static constexpr RFlagValue_t All() {
 				return (1 << (sizeof...(Ts)+1)) -1;
 			}
+			//! 自分より上の階層のフラグ (Low -> High)
+			template <class T>
+			static constexpr RFlagValue_t OrLH() {
+				// TypeListを巡回、A::Has<T>ならOr<A>()をたす
+				return Get<T>() | _IterateLH<T>();
+			}
+			//! 自分以下の階層のフラグ (High -> Low)
+			template <class T>
+			static constexpr RFlagValue_t OrHL() {
+				return Get<T>() | _IterateHL<T>();
+			}
+			//! 自分以下の階層のフラグ (High -> Low) 直下のみ
+			template <class T>
+			static constexpr RFlagValue_t OrHL0() {
+				return Get<T>() | _IterateHL0<T>();
+			}
+
 			//! 累積カウンタ値取得
 			template <class TA>
 			AcCounter_t getAcCounter() const {
 				return _accum[GetFlagIndex<TA>()];
 			}
 			//! 現在のフラグ値
-			RFlagValue_t GetFlag() const {
+			RFlagValue_t getFlag() const {
 				return _rflag;
 			}
 			//! フラグのテストだけする
 			template <class... TsA>
-			RFlagValue_t Test() const {
-				return GetFlag() & Get<TsA...>();
+			RFlagValue_t test() const {
+				return getFlag() & Get<TsA...>();
 			}
-
-			//! 自分より上の階層のフラグ (Low -> High)
-			template <class T>
-			static constexpr RFlagValue_t OrLH() {
-				// TypeListを巡回、A::Has<T>ならOr<A>()をたす
-				return Get<T>() | _IterateLH<T>(std::integral_constant<int,0>());
-			}
-			//! 自分以下の階層のフラグ (High -> Low)
-			template <class T>
-			static constexpr RFlagValue_t OrHL() {
-				return Get<T>() | _IterateHL<T>(std::integral_constant<int,T::size-1>());
-			}
-
 			//! 更新フラグだけを立てる
 			/*! 累積カウンタも更新 */
 			template <class... TsA>
 			void setFlag() {
-				_setFlag<TsA...>(std::integral_constant<int,sizeof...(TsA)>());
-			}
-			//! 必要に応じて更新をかけつつ、参照を返す
-			template <class T>
-			cref_type<T> get(const Class* self) const {
-				if(!(_rflag & Get<T>()))
-					return base::cref(_NullPtr<T>());
-				return _refresh<T>(self, [](auto){});
+				_setFlag<TsA...>();
 			}
 			//! 更新フラグはそのままに参照を返す
 			template <class T>
@@ -201,22 +267,27 @@ namespace spn {
 			void set(TA&& t) {
 				refF<T>() = std::forward<TA>(t);
 			}
-			//! 指定した変数型を更新しつつ、キャッシュがrefreshされた時にコールバック関数を呼ぶ
-			template <class CB, class... TsA>
-			RFlagValue_t refresh(const Class* /*self*/, CB&& /*cb*/, CType<TsA...>) const { return 0; }
-			template <class CB, class TA, class... TsA>
-			RFlagValue_t refresh(const Class* self, CB&& cb, CType<TA, TsA...>) const {
-				RFlagValue_t ret(0);
-				if(_rflag & Get<TA>()) {
-					ret |= Get<TA>();
-					_refresh<TA>(self, std::forward<CB>(cb));
-				}
-				return ret | refresh(self, std::forward<CB>(cb), CType<TsA...>());
+			//! 必要に応じて更新をかけつつ、参照を返す
+			template <class T>
+			cref_type<T> get(const Class* self) const {
+				return refresh<T>(self).first;
 			}
-			//! リフレッシュコールだけをする (複数同時指定可能)
+			//! リフレッシュコールだけをする
+			template <class T>
+			CRef_p<T> refresh(const Class* self) const {
+				// 全ての変数が更新済みなら参照を返す
+				if(!(_rflag & Get<T>()))
+					return CRef_p<T>(base::cref(_NullPtr<T>()), 0);
+				// 更新をかけて返す
+				return _refreshSingle<T>(self);
+			}
 			template <class... TsA>
-			RFlagValue_t refresh(const Class* self, CType<TsA...> t) const {
-				return refresh(self, [](auto...){}, t);
+			using Tuple_p = std::pair<std::tuple<cptr_type<TsA>...>, RFlagValue_t>;
+			template <class... TsA>
+			Tuple_p<TsA...> getAsTuple(const Class* self) const {
+				Tuple_p<TsA...> ret;
+				ret.second = _getAsTuple<0>(self, ret.first, ((TsA*)nullptr)...);
+				return ret;
 			}
 	};
 
@@ -242,7 +313,7 @@ namespace spn {
 	#define RFLAG_RVALUE_D_(name, valueT, ...) \
 		::spn::RFlagRet _refresh(valueT&, name*) const;
 	#define RFLAG_RVALUE_(name, valueT) \
-		::spn::RFlagRet _refresh(valueT&, name*) const { return {}; }
+		::spn::RFlagRet _refresh(valueT&, name*) const { return {true, 0}; }
 	#define RFLAG_GETMETHOD(name) auto get##name() const -> decltype(_rflag.template get<name>(this)) { return _rflag.template get<name>(this); }
 	#define PASS_THROUGH(func, ...)		func(__VA_ARGS__)
 	#define RFLAG_FUNC(z, data, elem)	PASS_THROUGH(RFLAG_RVALUE, BOOST_PP_SEQ_ENUM(elem))
