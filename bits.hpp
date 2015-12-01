@@ -223,17 +223,27 @@ namespace spn {
 		struct LowClear { constexpr static unsigned int result = 1 << MSB_N<N>::result; };
 	};
 	struct Bit {
-		static bool Check(uint32_t val, uint32_t flag) {
+		template <class T>
+		static bool Check(T& val, const T& flag) {
 			return val & flag;
 		}
-		static void Clear(uint32_t& val, uint32_t flag) {
+		template <class T>
+		static void Clear(T& val, const T& flag) {
 			val &= ~flag;
 		}
-		static void Set(uint32_t& val, uint32_t flag) {
+		template <class T>
+		static void Set(T& val, const T& flag) {
 			val |= flag;
 		}
+		template <class T>
+		static bool ChSet(T& val, const T& flag) {
+			bool bRet = Check(val, flag);
+			Set(val, flag);
+			return bRet;
+		}
 		//! ビットチェックした結果を返し、ビットは消去する
-		static bool ChClear(uint32_t& val, uint32_t flag) {
+		template <class T>
+		static bool ChClear(T& val, const T& flag) {
 			bool bRet = Check(val, flag);
 			Clear(val, flag);
 			return bRet;
