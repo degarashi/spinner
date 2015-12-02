@@ -1,5 +1,6 @@
 #include "test.hpp"
 #include "../rflag.hpp"
+#include "../structure/wrapper.hpp"
 
 namespace spn {
 	namespace test {
@@ -53,11 +54,15 @@ namespace spn {
 		template <class Self, class T>
 		using RefFunc = std::function<T& (Self&)>;
 
-		template <class V>
+		template <class V, bool B>
 		class RFTest {
 			private:
+				struct Getter {
+					using counter_t = uint32_t;
+				};
+				using Base0_t = std::conditional_t<B, AcWrapper<Wrapper<V>, Getter>, V>;
 				#define SEQ_CACHE \
-					((Base0)(V)) \
+					((Base0)(Base0_t)) \
 					((Base1)(V)) \
 					((Middle0)(V)(Base0)) \
 					((Middle1)(V)(Base1)) \
@@ -103,24 +108,24 @@ namespace spn {
 					return _counter;
 				}
 		};
-		template <class T>
-		const SetFunc<RFTest<T>, T> RFTest<T>::cs_setfunc[ValueT::Num] = {
+		template <class T, bool B>
+		const SetFunc<RFTest<T,B>, T> RFTest<T,B>::cs_setfunc[ValueT::Num] = {
 			[](RFTest& self, T&& t) { self.setBase0(std::move(t)); },
 			[](RFTest& self, T&& t) { self.setBase1(std::move(t)); },
 			[](RFTest& self, T&& t) { self.setMiddle0(std::move(t)); },
 			[](RFTest& self, T&& t) { self.setMiddle1(std::move(t)); },
 			[](RFTest& self, T&& t) { self.setUpper(std::move(t)); }
 		};
-		template <class T>
-		const GetFunc<RFTest<T>, T> RFTest<T>::cs_getfunc[ValueT::Num] = {
+		template <class T, bool B>
+		const GetFunc<RFTest<T,B>, T> RFTest<T,B>::cs_getfunc[ValueT::Num] = {
 			[](const RFTest& self) -> const T& { return self.getBase0(); },
 			[](const RFTest& self) -> const T& { return self.getBase1(); },
 			[](const RFTest& self) -> const T& { return self.getMiddle0(); },
 			[](const RFTest& self) -> const T& { return self.getMiddle1(); },
 			[](const RFTest& self) -> const T& { return self.getUpper(); }
 		};
-		template <class T>
-		const RefFunc<RFTest<T>, T> RFTest<T>::cs_reffunc[ValueT::Num] = {
+		template <class T, bool B>
+		const RefFunc<RFTest<T,B>, T> RFTest<T,B>::cs_reffunc[ValueT::Num] = {
 			[](RFTest& self) -> T& { return self.refBase0(); },
 			[](RFTest& self) -> T& { return self.refBase1(); },
 			[](RFTest& self) -> T& { return self.refMiddle0(); },
@@ -128,26 +133,26 @@ namespace spn {
 			[](RFTest& self) -> T& { return self.refUpper(); }
 		};
 
-		template <class T>
-		RFlagRet RFTest<T>::_refresh(T& v, Middle0*) const {
+		template <class T, bool B>
+		RFlagRet RFTest<T,B>::_refresh(typename Middle0::value_type& v, Middle0*) const {
 			v = getBase0();
 			++_counter.value[MiddleT::Middle0];
 			return {true, 0};
 		}
-		template <class T>
-		RFlagRet RFTest<T>::_refresh(T& v, Middle1*) const {
+		template <class T, bool B>
+		RFlagRet RFTest<T,B>::_refresh(typename Middle1::value_type& v, Middle1*) const {
 			v = getBase1();
 			++_counter.value[MiddleT::Middle1];
 			return {true, 0};
 		}
-		template <class T>
-		RFlagRet RFTest<T>::_refresh(T& v, Upper*) const {
+		template <class T, bool B>
+		RFlagRet RFTest<T,B>::_refresh(typename Upper::value_type& v, Upper*) const {
 			v = getMiddle0() + getMiddle1();
 			++_counter.value[MiddleT::Upper];
 			return {true, 0};
 		}
 
-		template <class T>
+		template <class T, bool B>
 		class RFCheck {
 			private:
 				mutable bool			_flag[ValueT::Num];
@@ -187,9 +192,16 @@ namespace spn {
 				Counter& refCounter() {
 					return _counter;
 				}
+				void acflag_set() const {
+					if(B) {
+						_flag[ValueT::Base0] =
+						_flag[ValueT::Middle0] =
+						_flag[ValueT::Upper] = true;
+					}
+				}
 		};
-		template <class T>
-		const SetFunc<RFCheck<T>, T> RFCheck<T>::cs_setfunc[ValueT::Num] = {
+		template <class T, bool B>
+		const SetFunc<RFCheck<T,B>, T> RFCheck<T,B>::cs_setfunc[ValueT::Num] = {
 			[](RFCheck& self, T&& t){
 				auto& v = self._value;
 				auto& f = self._flag;
@@ -198,6 +210,7 @@ namespace spn {
 
 				f[ValueT::Middle0] = true;
 				f[ValueT::Upper] = true;
+				self.acflag_set();
 			},
 			[](RFCheck& self, T&& t){
 				auto& v = self._value;
@@ -207,6 +220,7 @@ namespace spn {
 
 				f[ValueT::Middle1] = true;
 				f[ValueT::Upper] = true;
+				self.acflag_set();
 			},
 			[](RFCheck& self, T&& t){
 				auto& v = self._value;
@@ -215,6 +229,7 @@ namespace spn {
 				f[ValueT::Middle0] = false;
 
 				f[ValueT::Upper] = true;
+				self.acflag_set();
 			},
 			[](RFCheck& self, T&& t){
 				auto& v = self._value;
@@ -223,12 +238,14 @@ namespace spn {
 				f[ValueT::Middle1] = false;
 
 				f[ValueT::Upper] = true;
+				self.acflag_set();
 			},
 			[](RFCheck& self, T&& t){
 				auto& v = self._value;
 				auto& f = self._flag;
 				v[ValueT::Upper] = std::move(t);
 				f[ValueT::Upper] = false;
+				self.acflag_set();
 			},
 		};
 		bool FChClear(bool& b) {
@@ -236,12 +253,14 @@ namespace spn {
 			b = false;
 			return tmp;
 		}
-		template <class T>
-		const GetFunc<RFCheck<T>, T> RFCheck<T>::cs_getfunc[ValueT::Num] = {
+		template <class T, bool B>
+		const GetFunc<RFCheck<T,B>, T> RFCheck<T,B>::cs_getfunc[ValueT::Num] = {
 			[](const RFCheck& self) -> const T& {
+				self.acflag_set();
 				return self._value[ValueT::Base0];
 			},
 			[](const RFCheck& self) -> const T& {
+				self.acflag_set();
 				return self._value[ValueT::Base1];
 			},
 			[](const RFCheck& self) -> const T& {
@@ -251,6 +270,7 @@ namespace spn {
 					++self._counter.value[MiddleT::Middle0];
 					v[ValueT::Middle0] = cs_getfunc[ValueT::Base0](self);
 				}
+				self.acflag_set();
 				return v[ValueT::Middle0];
 			},
 			[](const RFCheck& self) -> const T& {
@@ -260,6 +280,7 @@ namespace spn {
 					++self._counter.value[MiddleT::Middle1];
 					v[ValueT::Middle1] = cs_getfunc[ValueT::Base1](self);
 				}
+				self.acflag_set();
 				return v[ValueT::Middle1];
 			},
 			[](const RFCheck& self) -> const T& {
@@ -269,16 +290,17 @@ namespace spn {
 					++self._counter.value[MiddleT::Upper];
 					v[ValueT::Upper] = cs_getfunc[ValueT::Middle0](self) + cs_getfunc[ValueT::Middle1](self);
 				}
+				self.acflag_set();
 				return v[ValueT::Upper];
 			}
 		};
-		#define DEF_REFFUNC(name) [](RFCheck<T>& self) -> T& { \
+		#define DEF_REFFUNC(name) [](RFCheck<T,B>& self) -> T& { \
 				T tmp(std::move(self._value[ValueT::name])); \
 				cs_setfunc[ValueT::name](self, std::move(tmp)); \
 				return self._value[ValueT::name]; \
 			},
-		template <class T>
-		const RefFunc<RFCheck<T>, T> RFCheck<T>::cs_reffunc[ValueT::Num] = {
+		template <class T, bool B>
+		const RefFunc<RFCheck<T,B>, T> RFCheck<T,B>::cs_reffunc[ValueT::Num] = {
 			DEF_REFFUNC(Base0)
 			DEF_REFFUNC(Base1)
 			DEF_REFFUNC(Middle0)
@@ -289,12 +311,16 @@ namespace spn {
 
 		template <class T>
 		class RefreshFlagTest : public RandomTestInitializer {};
-		using FlagT = ::testing::Types<int32_t, int64_t>;
+		using FlagT = ::testing::Types<std::pair<int32_t, std::false_type>,
+										std::pair<int64_t, std::false_type>,
+										std::pair<int32_t, std::true_type>,
+										std::pair<int64_t, std::true_type>>;
 		TYPED_TEST_CASE(RefreshFlagTest, FlagT);
 		TYPED_TEST(RefreshFlagTest, General) {
 			auto rd = this->getRand();
-			using RF_t = RFTest<TypeParam>;
-			using RFChk_t = RFCheck<TypeParam>;
+			using Type = typename TypeParam::first_type;
+			using RF_t = RFTest<Type, TypeParam::second_type::value>;
+			using RFChk_t = RFCheck<Type, TypeParam::second_type::value>;
 			RF_t	test;
 			RFChk_t chk;
 
@@ -308,15 +334,15 @@ namespace spn {
 			};
 			auto IRand = rd.template getUniformF<int>();
 			// ランダムに値をset, get, refして値や更新カウンタが想定と一致しているかチェック
-			int nOp = IRand({0,16});
+			int nOp = IRand({0,32});
 			while(nOp-- > 0) {
 				const int idx = IRand({0, ValueT::Num-1});
 				switch(IRand({0, OP::Num-1})) {
 					case OP::Set: {
 						// set
-						auto data = MakeRandomData<TypeParam>(rd);
-						test.set(idx, TypeParam(data));
-						chk.set(idx, TypeParam(data));
+						auto data = MakeRandomData<Type>(rd);
+						test.set(idx, Type(data));
+						chk.set(idx, Type(data));
 						break; }
 					case OP::Get: {
 						// get
@@ -331,9 +357,9 @@ namespace spn {
 						auto& data1 = chk.ref(idx);
 						// 値の比較
 						ASSERT_EQ(data0, data1);
-						auto data = MakeRandomData<TypeParam>(rd);
-						data0 = TypeParam(data);
-						data1 = TypeParam(data);
+						auto data = MakeRandomData<Type>(rd);
+						data0 = Type(data);
+						data1 = Type(data);
 						break; }
 				}
 			}

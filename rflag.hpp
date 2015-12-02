@@ -33,25 +33,40 @@ namespace spn {
 	};
 	using AcCounter_t = uint_fast32_t;
 	//! 変数が更新された時の累積カウンタの値を後で比較するためのラッパークラス
-	template <class T, class... Ts>
-	class AcWrapper {
-		private:
-			using CT = CType<Ts...>;
-			mutable T ac_counter[sizeof...(Ts)];
-			using Holder = ValueHolder<typename std::add_pointer<Ts>::type...>;
-			Holder _holder;
+	template <class T, class Getter, class... Ts>
+	class AcWrapper : public T {
 		public:
-			AcWrapper() {
+			using Flag_t = CType<Ts...>;
+			using Getter_t = Getter;
+			using Counter_t = typename Getter::counter_t;
+		private:
+			mutable AcCounter_t ac_counter[sizeof...(Ts)];
+			mutable Counter_t user_counter[sizeof...(Ts)];
+		public:
+			template <class... Args>
+			explicit AcWrapper(Args&&... args):
+				T(std::forward<Args>(args)...)
+			{
 				for(auto& a : ac_counter)
 					a = ~0;
+				for(auto& a : user_counter)
+					a = ~0;
+			}
+			AcWrapper& operator = (const T& t) {
+				static_cast<T&>(*this) = t;
+				return *this;
+			}
+			AcWrapper& operator = (T&& t) {
+				static_cast<T&>(*this) = std::move(t);
+				return *this;
 			}
 			template <class Type>
 			AcCounter_t& refAc() const {
-				return ac_counter[CT::template Find<Type>::result];
+				return ac_counter[Flag_t::template Find<Type>::result];
 			}
 			template <class Type>
-			bool checkAndSet(AcCounter_t a) const {
-				return spn::CompareAndSet(refAc<Type>(), a);
+			Counter_t& refUserAc() const {
+				return user_counter[Flag_t::template Find<Type>::result];
 			}
 	};
 	//! TがAcWrapperテンプレートクラスかをチェック
@@ -137,8 +152,9 @@ namespace spn {
 				// 一緒に更新された変数フラグを立てる
 				_rflag |= ret.flagOr;
 				_rflag &= ~TFlag;
-				AssertP(Trap, !(_rflag & (OrHL0<T>() & ~TFlag)), "refresh flag was not cleared correctly")
-				//TODO: Accum Or
+				AssertP(Trap, !(_rflag & (OrHL0<T>() & ~TFlag & ~ACFlag)), "refresh flag was not cleared correctly")
+				// Accumulationクラスを継承している変数は常に更新フラグを立てておく
+				_rflag |= ACFlag;
 				// 累積カウンタをインクリメント
 				++_accum[GetFlagIndex<T>()];
 				// 変数が更新された場合にはsecondに当該変数のフラグを返す
@@ -173,7 +189,8 @@ namespace spn {
 				// 自分の階層より上の変数は全てフラグを立てる
 				_rflag |= OrLH<T>();
 				_rflag &= ~Get<T>();
-				//TODO: Accum Or
+				// Accumulationクラスを継承している変数は常に更新フラグを立てておく
+				_rflag |= ACFlag;
 				// 累積カウンタをインクリメント
 				++_accum[GetFlagIndex<T>()];
 				__setFlag<TsA...>(IConst<N-1>());
@@ -186,11 +203,46 @@ namespace spn {
 			//! キャッシュ変数ポインタをstd::tupleにして返す
 			template <int N, class Tup>
 			RFlagValue_t _getAsTuple(const Class* /*self*/, const Tup& /*dst*/) const { return 0; }
-			template <int N, class... Tup, class T, class... TsA>
-			RFlagValue_t _getAsTuple(const Class* self, std::tuple<Tup...>& dst, T*, TsA*... remain) const {
+			template <int N, class Tup, class T, class... TsA>
+			RFlagValue_t _getAsTuple(const Class* self, Tup& dst, T*, TsA*... remain) const {
 				auto ret = refresh<T>(self);
 				std::get<N>(dst) = &ret.first;
 				return ret.second | _getAsTuple<N+1>(self, dst, remain...);
+			}
+			template <int N, class Acc, class Tup>
+			RFlagValue_t _getWithCheck(const Class*, const Acc&, const Tup&) const { return 0; }
+			template <int N, class Acc, class Tup, class T, class... TsA>
+			RFlagValue_t _getWithCheck(const Class* self, Acc& acc, Tup& dst, T*, TsA*... remain) const {
+				auto ret = refresh<T>(self);
+				std::get<N>(dst) = &ret.first;
+				RFlagValue_t flag = ret.second;
+				flag |= _getIfFlagDifferent<T>(acc, ret.first, typename Acc::Flag_t::template Has<T>());
+				return flag | _getWithCheck<N+1>(self, acc, dst, remain...);
+			}
+			template <class T, class Acc>
+			RFlagValue_t _getIfFlagDifferent(Acc& acc, cref_type<T> v, std::true_type) const {
+				using C = typename Acc::Counter_t;
+				using G = typename Acc::Getter_t;
+				if(CompareAndSet<C>(acc.template refUserAc<T>(), G()(v, _NullPtr<T>())) |
+					CompareAndSet(acc.template refAc<T>(), getAcCounter<T>()))
+					return Get<T>();
+				return 0;
+			}
+			template <class T, class Acc>
+			RFlagValue_t _getIfFlagDifferent(Acc&, cref_type<T>, std::false_type) const {
+				return 0;
+			}
+
+		public:
+			template <class T>
+			constexpr static T ReturnIf(T flag, std::true_type) { return flag; }
+			template <class T>
+			constexpr static T ReturnIf(T, std::false_type) { return 0; }
+			template <class... TsA>
+			constexpr static RFlagValue_t CalcAcFlag(CType<TsA...>) { return 0; }
+			template <class T, class... TsA>
+			constexpr static RFlagValue_t CalcAcFlag(CType<T,TsA...>) {
+				return ReturnIf(OrLH<T>(), IsAcWrapper<typename T::value_type>()) | CalcAcFlag(CType<TsA...>());
 			}
 
 		public:
@@ -228,6 +280,7 @@ namespace spn {
 			static constexpr RFlagValue_t OrHL0() {
 				return Get<T>() | _IterateHL0<T>();
 			}
+			constexpr static RFlagValue_t ACFlag = CalcAcFlag(ct_base());
 
 			//! 累積カウンタ値取得
 			template <class TA>
@@ -289,6 +342,30 @@ namespace spn {
 				ret.second = _getAsTuple<0>(self, ret.first, ((TsA*)nullptr)...);
 				return ret;
 			}
+			template <class Acc, class... TsA>
+			auto _getWithCheck(const Class* self, Acc& acc, CType<TsA...>) const {
+				Tuple_p<TsA...> ret;
+				ret.second = _getWithCheck<0>(self, acc, ret.first, ((TsA*)nullptr)...);
+				return ret;
+			}
+			template <class Acc>
+			auto getWithCheck(const Class* self, Acc& acc) const {
+				return _getWithCheck(self, acc, typename Acc::Flag_t());
+			}
+	};
+	template <class Base, class Getter>
+	struct AcCheck {};
+	template <class... Ts, class Base, class Getter>
+	static AcWrapper<Base, Getter, Ts...> AcDetect(AcCheck<Base, Getter>*);
+	template <class... Ts, class T>
+	static T AcDetect(T*);
+	template <class C>
+	struct RFlag_Getter {
+		using counter_t = C;
+		template <class T, class TP>
+		counter_t operator()(const T&, TP*) const {
+			return 0;
+		}
 	};
 
 	#define RFLAG(clazz, seq) \
@@ -298,8 +375,7 @@ namespace spn {
 		friend class spn::RFlag;
 	#define RFLAG_RVALUE_BASE(name, valueT, ...) \
 		struct name : spn::CType<__VA_ARGS__> { \
-			using value_type = valueT; \
-			value_type value; };
+			using value_type = decltype(spn::AcDetect<__VA_ARGS__>((valueT*)nullptr)); };
 	#define RFLAG_RVALUE(name, ...) \
 			RFLAG_RVALUE_BASE(name, __VA_ARGS__) \
 			BOOST_PP_IF( \
@@ -311,9 +387,9 @@ namespace spn {
 				RFLAG_RVALUE_D_ \
 			)(name, __VA_ARGS__)
 	#define RFLAG_RVALUE_D_(name, valueT, ...) \
-		::spn::RFlagRet _refresh(valueT&, name*) const;
+		::spn::RFlagRet _refresh(typename name::value_type&, name*) const;
 	#define RFLAG_RVALUE_(name, valueT) \
-		::spn::RFlagRet _refresh(valueT&, name*) const { return {true, 0}; }
+		::spn::RFlagRet _refresh(typename name::value_type&, name*) const { return {true, 0}; }
 	#define RFLAG_GETMETHOD(name) auto get##name() const -> decltype(_rflag.template get<name>(this)) { return _rflag.template get<name>(this); }
 	#define PASS_THROUGH(func, ...)		func(__VA_ARGS__)
 	#define RFLAG_FUNC(z, data, elem)	PASS_THROUGH(RFLAG_RVALUE, BOOST_PP_SEQ_ENUM(elem))
