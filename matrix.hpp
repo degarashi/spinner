@@ -941,15 +941,16 @@
 					// <Repeat by MUL_OUTER>
 					for(int i=0 ; i<n0 ; i++) {
 						reg128 tm = LOADTHISI(i);
-						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS_I(m.ma[0], 0));
+						reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS_I(A)n1(m.ma[0], 0));
 						// <Repeat by MUL_INNER>
 						for(int j=1 ; j<DIM_N ; j++)
-							reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(j,j,j,j)), LOADPS_I(m.ma[j], j)));
-						STOREPS_(A)4(ret.ma[i], accum);
+							accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(j,j,j,j)), LOADPS_I(A)n1(m.ma[j], j)));
+						STOREPS_(A)n1(ret.ma[i], accum);
 					}
 					return ret;
 				}
 			*/
+			// 対応する行列(サイズ)以外は何もコードを出力しない
 			#define DEF_MUL0(n0,n1,align) \
 				BOOST_PP_IF( \
 					BOOST_PP_EQUAL(DIM_N, n0), \
@@ -972,29 +973,39 @@
 				) \
 				return ret; \
 			}
-			#define MUL_INNER(z,n,AU)	accum = reg_add_ps( \
+			/*	Inner(z,n, AUn1)
+				accum = reg_add_ps(accum, reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), LOADPS_I(A)n1(m.ma[n], n)));
+			*/
+			#define MUL_INNER(z,n,AUn1)	accum = reg_add_ps( \
 													accum, \
 													reg_mul_ps( \
 														reg_shuffle_ps(tm, tm, _REG_SHUFFLE(n,n,n,n)), \
-														LOADPS_I##AU(m.ma[n], n) \
+														LOADPS_I##AUn1(m.ma[n], n) \
 													) \
 												);
-			#define MUL_OUTER(z,n,AU_n0) { \
+			/*	Outer(z,i, AUn1_n0)
+				reg128 tm = LOADTHISI(i);
+				reg128 accum = reg_mul_ps(reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), LOADPS_I(A)n1(m.ma[0], 0));
+				for(int j=1 ; j<AUn1_n0[1] ; j++)
+					Inner(j, AUn1_n0[0]);
+				STOREPS_(A)AUn1_n0[0](ret.ma[i], accum);
+			*/
+			#define MUL_OUTER(z,n,AUn1_n0) { \
 				reg128 tm = LOADTHISI(n); \
 				reg128 accum = reg_mul_ps( \
 								reg_shuffle_ps(tm, tm, _REG_SHUFFLE(0,0,0,0)), \
 								BOOST_PP_CAT( \
 									LOADPS_I, \
-									BOOST_PP_SEQ_ELEM(0,AU_n0) \
+									BOOST_PP_SEQ_ELEM(0,AUn1_n0) \
 								)(m.ma[0], 0) \
 							); \
 				BOOST_PP_REPEAT_FROM_TO( \
 					1, \
-					BOOST_PP_SEQ_ELEM(1,AU_n0), \
+					BOOST_PP_SEQ_ELEM(1,AUn1_n0), \
 					MUL_INNER, \
-					BOOST_PP_SEQ_ELEM(0,AU_n0) \
+					BOOST_PP_SEQ_ELEM(0,AUn1_n0) \
 				) \
-				STORETHISPS(ret.ma[n], accum); }
+				BOOST_PP_CAT(STOREPS_, BOOST_PP_SEQ_ELEM(0, AUn1_n0))(ret.ma[n], accum); }
 			BOOST_PP_REPEAT(LEN_SEQ, DEF_CONV_ITR, DEF_MUL0)
 			#undef DEF_MUL0
 			#undef DEF_MUL
