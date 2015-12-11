@@ -69,20 +69,20 @@ inline float RSqrt(float s) {
 	return Rcp22Bit(spn::Sqrt(s));
 }
 
-const static uint32_t fullbit = 0xffffffff,
-					absbit = 0x7fffffff;
-constexpr const static float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
+extern const uint32_t fullbit,
+						absbit;
+constexpr float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 // ベクトルレジスタ用の定数
-const static reg128 xmm_tmp0001(_mmSetPs(1,0,0,0)), xmm_tmp0001_i(_mmSetPdw(-1,0,0,0)),
-					xmm_tmp0111(_mmSetPs(1,1,1,0)), xmm_tmp0111_i(_mmSetPdw(-1,-1,-1,0)),
-					xmm_tmp0000(_mmSetPs(0,0,0,0)), xmm_tmp0000_i(_mmSetPdw(0,0,0,0)),
-					xmm_tmp1000(_mmSetPs(0,0,0,1)), xmm_tmp1000_i(_mmSetPdw(0,0,0,-1)),
-					xmm_tmp1111(_mmSetPs(1,1,1,1)), xmm_tmp1111_i(_mmSetPdw(-1)),
-					xmm_epsilon(_mmSetPs(FLOAT_EPSILON)),
-					xmm_epsilonM(_mmSetPs(-FLOAT_EPSILON)),
-					xmm_minus0(_mmSetPs(-0.f, -0.f, -0.f, -0.f)),
-					xmm_fullbit(reg_load1_ps(reinterpret_cast<const float*>(&fullbit))),
-					xmm_absmask(reg_load1_ps(reinterpret_cast<const float*>(&absbit)));
+extern const reg128 xmm_tmp0001, xmm_tmp0001_i,
+					xmm_tmp0111, xmm_tmp0111_i,
+					xmm_tmp0000, xmm_tmp0000_i,
+					xmm_tmp1000, xmm_tmp1000_i,
+					xmm_tmp1111, xmm_tmp1111_i,
+					xmm_epsilon,
+					xmm_epsilonM,
+					xmm_minus0,
+					xmm_fullbit,
+					xmm_absmask;
 
 //! レジスタ要素が全てゼロか判定 (+0 or -0)
 inline bool _mmIsZero(reg128 r) {
@@ -106,26 +106,10 @@ inline reg128 _makeMask() {
 	reg128 tmp = reg_move_ss(zero, full);
 	return reg_shuffle_ps(tmp, tmp, tmp2);
 }
-const static reg128 xmm_mask[4] = {_makeMask<1,0,0,0>(),
-									_makeMask<1,1,0,0>(),
-									_makeMask<1,1,1,0>(),
-									_makeMask<1,1,1,1>()},
-					xmm_maskN[4] = {_makeMask<0,1,1,1>(),
-									_makeMask<0,0,1,1>(),
-									_makeMask<0,0,0,1>(),
-									_makeMask<0,0,0,0>()};
-const static float cs_matI[4][4] = {
-	{1,0,0,0},
-	{0,1,0,0},
-	{0,0,1,0},
-	{0,0,0,1}
-};
-const static reg128 xmm_matI[4] = {
-	_mmSetPs(1,0,0,0),
-	_mmSetPs(0,1,0,0),
-	_mmSetPs(0,0,1,0),
-	_mmSetPs(0,0,0,1)
-};
+extern const reg128 xmm_mask[4],
+					xmm_maskN[4];
+extern const float cs_matI[4][4];
+extern const reg128 xmm_matI[4];
 template <class T>
 constexpr T Pi = T(3.1415926535);	// std::atan(1.0f)*4
 constexpr float PI = Pi<float>,
