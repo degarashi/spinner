@@ -216,20 +216,20 @@ namespace spn {
 				auto ret = refresh<T>(self);
 				std::get<N>(dst) = &ret.first;
 				RFlagValue_t flag = ret.second;
-				flag |= _getIfFlagDifferent<T>(acc, ret.first, typename Acc::Flag_t::template Has<T>());
+				flag |= _getIfFlagDifferent<T>(acc, ret.first, self, typename Acc::Flag_t::template Has<T>());
 				return flag | _getWithCheck<N+1>(self, acc, dst, remain...);
 			}
 			template <class T, class Acc>
-			RFlagValue_t _getIfFlagDifferent(Acc& acc, cref_type<T> v, std::true_type) const {
+			RFlagValue_t _getIfFlagDifferent(Acc& acc, cref_type<T> v, const Class* self, std::true_type) const {
 				using C = typename Acc::Counter_t;
 				using G = typename Acc::Getter_t;
-				if(CompareAndSet<C>(acc.template refUserAc<T>(), G()(v, _NullPtr<T>())) |
+				if(CompareAndSet<C>(acc.template refUserAc<T>(), G()(v, _NullPtr<T>(), *self)) |
 					CompareAndSet(acc.template refAc<T>(), getAcCounter<T>()))
 					return Get<T>();
 				return 0;
 			}
 			template <class T, class Acc>
-			RFlagValue_t _getIfFlagDifferent(Acc&, cref_type<T>, std::false_type) const {
+			RFlagValue_t _getIfFlagDifferent(Acc&, cref_type<T>, const Class*, std::false_type) const {
 				return 0;
 			}
 
@@ -362,8 +362,8 @@ namespace spn {
 	template <class C>
 	struct RFlag_Getter {
 		using counter_t = C;
-		template <class T, class TP>
-		counter_t operator()(const T&, TP*) const {
+		template <class T, class TP, class S>
+		counter_t operator()(const T&, TP*, const S&) const {
 			return 0;
 		}
 	};
