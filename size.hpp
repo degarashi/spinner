@@ -15,10 +15,13 @@ namespace spn {
 		template <class T2>
 		_Size(const _Size<T2>& s): width(s.width), height(s.height) {}
 		_Size& operator *= (const T& s) {
-			width *= s;
-			height *= s;
-			return *this;
-		}
+			return *this = *this * s; }
+		_Size& operator /= (const T& s) {
+			return *this = *this / s; }
+		_Size operator / (const T& s) const {
+			return _Size(width/s, height/s); }
+		_Size operator * (const T& s) const {
+			return _Size(width*s, height*s); }
 		template <class V>
 		void shiftR(int n, typename std::enable_if<std::is_integral<V>::value>::type* = nullptr) {
 			width >>= n;
@@ -56,6 +59,10 @@ namespace spn {
 		bool operator <= (const _Size& s) const {
 			return width <= s.width &&
 					height <= s.height;
+		}
+		template <class V>
+		auto toSize() const {
+			return _Size<V>(width, height);
 		}
 	};
 	template <class T>
