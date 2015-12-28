@@ -295,6 +295,11 @@ namespace spn {
 			noseq_list(noseq_list&& sl): _array(std::move(sl._array)), _nFree(sl._nFree), _firstFree(sl._firstFree) {
 				AssertP(Trap, !_bRemoving && _remList.empty())
 			}
+			noseq_list& operator = (noseq_list&& ns) {
+				this->~noseq_list();
+				new(this) noseq_list(std::move(ns));
+				return *this;
+			}
 
 			template <class... Ts>
 			ID emplace(Ts&&... ts) {
