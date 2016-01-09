@@ -26,6 +26,9 @@ namespace spn {
 			void pushValue(const T& val) {
 				_value.push_back(val);
 			}
+			void push_back(const T& val) {
+				pushValue(val);
+			}
 			//! 現在のグループを閉じて次のグループを開始
 			void finishGroup() {
 				auto sz = _value.size();
