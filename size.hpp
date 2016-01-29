@@ -43,8 +43,10 @@ namespace spn {
 		//! 1右ビットシフトした値を2の累乗に合わせる
 		void shiftR_2pow() {
 			auto fn = [](const T& t) -> T {
-				auto v = Bit::LowClear(t);
-				if(v != t)
+				using UT = std::make_unsigned_t<T>;
+				UT ut(t);
+				auto v = Bit::LowClear(ut);
+				if(v != ut)
 					return v;
 				return v >> 1;
 			};
@@ -60,6 +62,28 @@ namespace spn {
 			return width <= s.width &&
 					height <= s.height;
 		}
+		//! 領域の拡大縮小
+		/*!
+			負数で領域の縮小
+			\return		縮小によって面積が0になった場合はtrue, それ以外はfalse
+		*/
+		bool expand(const T& w, const T& h) {
+			bool ret = false;
+			width += w;
+			height += h;
+			if(width <= 0) {
+				width = 0;
+				ret = true;
+			}
+			if(height <= 0) {
+				height = 0;
+				ret = true;
+			}
+			return ret;
+		}
+		bool expand(const T& w) {
+			return expand(w,w);
+		}
 		template <class V>
 		auto toSize() const {
 			return _Size<V>(width, height);
@@ -69,7 +93,7 @@ namespace spn {
 	std::ostream& operator << (std::ostream& os, const spn::_Size<T>& s) {
 		return os << "Size {width=" << s.width << ", height=" << s.height << "}";
 	}
-	using Size = _Size<uint32_t>;
+	using Size = _Size<int32_t>;
 	using SizeF = _Size<float>;
 
 	//! 任意の型の2D矩形
@@ -122,12 +146,40 @@ namespace spn {
 				a *= t;
 			return *this;
 		}
+		//! 領域の拡大縮小
+		/*!
+			負数で領域の縮小
+			\return		縮小によって面積が0になった場合はtrue, それ以外はfalse
+		*/
+		bool expand(const T& w, const T& h) {
+			bool ret = false;
+			x0 -= w;
+			x1 += w;
+			y0 -= h;
+			y1 += h;
+			if(x0 >= x1) {
+				auto d = x0 - x1;
+				x1 += d/2;
+				x0 = x1;
+				ret = true;
+			}
+			if(y0 >= y1) {
+				auto d = y0 - y1;
+				y1 += d/2;
+				y0 = y1;
+				ret = true;
+			}
+			return ret;
+		}
+		bool expand(const T& w) {
+			return expand(w,w);
+		}
 		template <class V>
 		auto toRect() const {
 			return _Rect<V>(x0, x1, y0,y1);
 		}
 	};
-	using Rect = _Rect<int>;
+	using Rect = _Rect<int32_t>;
 	using RectF = _Rect<float>;
 	template <class T>
 	std::ostream& operator << (std::ostream& os, const spn::_Rect<T>& r) {
