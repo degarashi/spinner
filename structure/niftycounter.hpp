@@ -3,8 +3,9 @@
 namespace spn {
 	//! static変数の初期化を制御する
 	template <class T>
-	class NiftyCounterIdiom {
-		static int s_niftyCounter;
+	class NiftyCounterIdiom : T {
+		private:
+			static int s_niftyCounter;
 		public:
 			NiftyCounterIdiom() {
 				if(s_niftyCounter++ == 0) {

@@ -70,13 +70,24 @@ std::string MakeAssertMsg(const char* base, const char* filename, const char* fu
 	return ss.str();
 }
 
-using LogOUT = std::function<void (const std::string&)>;
-extern LogOUT g_logOut;
-void LogOutput(const std::string& s);
-template <class... Ts>
-void LogOutput(const char* fmt, Ts&&... ts) {
-	boost::format msg(fmt);
-	LogOutput(ConcatMessage(msg, std::forward<Ts>(ts)...));
+#include "structure/niftycounter.hpp"
+namespace spn {
+	struct Log {
+		using OutF = std::function<void (const std::string&)>;
+		static OutF* s_logOut;
+
+		static void Initialize();
+		static void Terminate();
+		static void Output(const std::string& s);
+		template <class... Ts>
+		static void Output(const char* fmt, Ts&&... ts) {
+			boost::format msg(fmt);
+			Output(ConcatMessage(msg, std::forward<Ts>(ts)...));
+		}
+		static OutF* GetOutputF();
+		static void SetOutputF(const OutF& f);
+	};
+	DEF_NIFTY_INITIALIZER(Log)
 }
 
 //! エラー時にメッセージ出力だけする
@@ -85,7 +96,7 @@ struct AAct_Warn {
 	template <class... TA>
 	AAct_Warn(TA&&...) {}
 	void onError(const std::string& str, ...) {
-		LogOutput(str);
+		::spn::Log::Output(str);
 	}
 };
 //! エラー時にメッセージ出力と例外の送出を行う
@@ -221,4 +232,3 @@ void LogOutput(const ::spn::SourcePos& pos, const std::string& msg, Ts&&... ts) 
 	ConcatMessage(str, std::forward<Ts>(ts)...);
 	LogOutput(pos, str.str());
 }
-
