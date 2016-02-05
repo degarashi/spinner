@@ -45,7 +45,7 @@ namespace spn {
 		int32_t t_exp = int32_t(fp.exp);
 		int32_t mask = ZeroOrFull(t_exp);			// 指数が0の時に0, それ以外は全部1
 		int32_t mask2 = ZeroOrFull(t_exp ^ 0x1f);	// 指数が15の時に0
-		int32_t mask3 = ~(mask|mask2);				// 指数が上限または下限の時に0
+		int32_t mask3 = mask|mask2;					// 指数が上限または下限の時に0
 		t_fract &= mask3;
 		t_exp = t_exp - 15 + 127;
 		t_exp &= mask;								// 指数のマイナス飽和
