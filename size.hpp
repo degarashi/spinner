@@ -140,12 +140,20 @@ namespace spn {
 		_Size<T> size() const {
 			return _Size<T>(width(), height());
 		}
-		template <class T2>
-		_Rect& operator *= (const T2& t) {
-			for(auto& a : ar)
-				a *= t;
-			return *this;
-		}
+		#define DEF_OP(op) \
+			_Rect& operator op##= (const T& t) { \
+				return *this = *this op t; } \
+			_Rect operator op (const T& t) const { \
+				_Rect r; \
+				for(int i=0 ; i<int(countof(ar)) ; i++) \
+					r.ar[i] = ar[i] op t; \
+				return r; \
+			}
+		DEF_OP(+)
+		DEF_OP(-)
+		DEF_OP(*)
+		DEF_OP(/)
+		#undef DEF_OP
 		//! 領域の拡大縮小
 		/*!
 			負数で領域の縮小
