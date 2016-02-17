@@ -2,6 +2,7 @@
 #include "bits.hpp"
 #include <algorithm>
 #include <iostream>
+#include "optional.hpp"
 
 namespace spn {
 	//! 任意の型の縦横サイズ
@@ -120,10 +121,23 @@ namespace spn {
 			y1 += y;
 		}
 		bool hit(const _Rect& r) const {
-			if(x1 < r.x0 || r.x1 < x0 ||
-				y1 < r.y0 || r.y1 < y0)
-				return false;
-			return true;
+			return !(r.x1 <= x0 ||
+					r.x0 >= x1 ||
+					r.y1 <= y0 ||
+					r.y0 >= y1);
+		}
+		//! 面積
+		T area() const {
+			return width() * height();
+		}
+		_Rect move(const T& dx, const T& dy) const {
+			return
+				_Rect(
+					x0 + dx,
+					x1 + dx,
+					y0 + dy,
+					y1 + dy
+				);
 		}
 		void shrinkRight(const T& s) {
 			x1 = std::max(x0, x1-s);
@@ -185,6 +199,27 @@ namespace spn {
 		template <class V>
 		auto toRect() const {
 			return _Rect<V>(x0, x1, y0,y1);
+		}
+		bool operator == (const _Rect& r) const {
+			return x0 == r.x0 &&
+					x1 == r.x1 &&
+					y0 == r.y0 &&
+					y1 == r.y1;
+		}
+		bool operator != (const _Rect& r) const {
+			return !(operator == (r));
+		}
+		//! 重なっている領域を算出
+		Optional<_Rect> cross(const _Rect& r) const {
+			if(hit(r)) {
+				return _Rect(
+							std::max(x0, r.x0),
+							std::min(x1, r.x1),
+							std::max(y0, r.y0),
+							std::min(y1, r.y1)
+						);
+			}
+			return spn::none;
 		}
 	};
 	using Rect = _Rect<int32_t>;
