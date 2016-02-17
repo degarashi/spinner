@@ -10,11 +10,19 @@ namespace spn {
 		int LoopValueD(const int t, const int w) {
 			if(t < 0)
 				return ((t+1)/w)-1;
-			return (t/w)+1;
+			return t/w;
 		}
 		void IncrementalRect(const spn::Rect& base, const int dx, const int dy, const Rect_cb& cb) {
+			// 動いて無ければ何もせず終了
 			if(dx==0 && dy==0)
 				return;
+			// 前後の矩形が重ならない場合、単に移動後の矩形でコールバック
+			if(std::abs(dx) >= base.width() ||
+				std::abs(dy) >= base.height())
+			{
+				cb(base.move(dx, dy));
+				return;
+			}
 
 			int x0=0, x1=0;
 			int y0=0, y1=0;
@@ -46,78 +54,49 @@ namespace spn {
 			}
 		}
 		void DivideRect(const spn::Size& size, const spn::Rect& request, const DRect_cb& cb) {
-			// 更新領域のうちの左下(原点より)は常に更新
-			const auto tw = size.width,
-						th = size.height;
-			const bool bX = LoopValueD(request.x0, tw) != LoopValueD(request.x1, tw),
-					 bY = LoopValueD(request.y0, th) != LoopValueD(request.y1, th);
-			const int x = LoopValue(request.x0, tw),
-					y = LoopValue(request.y0, th);
-			using Rect = spn::Rect;
-			const Rect r(x, (bX ? tw : LoopValue(request.x1, tw)),
-							y, (bY ? th : LoopValue(request.y1, th)));
 			const auto btm = [](auto x, auto w){
 				return x/w*w;
 			};
-			cb(
-				Rect(
-					request.x0,
-					(bX ? btm(request.x1, tw) : request.x1),
-					request.y0,
-					(bY ? btm(request.y1, th) : request.y1)
-				),
-				r
-			);
-			// 更新領域のうちの右下
-			if(bX) {
-				cb(
-					Rect(
-						btm(request.x1, tw),
-						request.x1,
-						request.y0,
-						(bY ? btm(request.y1, th) : request.y1)
-					),
-					Rect(
-						0,
-						LoopValue(request.x1, tw),
-						r.y0,
-						r.y1
-					)
-				);
-			}
-			// 更新領域のうちの左上
-			if(bY) {
-				cb(
-					Rect(
-						request.x0,
-						btm(request.x1, tw),
-						btm(request.y1, th),
-						request.y1
-					),
-					Rect(
-						r.x0,
-						r.x1,
-						0,
-						LoopValue(request.y1, th)
-					)
-				);
-			}
-			// 更新領域のうちの右上
-			if(bX && bY) {
-				cb(
-					Rect(
-						btm(request.x1, tw),
-						request.x1,
-						btm(request.y1, th),
-						request.y1
-					),
-					Rect(
-						0,
-						LoopValue(request.x1, tw),
-						0,
-						LoopValue(request.y1, th)
-					)
-				);
+			struct Range {
+				int g0, g1;
+				int l0, l1;
+			};
+			auto fnRange = [&btm](Range (&res)[2], int x0, int x1, int w){
+				const bool bX = LoopValueD(x0, w) != LoopValueD(x1, w);
+				const auto lpx0 = LoopValue(x0,w),
+							lpx1 = LoopValue(x1,w);
+				if(bX) {
+					const int mdl = btm(x1, w);
+					res[0] = Range{x0,mdl, lpx0,w};
+					res[1] = Range{mdl,x1, 0,lpx1};
+					return (mdl==x1) ? 1 : 2;
+				} else {
+					res[0] = Range{x0,x1, lpx0,lpx1};
+					return 1;
+				}
+			};
+			const auto tw = size.width,
+						th = size.height;
+			Range xRange[2],
+				yRange[2];
+			const int nx = fnRange(xRange, request.x0, request.x1, tw),
+					ny = fnRange(yRange, request.y0, request.y1, th);
+			using Rect = spn::Rect;
+			for(int i=0 ; i<ny ; i++) {
+				auto& yr = yRange[i];
+				for(int j=0 ; j<nx ; j++) {
+					auto& xr = xRange[j];
+					cb(
+						Rect(
+							xr.g0, xr.g1,
+							yr.g0, yr.g1
+						),
+						Rect(
+							xr.l0, xr.l1,
+							yr.l0, yr.l1
+						)
+					);
+				}
 			}
 		}
 	}
