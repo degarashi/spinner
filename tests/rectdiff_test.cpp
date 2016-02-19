@@ -7,10 +7,6 @@
 namespace spn {
 	namespace test {
 		namespace {
-			void CheckRect(const Rect& r) {
-				ASSERT_LE(r.x0, r.x1);
-				ASSERT_LE(r.y0, r.y1);
-			}
 			template <class RF, class RF2>
 			Rect RandomRect(RF& rfw, RF2& rfh) {
 				const auto x0 = rfw(),
@@ -38,26 +34,24 @@ namespace spn {
 			constexpr int MaxRange = 100;
 			const Size size(randI({1, MaxRange}),
 							randI({1, MaxRange}));
-			bool imap[MaxRange][MaxRange];
-			auto randW = rd.template getUniformF<int>({1, size.width}),
-				randH = rd.template getUniformF<int>({1, size.height});
+			bool imap[MaxRange*2][MaxRange*2];
+			const auto randX = rd.template getUniformF<int>({-size.width/2, size.width/2}),
+						randY = rd.template getUniformF<int>({-size.height/2, size.height/2});
 			constexpr int NItr = 0x100;
 			for(int i=0 ; i<NItr ; i++) {
 				std::memset(imap, 0, sizeof(imap));
 				// テスト範囲以下の矩形をランダムな位置に置く
-				const auto rect = RandomRect(randW, randH);
+				const auto rect = RandomRect(randX, randY);
 				int area = 0;
 				ASSERT_NO_FATAL_FAILURE(
 					rect::DivideRect(
 						size,
 						rect,
 						[&rect, &size, &area, &imap](const Rect& g, const Rect& l){
-							ASSERT_NO_FATAL_FAILURE(CheckRect(g));
-							ASSERT_NO_FATAL_FAILURE(CheckRect(l));
+							ASSERT_NO_THROW(g.checkValidness());
+							ASSERT_NO_THROW(l.checkValidness());
 							// グローバルとローカル矩形の面積は同じ
 							ASSERT_EQ(g.area(), l.area());
-							// グローバル座標が入力値と一致しているか
-							ASSERT_EQ(rect, g);
 							// ローカル座標がテスト範囲を出ていないか
 							ASSERT_TRUE(IsInRange(l.x0, 0, size.width));
 							ASSERT_TRUE(IsInRange(l.x1, 0, size.width));
@@ -66,7 +60,7 @@ namespace spn {
 							// 矩形を塗りつぶしていき、重なりや面積が違っていなければOK
 							for(int i=g.y0 ; i<g.y1 ; i++) {
 								for(int j=g.x0 ; j<g.x1 ; j++) {
-									auto& im = imap[i][j];
+									auto& im = imap[i+MaxRange][j+MaxRange];
 									ASSERT_FALSE(im);
 									im = true;
 								}
@@ -83,7 +77,7 @@ namespace spn {
 			auto rd = getRand();
 			constexpr int MaxRange = 100;
 			const auto randMove = rd.template getUniformF<int>({-MaxRange, MaxRange});
-			const auto randW = rd.template getUniformF<int>({1, MaxRange});
+			const auto randW = rd.template getUniformF<int>({-MaxRange, MaxRange});
 			constexpr int NItr = 0x100;
 			for(int i=0 ; i<NItr ; i++) {
 				// テスト範囲以下の矩形をランダムな位置に置く
