@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include "optional.hpp"
+#include "exception.hpp"
 
 namespace spn {
 	//! 任意の型の縦横サイズ
@@ -99,128 +100,156 @@ namespace spn {
 
 	//! 任意の型の2D矩形
 	template <class T>
-	struct _Rect {
-		union {
-			struct {
-				T	x0, x1, y0, y1;
+	class _Rect {
+		private:
+			template <class E>
+			void _checkValidnessT() const {
+				if(x1 < x0 ||
+					y1 < y0)
+					throw E((boost::format("invalid region: x1(%1%)<x0(%2%) or y1(%3%)<y0(%4%)") % x1 % x0 % y1 % y0).str());
+			}
+		protected:
+			void _checkValidness() const {
+				#ifdef DEBUG
+					_checkValidnessT<ValidationFail>();
+				#endif
+			}
+		public:
+			union {
+				struct {
+					T	x0, x1, y0, y1;
+				};
+				T	ar[4];
 			};
-			T	ar[4];
-		};
 
-		_Rect() = default;
-		_Rect(const _Rect& r) = default;
-		_Rect(const T& x_0, const T& x_1, const T& y_0, const T& y_1):
-			x0(x_0), x1(x_1), y0(y_0), y1(y_1) {}
+			_Rect() = default;
+			_Rect(const _Rect& r) = default;
+			_Rect(const T& x_0, const T& x_1, const T& y_0, const T& y_1):
+				x0(x_0), x1(x_1), y0(y_0), y1(y_1)
+			{
+				_checkValidness();
+			}
 
-		T width() const { return x1-x0; }
-		T height() const { return y1-y0; }
-		void addOffset(const T& x, const T& y) {
-			x0 += x;
-			x1 += x;
-			y0 += y;
-			y1 += y;
-		}
-		bool hit(const _Rect& r) const {
-			return !(r.x1 <= x0 ||
-					r.x0 >= x1 ||
-					r.y1 <= y0 ||
-					r.y0 >= y1);
-		}
-		//! 面積
-		T area() const {
-			return width() * height();
-		}
-		_Rect move(const T& dx, const T& dy) const {
-			return
-				_Rect(
-					x0 + dx,
-					x1 + dx,
-					y0 + dy,
-					y1 + dy
-				);
-		}
-		void shrinkRight(const T& s) {
-			x1 = std::max(x0, x1-s);
-		}
-		void shrinkBottom(const T& s) {
-			y1 = std::max(y0, y1-s);
-		}
-		void shrinkLeft(const T& s) {
-			x0 = std::min(x1, x0+s);
-		}
-		void shrinkTop(const T& s) {
-			y0 = std::min(y1, y0+s);
-		}
-		_Size<T> size() const {
-			return _Size<T>(width(), height());
-		}
-		#define DEF_OP(op) \
-			_Rect& operator op##= (const T& t) { \
-				return *this = *this op t; } \
-			_Rect operator op (const T& t) const { \
-				_Rect r; \
-				for(int i=0 ; i<int(countof(ar)) ; i++) \
-					r.ar[i] = ar[i] op t; \
-				return r; \
+			T width() const {
+				_checkValidness();
+				return x1-x0;
 			}
-		DEF_OP(+)
-		DEF_OP(-)
-		DEF_OP(*)
-		DEF_OP(/)
-		#undef DEF_OP
-		//! 領域の拡大縮小
-		/*!
-			負数で領域の縮小
-			\return		縮小によって面積が0になった場合はtrue, それ以外はfalse
-		*/
-		bool expand(const T& w, const T& h) {
-			bool ret = false;
-			x0 -= w;
-			x1 += w;
-			y0 -= h;
-			y1 += h;
-			if(x0 >= x1) {
-				auto d = x0 - x1;
-				x1 += d/2;
-				x0 = x1;
-				ret = true;
+			T height() const {
+				_checkValidness();
+				return y1-y0;
 			}
-			if(y0 >= y1) {
-				auto d = y0 - y1;
-				y1 += d/2;
-				y0 = y1;
-				ret = true;
+			void checkValidness() const {
+				_checkValidnessT<ValidationFailRuntime>();
 			}
-			return ret;
-		}
-		bool expand(const T& w) {
-			return expand(w,w);
-		}
-		template <class V>
-		auto toRect() const {
-			return _Rect<V>(x0, x1, y0,y1);
-		}
-		bool operator == (const _Rect& r) const {
-			return x0 == r.x0 &&
-					x1 == r.x1 &&
-					y0 == r.y0 &&
-					y1 == r.y1;
-		}
-		bool operator != (const _Rect& r) const {
-			return !(operator == (r));
-		}
-		//! 重なっている領域を算出
-		Optional<_Rect> cross(const _Rect& r) const {
-			if(hit(r)) {
-				return _Rect(
-							std::max(x0, r.x0),
-							std::min(x1, r.x1),
-							std::max(y0, r.y0),
-							std::min(y1, r.y1)
-						);
+			void addOffset(const T& x, const T& y) {
+				_checkValidness();
+				x0 += x;
+				x1 += x;
+				y0 += y;
+				y1 += y;
 			}
-			return spn::none;
-		}
+			bool hit(const _Rect& r) const {
+				_checkValidness();
+				return !(r.x1 <= x0 ||
+						r.x0 >= x1 ||
+						r.y1 <= y0 ||
+						r.y0 >= y1);
+			}
+			//! 面積
+			T area() const {
+				return width() * height();
+			}
+			_Rect move(const T& dx, const T& dy) const {
+				return
+					_Rect(
+						x0 + dx,
+						x1 + dx,
+						y0 + dy,
+						y1 + dy
+					);
+			}
+			void shrinkRight(const T& s) {
+				x1 = std::max(x0, x1-s);
+			}
+			void shrinkBottom(const T& s) {
+				y1 = std::max(y0, y1-s);
+			}
+			void shrinkLeft(const T& s) {
+				x0 = std::min(x1, x0+s);
+			}
+			void shrinkTop(const T& s) {
+				y0 = std::min(y1, y0+s);
+			}
+			_Size<T> size() const {
+				return _Size<T>(width(), height());
+			}
+			#define DEF_OP(op) \
+				_Rect& operator op##= (const T& t) { \
+					return *this = *this op t; } \
+				_Rect operator op (const T& t) const { \
+					_Rect r; \
+					for(int i=0 ; i<int(countof(ar)) ; i++) \
+						r.ar[i] = ar[i] op t; \
+					return r; \
+				}
+			DEF_OP(+)
+			DEF_OP(-)
+			DEF_OP(*)
+			DEF_OP(/)
+			#undef DEF_OP
+			//! 領域の拡大縮小
+			/*!
+				負数で領域の縮小
+				\return		縮小によって面積が0になった場合はtrue, それ以外はfalse
+			*/
+			bool expand(const T& w, const T& h) {
+				bool ret = false;
+				x0 -= w;
+				x1 += w;
+				y0 -= h;
+				y1 += h;
+				if(x0 >= x1) {
+					auto d = x0 - x1;
+					x1 += d/2;
+					x0 = x1;
+					ret = true;
+				}
+				if(y0 >= y1) {
+					auto d = y0 - y1;
+					y1 += d/2;
+					y0 = y1;
+					ret = true;
+				}
+				return ret;
+			}
+			bool expand(const T& w) {
+				return expand(w,w);
+			}
+			template <class V>
+			auto toRect() const {
+				return _Rect<V>(x0, x1, y0,y1);
+			}
+			bool operator == (const _Rect& r) const {
+				return x0 == r.x0 &&
+						x1 == r.x1 &&
+						y0 == r.y0 &&
+						y1 == r.y1;
+			}
+			bool operator != (const _Rect& r) const {
+				return !(operator == (r));
+			}
+			//! 重なっている領域を算出
+			Optional<_Rect> cross(const _Rect& r) const {
+				if(hit(r)) {
+					return _Rect(
+								std::max(x0, r.x0),
+								std::min(x1, r.x1),
+								std::max(y0, r.y0),
+								std::min(y1, r.y1)
+							);
+				}
+				return spn::none;
+			}
 	};
 	using Rect = _Rect<int32_t>;
 	using RectF = _Rect<float>;
