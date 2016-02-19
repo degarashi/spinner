@@ -54,19 +54,16 @@ namespace spn {
 			}
 		}
 		void DivideRect(const spn::Size& size, const spn::Rect& request, const DRect_cb& cb) {
-			const auto btm = [](auto x, auto w){
-				return x/w*w;
-			};
 			struct Range {
 				int g0, g1;
 				int l0, l1;
 			};
-			auto fnRange = [&btm](Range (&res)[2], int x0, int x1, int w){
+			auto fnRange = [](Range (&res)[2], int x0, int x1, int w){
 				const bool bX = LoopValueD(x0, w) != LoopValueD(x1, w);
 				const auto lpx0 = LoopValue(x0,w),
 							lpx1 = LoopValue(x1,w);
 				if(bX) {
-					const int mdl = btm(x1, w);
+					const int mdl = LoopValueD(x1, w)*w;
 					res[0] = Range{x0,mdl, lpx0,w};
 					res[1] = Range{mdl,x1, 0,lpx1};
 					return (mdl==x1) ? 1 : 2;
