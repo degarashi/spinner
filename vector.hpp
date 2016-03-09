@@ -374,6 +374,7 @@
 			DEF_OP(-, reg_sub_ps)
 			DEF_OP(*, reg_mul_ps)
 			DEF_OP(/, _mmDivPs)
+			#undef DEF_OP
 			VT VT::addV(const UVec& v) const {
 				return *this + v; }
 			VT VT::subV(const UVec& v) const {
