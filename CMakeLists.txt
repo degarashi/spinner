@@ -20,18 +20,26 @@ if(${WIN32})
 	set(LIBSRC_FILE ${LIBSRC_FILE} ${DEPENDANT_SRC_WIN})
 elseif(${UNIX})
 	set(LIBSRC_FILE ${LIBSRC_FILE} ${DEPENDANT_SRC_UNIX})
-	set(LINK_LIBS boost_thread boost_system pthread)
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
-add_library(spinner STATIC ${LIBSRC_FILE})
-
-install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
+find_package(Boost REQUIRED system thread regex serialization)
+find_package(GTest REQUIRED)
+find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
 file(GLOB_RECURSE HEADERS "*.hpp")
+
+add_library(spinner STATIC ${LIBSRC_FILE})
+install(TARGETS spinner ARCHIVE DESTINATION lib_${TOOL_PREFIX})
 
 set(COPYHEADERS_EXCLUDE_DIR "")		# ここに除外したいヘッダディレクトリを指定
 set(COPYHEADERS_MY_DIR "spinner")
 include(crosscompile/CopyHeaders.cmake require)
+include_directories(
+	${Boost_INCLUDE_DIRS}
+	${GTEST_INCLUDE_DIRS}
+	${ZLIB_INCLUDE_DIRS}
+)
 
 message(STATUS "CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
 message(STATUS "CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
@@ -41,12 +49,10 @@ if(NOT DEFINED ARCHITECTURE)
 	add_executable(spn_test main.cpp ${TEST_SRC})
 	set(LINK_LIBS
 				spinner
-				boost_regex
-				boost_serialization
-				${LINK_LIBS}
-				gtest
-				pthread
-				z)
+				${Boost_LIBRARIES}
+				${GTEST_LIBRARIES}
+				${CMAKE_THREAD_LIBS_INIT}
+				${ZLIB_LIBRARIES})
 	target_link_libraries(spn_test ${LINK_LIBS})
 	install(TARGETS spn_test RUNTIME DESTINATION bin_${TOOL_PREFIX})
 	add_test(NAME only_test
