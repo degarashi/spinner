@@ -2,16 +2,6 @@
 
 namespace spn {
 	namespace rect {
-		int LoopValue(const int t, const int w) {
-			if(t < 0)
-				return (w-1)+((t+1)%w);
-			return t % w;
-		}
-		int LoopValueD(const int t, const int w) {
-			if(t < 0)
-				return ((t+1)/w)-1;
-			return t/w;
-		}
 		void IncrementalRect(const spn::Rect& base, const int dx, const int dy, const Rect_cb& cb) {
 			// 動いて無ければ何もせず終了
 			if(dx==0 && dy==0)
