@@ -115,14 +115,23 @@ namespace spn {
 		return ret;
 	}
 
-	//! ある値 + 浮動小数点数で表現できる最小の値 を返す
 	template <class T,
 			  typename std::enable_if_t<std::is_floating_point<T>::value>*& = inner::Enabler>
-	auto ULPs_Increment(const T& f) {
+	auto ULPs_Move(const T& f, const int m) {
 		using Int = typename inner::ULPHelper<T>::Integral_t;
 		auto v = *reinterpret_cast<const Int*>(&f);
-		++v;
+		v += m;
 		return *reinterpret_cast<const T*>(&v);
+	}
+	//! ある値 + 浮動小数点数で表現できる最小の値 を返す
+	template <class T>
+	auto ULPs_Increment(const T& f) {
+		return ULPs_Move(f, 1);
+	}
+	//! ある値 - 浮動小数点数で表現できる最小の値 を返す
+	template <class T>
+	auto ULPs_Decrement(const T& f) {
+		return ULPs_Move(f, -1);
 	}
 	//! FloatのULPs
 	template <class T,
