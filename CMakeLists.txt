@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 2.8)
 project(spinner)
 
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+find_package(Threads REQUIRED)
+find_package(Boost REQUIRED system thread regex serialization)
+find_package(GTest REQUIRED)
+find_package(ZLIB REQUIRED)
 # Linux: BUILD_TYPE = Linux
 # MinGW: BUILD_TYPE = MinGW
 # Android:	BUILD_TYPE = AndroidX86 or AndroidArm
@@ -23,10 +28,6 @@ elseif(${UNIX})
 else()
 	message(FATAL_ERROR "couldn't detect OS type")
 endif()
-find_package(Boost REQUIRED system thread regex serialization)
-find_package(GTest REQUIRED)
-find_package(Threads REQUIRED)
-find_package(ZLIB REQUIRED)
 file(GLOB_RECURSE HEADERS "*.hpp")
 
 add_library(spinner STATIC ${LIBSRC_FILE})
