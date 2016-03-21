@@ -101,11 +101,11 @@
 			return *reinterpret_cast<const VEC3*>(this);
 		}
 		float PT::dot(const VEC3& p) const {
-			reg128 xm = reg_mul_ps(LOADTHIS(), LOADPS_I3(p.m, 3));
+			reg128 xm = reg_mul_ps(LOADTHIS(), LOADPS_Z3(p.m));
 			SUMVEC(xm)
 			float ret;
 			reg_store_ss(&ret, xm);
-			return ret;
+			return ret + d;
 		}
 		void PT::move(float fd) {
 			d += fd;
