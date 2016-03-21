@@ -69,31 +69,63 @@ inline float RSqrt(float s) {
 	return Rcp22Bit(spn::Sqrt(s));
 }
 
-extern const uint32_t fullbit,
-						absbit;
+constexpr static uint32_t Fullbit = 0xffffffff,
+						Absbit = 0x7fffffff;
 constexpr float FLOAT_EPSILON = 1e-5f;		//!< 2つの値を同一とみなす誤差
 // ベクトルレジスタ用の定数
-extern const reg128 xmm_tmp0001, xmm_tmp0001_i,
-					xmm_tmp0111, xmm_tmp0111_i,
-					xmm_tmp0000, xmm_tmp0000_i,
-					xmm_tmp1000, xmm_tmp1000_i,
-					xmm_tmp1111, xmm_tmp1111_i,
-					xmm_epsilon,
-					xmm_epsilonM,
-					xmm_minus0,
-					xmm_fullbit,
-					xmm_absmask;
+class xmm_const {
+	protected:
+		static void Initialize();
+		static void Terminate();
 
+	#define DefXmm(name) \
+		private: static reg128 _##name; \
+		public: static const reg128& name() { return _##name; }
+	DefXmm(tmp0001)
+	DefXmm(tmp0001_i)
+	DefXmm(tmp0111)
+	DefXmm(tmp0111_i)
+	DefXmm(tmp0000)
+	DefXmm(tmp0000_i)
+	DefXmm(tmp1000)
+	DefXmm(tmp1000_i)
+	DefXmm(tmp1111)
+	DefXmm(tmp1111_i)
+	DefXmm(epsilon)
+	DefXmm(epsilonM)
+	DefXmm(minus0)
+	DefXmm(fullbit)
+	DefXmm(absmask)
+	#undef DefXmm
+
+	using XmmA4 = const reg128 (&)[4];
+	#define DefXmmA(name, n) \
+		private: static reg128 _##name[n]; \
+		public: static XmmA4 name() { return _##name; }
+	DefXmmA(mask, 4)
+	DefXmmA(maskN, 4)
+	DefXmmA(matI, 4)
+	#undef DefXmmA
+
+	using FA44 = const float (&)[4][4];
+	private: static float _cs_matI[4][4];
+	public: static FA44 cs_matI() { return _cs_matI; }
+};
+}
+
+#include "structure/niftycounter.hpp"
+namespace spn {
+DEF_NIFTY_INITIALIZER(xmm_const)
 //! レジスタ要素が全てゼロか判定 (+0 or -0)
 inline bool _mmIsZero(reg128 r) {
-	r = reg_andnot_ps(xmm_minus0, r);
-	r = reg_cmpeq_ps(r, xmm_tmp0000);
+	r = reg_andnot_ps(xmm_const::minus0(), r);
+	r = reg_cmpeq_ps(r, xmm_const::tmp0000());
 	return reg_movemask_ps(r) == 0;
 }
 //! 誤差を含んだゼロ判定
 inline bool _mmIsZeroEps(reg128 r) {
-	reg128 xm0 = reg_cmplt_ps(r, xmm_epsilon),
-			xm1 = reg_cmpnle_ps(r, xmm_epsilonM);
+	reg128 xm0 = reg_cmplt_ps(r, xmm_const::epsilon()),
+			xm1 = reg_cmpnle_ps(r, xmm_const::epsilonM());
 	xm0 = reg_or_ps(xm0, xm1);
 	return reg_movemask_ps(xm0) == 0;
 }
@@ -106,10 +138,6 @@ inline reg128 _makeMask() {
 	reg128 tmp = reg_move_ss(zero, full);
 	return reg_shuffle_ps(tmp, tmp, tmp2);
 }
-extern const reg128 xmm_mask[4],
-					xmm_maskN[4];
-extern const float cs_matI[4][4];
-extern const reg128 xmm_matI[4];
 template <class T>
 constexpr T Pi = T(3.1415926535);	// std::atan(1.0f)*4
 constexpr float PI = Pi<float>,
@@ -219,22 +247,22 @@ struct TrivialWrapper<T[N]> : TrivialWrapperBase<TrivialWrapper<T[N]>> {
 #define LOADPS_A3(ptr)		LOADPS_A4(ptr)
 #define LOADPS_3(ptr)		LOADPS_4(ptr)
 #define LOADPS_BASE3(ptr,src,lfunc)	reg_mul_ps(src, lfunc(ptr))
-#define LOADPS_ZA3(ptr)		reg_and_ps(spn::xmm_tmp0111_i, reg_load_ps(ptr))
-#define LOADPS_Z3(ptr)		reg_and_ps(spn::xmm_tmp0111_i, reg_loadu_ps(ptr))
+#define LOADPS_ZA3(ptr)		reg_and_ps(spn::xmm_const::tmp0111_i(), reg_load_ps(ptr))
+#define LOADPS_Z3(ptr)		reg_and_ps(spn::xmm_const::tmp0111_i(), reg_loadu_ps(ptr))
 #define LOADPS_IA3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										reg_or_ps(spn::xmm_matI[3], LOADPS_ZA3(ptr)), \
+										reg_or_ps(spn::xmm_const::matI()[3], LOADPS_ZA3(ptr)), \
 										LOADPS_ZA3(ptr))
 #define LOADPS_I3(ptr,n)	BOOST_PP_IF(BOOST_PP_EQUAL(n,3), \
-										reg_or_ps(spn::xmm_matI[3], LOADPS_Z3(ptr)), \
+										reg_or_ps(spn::xmm_const::matI()[3], LOADPS_Z3(ptr)), \
 										LOADPS_Z3(ptr))
 #define STOREPS_A3(ptr, r)	{ reg_storel_pi((reg64i*)ptr, r); reg_store_ss(ptr+2, reg_shuffle_ps(r, r, _REG_SHUFFLE(2,2,2,2))); }
 #define STOREPS_3(ptr, r)	STOREPS_A3(ptr,r)
 
 #define LOADPS_A2(ptr)		LOADPS_A4(ptr)
 #define LOADPS_2(ptr)		LOADPS_4(ptr)
-#define LOADPS_ZA2(ptr)		reg_loadl_pi(spn::xmm_tmp0000, (const reg64i*)ptr)
+#define LOADPS_ZA2(ptr)		reg_loadl_pi(spn::xmm_const::tmp0000(), (const reg64i*)ptr)
 #define LOADPS_Z2(ptr)		LOADPS_ZA2(ptr)
-#define LOADPS_IA2(ptr,n)	reg_loadl_pi(spn::xmm_matI[n], (const reg64i*)ptr)
+#define LOADPS_IA2(ptr,n)	reg_loadl_pi(spn::xmm_const::matI()[n], (const reg64i*)ptr)
 #define LOADPS_I2(ptr,n)	LOADPS_IA2(ptr,n)
 #define STOREPS_A2(ptr, r)	reg_storel_pi((reg64i*)ptr,r)
 #define STOREPS_2(ptr, r)	STOREPS_A2(ptr,r)

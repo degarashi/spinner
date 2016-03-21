@@ -314,7 +314,7 @@
 					r_zero = reg_setzero_ps();
 				reg128 res = reg_or_ps(reg_cmple_ps(r0, r_zero),
 										reg_cmpgt_ps(r0, r_zero));
-				res = reg_andnot_ps(res, xmm_fullbit);
+				res = reg_andnot_ps(res, xmm_const::fullbit());
 				SUMVEC(res)
 				float f;
 				reg_store_ss(&f, res);
@@ -324,12 +324,12 @@
 				const float f = std::numeric_limits<float>::infinity();
 				reg128 r_inf = reg_load1_ps(&f),
 						r_zero = reg_setzero_ps(),
-						r0 = reg_and_ps(LOADTHIS(), xmm_absmask);
+						r0 = reg_and_ps(LOADTHIS(), xmm_const::absmask());
 				reg128 r1 = reg_or_ps(reg_cmple_ps(r0, r_zero),
 									reg_cmpgt_ps(r0, r_zero));
 				r0 = reg_cmpeq_ps(r0, r_inf);
 
-				r1 = reg_andnot_ps(r1, xmm_fullbit);
+				r1 = reg_andnot_ps(r1, xmm_const::fullbit());
 				r0 = reg_or_ps(r0, r1);
 				SUMVEC(r0)
 

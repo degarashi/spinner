@@ -116,7 +116,7 @@
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMUL, DEF_ARGS, f))) {
 					BOOST_PP_REPEAT(DMUL, SET_ARGS0, f)
 				}
-				#define SET_ARGS1(z,n,data)	STORETHIS(n, reg_mul_ps(xmm_matI[n], reg_load1_ps(&BOOST_PP_CAT(data,n))));
+				#define SET_ARGS1(z,n,data)	STORETHIS(n, reg_mul_ps(xmm_const::matI()[n], reg_load1_ps(&BOOST_PP_CAT(data,n))));
 				#define SET_ARGS2(z,n,dummy) STORETHIS(n, reg_setzero_ps());
 				//! 対角線上
 				MatT(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DMIN, DEF_ARGS, f))) {
@@ -141,7 +141,7 @@
 
 				const Row& getRow(int n) const {
 					if(n >= height)
-						return *reinterpret_cast<const Row*>(cs_matI[n]);
+						return *reinterpret_cast<const Row*>(xmm_const::cs_matI()[n]);
 					return *reinterpret_cast<const Row*>(ma[n]);
 				}
 				Row& getRow(int n) {
@@ -156,8 +156,8 @@
 				#else
 					RowE getRowE(int n) const {
 						if(n >= height)
-							return RowE(xmm_matI[n]);
-						return RowE(reg_or_ps(reg_and_ps(LOADTHIS(n), xmm_mask[n]), xmm_matI[n]));
+							return RowE(xmm_const::matI()[n]);
+						return RowE(reg_or_ps(reg_and_ps(LOADTHIS(n), xmm_const::mask()[n]), xmm_const::matI()[n]));
 					}
 				#endif
 				template <bool A>
@@ -171,7 +171,7 @@
 				#define SET_COLUMN(z,n,data)	(ma[n][data])
 				Column getColumn(int n) const {
 					if(n >= DIM_N)
-						return Column(xmm_matI[n]);
+						return Column(xmm_const::matI()[n]);
 					return Column(BOOST_PP_SEQ_ENUM(BOOST_PP_REPEAT(DIM_M, SET_COLUMN, n)));
 				}
 				#undef SET_COLUMN
@@ -663,7 +663,7 @@
 				#define ACCUM_ABS(dummy,n,dummy2)	reg_add_ps(accum, _mmAbsPs(LOADTHIS(n)));
 				BOOST_PP_REPEAT(DIM_M, ACCUM_ABS, NOTHING)
 				#undef ACCUM_ABS
-				accum = reg_and_ps(accum, xmm_mask[DIM_N]);
+				accum = reg_and_ps(accum, xmm_const::mask()[DIM_N]);
 				return reg_movemask_ps(accum) == 0;
 			}
 			void MT::rowNormalize() {
@@ -847,7 +847,7 @@
 					// DMIN >= 3なら4x4行列として処理
 					// M*4行列 = レジスタM本
 					reg128	xm[4], xmt[4];
-					#define LOADROWE(n) BOOST_PP_IF(BOOST_PP_GREATER_EQUAL(n, DIM_M), xmm_matI[n], LOADTHIS(n))
+					#define LOADROWE(n) BOOST_PP_IF(BOOST_PP_GREATER_EQUAL(n, DIM_M), xmm_const::matI()[n], LOADTHIS(n))
 					#define BOOST_PP_LOCAL_MACRO(n)	xm[n] = LOADROWE(n);
 					#define BOOST_PP_LOCAL_LIMITS (0,BOOST_PP_SUB(DMAX, 1))
 					#include BOOST_PP_LOCAL_ITERATE()
@@ -876,7 +876,7 @@
 						if(i < DIM_M)
 							STOREPS_(A)##n1(ret.ma[i], LOADTHIS(i));
 						else
-							STOREPS_(A)##n1(ret.ma[i], xmm_matI[i]);
+							STOREPS_(A)##n1(ret.ma[i], xmm_const::matI()[i]);
 					}
 					return ret;
 				}
@@ -896,7 +896,7 @@
 					BOOST_PP_IF( \
 						BOOST_PP_LESS(n,DIM_M), \
 						LOADTHISI(n), \
-						xmm_matI[n] \
+						xmm_const::matI()[n] \
 					) \
 				);
 			#define ITR_COPY(z,n,data)		ITR_COPY_I(n, BOOST_PP_SEQ_ELEM(0,data), BOOST_PP_SEQ_ELEM(1,data))
