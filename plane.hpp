@@ -157,9 +157,9 @@
 		}
 		template <bool A>
 		PT PT::operator * (const MatT<4,3,A>& m) const {
-			auto& nml = getNormal();
-			VEC3 tmp(nml * -d);
-			return PT::FromPtDir(tmp.asVec4(1)*m, nml.asVec4(0)*m);
+			const auto& nml = getNormal();
+			const VEC3 tmp(nml * -d);
+			return PT::FromPtDir(tmp.asVec4(1)*m, (nml.asVec4(0)*m).normalization());
 		}
 		template <bool A>
 		PT& PT::operator *= (const MatT<4,3,A>& m) {
