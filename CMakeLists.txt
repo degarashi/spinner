@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project(spinner)
 
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+set(THREADS_PTHREAD_ARG "")
 find_package(Threads REQUIRED)
 find_package(Boost REQUIRED system thread regex serialization)
 find_package(GTest REQUIRED)
