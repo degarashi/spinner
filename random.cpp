@@ -15,7 +15,7 @@ namespace spn {
 		std::seed_seq seq(rndv.begin(), rndv.end());
 		// ユーザーのミスを警告するため、2重初期化はNG
 		Assert(Trap, _rndMap.count(entID)==0)
-		_rndMap.emplace(entID, std::mt19937(seq));
+		_rndMap.emplace(entID, MT_t(seq));
 	}
 	void MTRandomMgr::removeEngine(ID entID) {
 		// 存在しない物を消去するのはNG

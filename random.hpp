@@ -39,10 +39,12 @@ namespace spn {
 			template <class T>
 			using L = std::numeric_limits<T>;
 
-			std::mt19937&	_mt;
+			using MT_t = std::mt19937;
+			MT_t&	_mt;
 		public:
-			MTRandom(std::mt19937& mt): _mt(mt) {}
+			MTRandom(MT_t& mt): _mt(mt) {}
 
+			MT_t& refMt() const { return _mt; }
 			//! 一様分布
 			/*! floating-pointの場合は0から1の乱数
 				integerの場合は範囲指定なしnumeric_limits<T>::min() -> max()の乱数 */
@@ -86,9 +88,10 @@ namespace spn {
 	class MTRandomMgr : public Singleton<MTRandomMgr> {
 		public:
 			using ID = int32_t;
-			using Value = std::mt19937::result_type;
+			using MT_t = std::mt19937;
+			using Value = MT_t::result_type;
 		private:
-			using RndMap = std::unordered_map<ID, std::mt19937>;
+			using RndMap = std::unordered_map<ID, MT_t>;
 			RndMap	_rndMap;
 
 		public:
