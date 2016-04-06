@@ -184,19 +184,26 @@ namespace spn {
 				return _Size<T>(width(), height());
 			}
 			#define DEF_OP(op) \
-				_Rect& operator op##= (const T& t) { \
+				template <class V> \
+				_Rect& operator op##= (const V& t) { \
 					return *this = *this op t; } \
 				_Rect operator op (const T& t) const { \
 					_Rect r; \
 					for(int i=0 ; i<int(countof(ar)) ; i++) \
 						r.ar[i] = ar[i] op t; \
 					return r; \
+				} \
+				template <class V> \
+				_Rect operator op (const _Size<V>& s) const { \
+					return {x0 op s.width, x1 op s.width, \
+							y0 op s.height, y1 op s.height}; \
 				}
 			DEF_OP(+)
 			DEF_OP(-)
 			DEF_OP(*)
 			DEF_OP(/)
 			#undef DEF_OP
+
 			//! 領域の拡大縮小
 			/*!
 				負数で領域の縮小
