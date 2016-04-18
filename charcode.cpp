@@ -409,6 +409,8 @@ namespace spn {
 		template <class DST, class SRC, class Conv>
 		std::basic_string<DST> UTFConvert(const SRC* pSrc, size_t len, int ratio, Conv cnv) {
 			std::vector<DST> ret(len*ratio);
+			if(ret.empty())
+				return std::basic_string<DST>();
 			auto* pDst = &ret[0];
 			auto* pSrcEnd = pSrc + len;
 			while(pSrc != pSrcEnd) {
