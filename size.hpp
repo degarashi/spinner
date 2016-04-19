@@ -4,6 +4,7 @@
 #include <iostream>
 #include "optional.hpp"
 #include "exception.hpp"
+#include "vector.hpp"
 
 namespace spn {
 	//! 任意の型の縦横サイズ
@@ -192,6 +193,9 @@ namespace spn {
 					for(int i=0 ; i<int(countof(ar)) ; i++) \
 						r.ar[i] = ar[i] op t; \
 					return r; \
+				} \
+				_Rect operator op (const Vec2& v) const { \
+					return *this op _Size<T>{v.x, v.y}; \
 				} \
 				template <class V> \
 				_Rect operator op (const _Size<V>& s) const { \
