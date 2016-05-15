@@ -212,7 +212,7 @@ namespace spn {
 			} else {
 				_array.clear();
 				_array.resize(nEnt);
-				boost::serialization::array<Entry>	ary(_array.data(), nEnt);
+				boost::serialization::array_wrapper<Entry>	ary(_array.data(), nEnt);
 				ar & boost::serialization::make_nvp("_array", ary);
 			}
 		}
@@ -234,7 +234,7 @@ namespace spn {
 				ar & BOOST_SERIALIZATION_NVP(arID) & BOOST_SERIALIZATION_NVP(arIDS);
 			} else {
 				// 通常の出力
-				boost::serialization::array<const Entry>	ary(&_array[0], size_t(_array.size()));
+				boost::serialization::array_wrapper<const Entry>	ary(&_array[0], size_t(_array.size()));
 				ar & boost::serialization::make_nvp("_array", ary);
 			}
 		}
