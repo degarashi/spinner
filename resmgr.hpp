@@ -245,6 +245,8 @@ namespace spn {
 			WHdl weak() const { return _hdl.weak(); }
 			uint32_t count() const { return _hdl.count(); }
 	};
+	template <class H, bool D>
+	typename HdlLockB<H,D>::tagAsLocked HdlLockB<H,D>::AsLocked;
 	namespace resmgr_tmp {}
 	//! 強参照スマートハンドル
 	template <class HDL, bool DIRECT>
