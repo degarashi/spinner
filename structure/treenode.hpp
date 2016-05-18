@@ -126,6 +126,33 @@ namespace spn {
 			const SP& getSibling() const {
 				return _spSibling;
 			}
+			SP getPrevSibling(const bool bLoop=false) const {
+				const SP p = getParent();
+				if(p) {
+					auto cur = p->getChild();
+					if(!cur->getSibling()) {
+						// 項目が1つしかない
+						return nullptr;
+					}
+					// カーソルがリストの最初
+					if(cur.get() == this) {
+						if(bLoop) {
+							// カーソルを末尾にループ
+							while(const auto& tmp = cur->getSibling())
+								cur = tmp;
+							return cur;
+						}
+						return nullptr;
+					}
+					// 直前の項目を探す
+					while(const auto& cur2 = cur->getSibling()) {
+						if(cur2.get() == this)
+							return cur;
+						cur = cur2;
+					}
+				}
+				return nullptr;
+			}
 			void removeChild(const SP& target) {
 				AssertP(Trap, _spChild)
 				if(_spChild == target) {
