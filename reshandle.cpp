@@ -109,4 +109,10 @@ namespace spn {
 	void WHandle::swap(WHandle& wh) noexcept {
 		std::swap(_value, wh._value);
 	}
+	ResMgrBase* WHandle::getManager() {
+		return ResMgrBase::GetManager(getResID());
+	}
+	const ResMgrBase* WHandle::getManager() const {
+		return ResMgrBase::GetManager(getResID());
+	}
 }

@@ -113,6 +113,9 @@ namespace spn {
 			bool operator == (const WHandle& wh) const;
 			bool operator != (const WHandle& wh) const;
 			bool operator < (const WHandle& wh) const;
+
+			ResMgrBase* getManager();
+			const ResMgrBase* getManager() const;
 	};
 }
 namespace std {
