@@ -44,11 +44,25 @@
 	#define AssertFTP(act, throwtype, ...)			AssertFT(act, throwtype, __VA_ARGS__)
 	#define AssertP(act, ...)						Assert(act, __VA_ARGS__)
 	#define AssertTP(act, expr, throwtype, ...)		AssertT(act,expr,throwtype, __VA_ARGS__)
+	#define TRY_BEGIN try {
+	#define TRY_END \
+		} catch(const std::exception& e) { \
+			std::cout << "exception occured: " << std::endl \
+						<< e.what() << std::endl \
+						<< SOURCEPOS << std::endl; \
+			throw; \
+		} catch(...) { \
+			std::cout << "exception occured: (unknown exception)" << std::endl \
+						<< SOURCEPOS << std::endl; \
+			throw; \
+		}
 #else
 	#define AssertFP(act, ...)
 	#define AssertFTP(act, throwtype, ...)
 	#define AssertP(act, ...)
 	#define AssertTP(act, expr, throwtype, ...)
+	#define TRY_BEGIN {
+	#define TRY_END }
 #endif
 template <class... Ts>
 std::string ConcatMessage(boost::format& fmt, Ts&&... /*t*/) { return fmt.str(); }
