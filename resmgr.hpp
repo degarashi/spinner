@@ -1192,6 +1192,9 @@ namespace spn {
 		using H##suffix = spn::SHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
 		using W##suffix = spn::WHandleT<spn::ResMgrA<bsp, mgr, alloc>, sp>; \
 		using HL##suffix = spn::HdlLock<H##suffix, true>; \
+		using VH##suffix = spn::VHChk<H##suffix>; \
+		using VW##suffix = spn::VHChk<W##suffix>; \
+		using VHL##suffix = spn::VHChk<HL##suffix>; \
 		using BOOST_PP_CAT(BOOST_PP_CAT(HL,suffix),F) = spn::HdlLock<H##suffix, false>;
 	#define DEF_AHANDLE(mgr, suffix, bsp, sp) DEF_AHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator)
 	//! 名前付きハンドル
@@ -1200,6 +1203,9 @@ namespace spn {
 		using H##suffix = spn::SHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
 		using W##suffix = spn::WHandleT<spn::ResMgrA<spn::ResWrap<bsp,key>, mgr, alloc>, sp>; \
 		using HL##suffix = spn::HdlLock<H##suffix, true>; \
+		using VH##suffix = spn::VHChk<H##suffix>; \
+		using VW##suffix = spn::VHChk<W##suffix>; \
+		using VHL##suffix = spn::VHChk<HL##suffix>; \
 		using BOOST_PP_CAT(BOOST_PP_CAT(HL,suffix),F) = spn::HdlLock<H##suffix, false>;
 	#define DEF_NHANDLE(mgr ,suffix, bsp, sp) DEF_NHANDLE_PROP(mgr, suffix, bsp, sp, std::allocator, spn::String<std::string>)
 
@@ -1220,6 +1226,19 @@ namespace spn {
 	struct IsHandle<SHandle> : std::true_type {};
 	template <>
 	struct IsHandle<WHandle> : std::true_type {};
+
+	template <class H>
+	class VHChk_t : public H {
+		public:
+			template <class... Ts>
+			VHChk_t(Ts&&... ts):
+				H(std::forward<Ts>(ts)...)
+			{
+				AssertP(Throw, H::valid())
+			}
+	};
+	template <class T>
+	using VHChk = VHChk_t<T>;
 }
 namespace std {
 	template <class MGR, class DATA>
