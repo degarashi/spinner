@@ -25,7 +25,7 @@
 // Debug=warning, Release=warning	[Assert_Warn]
 // Debug=warning, Release=none		[Assert_WarnP]
 
-#define Assert_MakeMessage(expr, ...)				MakeAssertMsg(#expr, __FILE__, __FUNCTION__, __LINE__, __VA_ARGS__).c_str()
+#define Assert_MakeMessage(expr, ...)				::spn::MakeAssertMsg(#expr, SOURCEPOS, __VA_ARGS__).c_str()
 // 任意の例外クラスを指定してアサートチェック
 #define AssertT(act, expr, throwtype, ...)			{if(!(expr)) { AAct_##act<throwtype, const char*>(Assert_MakeMessage(expr, __VA_ARGS__)).onError(Assert_MakeMessage(expr, __VA_ARGS__)); }}
 #define AssertTArg(act, expr, throwtype, ...)		{if(!(expr)) { AAct_##act<BOOST_PP_SEQ_ENUM(throwtype)>(__VA_ARGS__).onError(Assert_MakeMessage(expr, BOOST_PP_STRINGIZE(BOOST_PP_SEQ_ELEM(0,throwtype))), std::true_type()); }}
@@ -57,17 +57,25 @@ std::string ConcatMessage(boost::format& fmt, T&& t, Ts&&... ts) {
 	fmt % std::forward<T>(t);
 	return ConcatMessage(fmt, std::forward<Ts>(ts)...);
 }
-template <class... Ts>
-std::string MakeAssertMsg(const char* base, const char* filename, const char* funcname, int line, const char* fmt, const Ts&... ts) {
-	using std::endl;
-	boost::format bf(fmt);
-	std::stringstream ss;
-	ss << ConcatMessage(bf, ts...) << endl
-		<< base << endl
-		<< "at file:\t" << filename << endl
-		<< "at function:\t" << funcname << endl
-		<< "on line:\t" << line << endl;
-	return ss.str();
+namespace spn {
+	//! ソースコード上の位置を表す情報
+	struct SourcePos {
+		const char	*filename,
+					*funcname,
+					*funcname_short;
+		int			line;
+	};
+	template <class... Ts>
+	std::string MakeAssertMsg(const char* base, const SourcePos& s, const char* fmt, const Ts&... ts) {
+		using std::endl;
+		boost::format bf(fmt);
+		std::stringstream ss;
+		ss << ConcatMessage(bf, ts...) << endl
+			<< base << endl
+			<< s;
+		return ss.str();
+	}
+	std::ostream& operator << (std::ostream& s, const SourcePos& p);
 }
 
 #include "structure/niftycounter.hpp"
@@ -131,18 +139,11 @@ struct AAct_Trap : AAct_Throw<E,Ts...> {
 
 #define SOURCEPOS ::spn::SourcePos{__FILE__, __PRETTY_FUNCTION__, __func__, __LINE__}
 namespace spn {
-	//! ソースコード上の位置を表す情報
-	struct SourcePos {
-		const char	*filename,
-					*funcname,
-					*funcname_short;
-		int			line;
-	};
 	template <class Act, class Chk, class... Ts>
 	void EChk(Act&& act, Chk&& chk, const SourcePos& pos, Ts&&... ts) {
 		const char* msg = chk.errorDesc(std::forward<Ts>(ts)...);
 		if(msg)
-			act.onError(MakeAssertMsg(chk.getAPIName(), pos.filename, pos.funcname, pos.line, msg));
+			act.onError(MakeAssertMsg(chk.getAPIName(), pos, msg));
 	}
 	namespace detail {
 		template <class RT, class Act, class Chk, class Func, class... TsA>

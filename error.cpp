@@ -25,6 +25,13 @@ namespace spn {
 	Log::OutF* Log::GetOutputF() {
 		return s_logOut;
 	}
+	std::ostream& operator << (std::ostream& s, const SourcePos& p) {
+		using std::endl;
+		return s
+			<< "at file:\t" << p.filename << endl
+			<< "at function:\t" << p.funcname << endl
+			<< "on line:\t" << p.line << endl;
+	}
 }
 // 未使用だとtls_errMsgTmpがリンク時に消されてしまう為
 void Dummy_ErrMsg() {
