@@ -944,10 +944,17 @@ namespace spn {
 				// 簡易マジックナンバーチェック
 				AssertP(Trap, ent.magic == sh.getMagic(), "ResMgr: invalid magic number(Ent:%1% != Handle:%2%)", ent.magic, sh.getMagic())
 				if(--ent.count == 0) {
+					constexpr int Addition = 0x1000;
+					// 一旦カウンタを上乗せ
+					ent.count = Addition;
 					cb(ent);
-					// オブジェクトの解放
-					_dataVec.rem(sh.getIndex());
-					return true;
+					// カウンタを元に戻して0なら解放
+					ent.count -= Addition;
+					if(ent.count == 0) {
+						// オブジェクトメモリの解放
+						_dataVec.rem(sh.getIndex());
+						return true;
+					}
 				}
 				return false;
 			}
