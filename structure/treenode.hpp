@@ -47,8 +47,10 @@ namespace spn {
 
 		// 巡回参照を避けるために親ノードはweak_ptrで格納
 		public:
+			using Iterate = ::spn::Iterate;
 			using this_t = TreeNode<T>;
 			using pointer = this_t*;
+			using element_type = T;
 			using SP = std::shared_ptr<T>;
 			using SPC = std::shared_ptr<const T>;
 			using WP = std::weak_ptr<T>;
@@ -93,6 +95,15 @@ namespace spn {
 				});
 				return pv;
 			}
+			template <class CB>
+			void _iterateChild(CB&& cb) const {
+				if(SP sp = getChild()) {
+					do {
+						cb(sp);
+						sp = sp->getSibling();
+					} while(sp);
+				}
+			}
 
 		public:
 			TreeNode() = default;
@@ -104,6 +115,33 @@ namespace spn {
 			// ムーブは可
 			TreeNode& operator = (TreeNode&& t) = default;
 
+			//! 任意の基準で子ノードをソート
+			template <class CMP>
+			void sortChild(CMP&& cmp, const bool recursive) {
+				if(auto c = getChild()) {
+					SPVector spv;
+					_iterateChild([&spv](auto& nd){
+						spv.emplace_back(nd);
+					});
+					std::sort(spv.begin(), spv.end(), cmp);
+					SP	cur = spv.front(),
+						pcur;
+					_spChild = cur;
+					auto itr = spv.begin();
+					do {
+						cur = *itr;
+						if(pcur)
+							pcur->_spSibling = cur;
+						pcur = cur;
+					} while(++itr != spv.end());
+					cur->_spSibling.reset();
+
+					if(recursive) {
+						for(auto& s : spv)
+							s->sortChild(cmp, recursive);
+					}
+				}
+			}
 			void setParent(const SP& s) {
 				setParent(WP(s));
 			}
