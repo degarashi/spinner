@@ -164,8 +164,8 @@ namespace spn {
 			_CallTS(std::forward<CB>(cb), std::forward<Ts>(ts)...);
 			return res;
 		}
-		template <class RD, class T, class... Ts>
-		void RandomManipulate(RD& rd, int value, T&& t, Ts&&... ts) {
+		template <class RD, class VT, class T, class... Ts>
+		void RandomManipulate(RD& rd, VT&& vt, const int index, const bool allowRemove, T&& t, Ts&&... ts) {
 			enum class E_Manip {
 				Add,
 				Add2,
@@ -185,6 +185,7 @@ namespace spn {
 					// 挿入箇所を配列から適当に選ぶ
 					int at = rd.template getUniform<int>({0, t.size()-1});
 					// Tree-A
+					auto value = vt(index);
 					value = _CallTS([value, at](auto& t){
 										t.add(at, std::make_shared<typename std::decay_t<decltype(t)>::Type>(value));
 										return value;
@@ -193,11 +194,13 @@ namespace spn {
 					break; }
 				// ノードを削除
 				case E_Manip::Remove: {
+					if(!allowRemove)
+						break;
 					// ルート以外を選ぶ
 					int at = rd.template getUniform<int>({1, t.size()-1});
-					value = _CallTS([at](auto& t){
-										return t.rem(at)->value;
-									}, std::forward<T>(t), std::forward<Ts>(ts)...);
+					_CallTS([at](auto& t){
+									return t.rem(at)->value;
+								}, std::forward<T>(t), std::forward<Ts>(ts)...);
 					// std::cout << boost::format("removed: %1% value=%2%\n") % at % value;
 					break; }
 				// ノードを別の場所に繋ぎ変え
@@ -207,20 +210,19 @@ namespace spn {
 					if(to >= from)
 						++to;
 
-					value = _CallTS([from, to](auto& t){
-										return t.swapAt(from, to)->value;
-									}, std::forward<T>(t), std::forward<Ts>(ts)...);
+					_CallTS([from, to](auto& t){
+									return t.swapAt(from, to)->value;
+								}, std::forward<T>(t), std::forward<Ts>(ts)...);
 					// std::cout << boost::format("moved: %1% to %2% value=%3%\n") % from % to % value;
 					break; }
 				default:
 					__assume(0);
 			}
 		}
-
+/*
 		//! print out テスト
-		template <class SP>
-		void PrintOut(SP& root) {
-			using T = typename SP::element_type;
+		void PrintOut(const SPTreeNode& root) {
+			using T = typename std::decay_t<decltype(*root)>::element_type;
 			std::unordered_set<const T*> testset;
 			root->iterateDepthFirst<false>([&testset](auto& nd, int d){
 				using Ret = typename std::decay_t<decltype(nd)>::Iterate;
@@ -236,6 +238,7 @@ namespace spn {
 				}
 			});
 		}
+*/
 		//! 重複ノードに関するテスト
 		template <class TR>
 		void DuplNodeTest(TR& tree)	{
@@ -250,9 +253,9 @@ namespace spn {
 		namespace {
 			// ランダムにノード操作
 			template <class RD, class V, class... TS>
-			void MakeRandomTree(RD& rd, int repeat, V&& fnValue, TS&&... tree) {
+			void MakeRandomTree(RD& rd, const int repeat, V&& fnValue, const bool allowRemove, TS&&... tree) {
 				for(int i=0 ; i<repeat ; i++)
-					RandomManipulate(rd, fnValue(i), std::forward<TS>(tree)...);
+					RandomManipulate(rd, fnValue, i, allowRemove, std::forward<TS>(tree)...);
 			}
 		}
 		class TreeNodeTest : public RandomTestInitializer {};
@@ -261,7 +264,16 @@ namespace spn {
 			// TreeNodeと、子を配列で持つノードでそれぞれツリーを作成
 			TestTree<TestNode>		treeA(0);		// 確認用
 			TestTree<TreeNode_t>	treeB(0);		// テスト対象
-			MakeRandomTree(rd, 100, [](int r){ return r+1; }, treeA, treeB);
+			MakeRandomTree(
+				rd,
+				100,
+				[](const int r){
+					return r+1;
+				},
+				true,
+				treeA,
+				treeB
+			);
 			// 親ノードの接続確認
 			ASSERT_NO_FATAL_FAILURE(CheckParent(treeB.getRoot()));
 			// Cloneしたツリーでも確認
@@ -299,7 +311,15 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
+			MakeRandomTree(
+				rd,
+				100,
+				[](const int r){
+					return r+1;
+				},
+				true,
+				tree
+			);
 			auto spRoot = tree.getRoot();
 			{
 				// 配列化(smart pointer)
@@ -318,7 +338,15 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	treeA(0);
-			MakeRandomTree(rd, 100, [](int r){ return r+1; }, treeA);
+			MakeRandomTree(
+				rd,
+				100,
+				[](const int r){
+					return r+1;
+				},
+				true,
+				treeA
+			);
 			TestTree<TreeNode_t>	treeB(treeA.getRoot()->cloneTree());
 
 			// ツリー構造比較はtrue
@@ -337,7 +365,15 @@ namespace spn {
 			auto rd = getRand();
 			// ランダムなツリーを作る
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
+			MakeRandomTree(
+				rd,
+				100,
+				[](const int r){
+					return r+1;
+				},
+				true,
+				tree
+			);
 
 			// シリアライズ
 			auto sl = tree.getRoot();
@@ -359,7 +395,15 @@ namespace spn {
 			auto rd = getRand();
 			// ランダムなツリーを作る
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(rd, 100, [](int r){ return r+1; }, tree);
+			MakeRandomTree(
+				rd,
+				100,
+				[](const int r){
+					return r+1;
+				},
+				true,
+				tree
+			);
 
 			// Iterate関数を使ってカウント
 			int depth = 0;
@@ -370,6 +414,63 @@ namespace spn {
 			// GetDepthでカウント
 			int depth2 = tree.getRoot()->getDepth();
 			EXPECT_EQ(depth, depth2);
+		}
+		namespace {
+			void _ChkCount(std::vector<int>& count, const SPTreeNode& sp) {
+				ASSERT_LT(sp->value, int(count.size()));
+				++count[sp->value];
+				if(auto c = sp->getChild()) {
+					do {
+						_ChkCount(count, c);
+					} while((c = c->getSibling()));
+				}
+			}
+			// 0からmまでの数値が1回ずつ出現するかのチェック
+			void ChkCount(const SPTreeNode& sp, const int m) {
+				std::vector<int> count(m);
+				std::fill(count.begin(), count.end(), 0);
+				_ChkCount(count, sp);
+				for(auto& c : count) {
+					ASSERT_EQ(1, c);
+				}
+			}
+			// ちゃんとソートされているか
+			void ChkSort(const SPTreeNode& sp) {
+				if(auto c = sp->getChild()) {
+					int value = c->value;
+					while((c = c->getSibling())) {
+						ASSERT_LE(value, c->value);
+						value = c->value;
+						ChkSort(c);
+					}
+				}
+			}
+		}
+		TEST_F(TreeNodeTest, Sort) {
+			auto rd = getRand();
+			// ランダムなツリーを作る
+			TestTree<TreeNode_t>	tree(0);
+			int value = 0;
+			constexpr int N_Entry = 100;
+			MakeRandomTree(
+				rd,
+				N_Entry,
+				[&value](const int){
+					return ++value;
+				},
+				false,
+				tree
+			);
+			SPTreeNode root = tree.getRoot();
+			ChkCount(root, value+1);
+			root->sortChild(
+				[](const auto& a, const auto& b){
+					return a->value < b->value;
+				},
+				true
+			);
+			ChkSort(root);
+			ChkCount(root, value+1);
 		}
 	}
 }
