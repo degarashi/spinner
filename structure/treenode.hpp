@@ -95,15 +95,6 @@ namespace spn {
 				});
 				return pv;
 			}
-			template <class CB>
-			void _iterateChild(CB&& cb) const {
-				if(SP sp = getChild()) {
-					do {
-						cb(sp);
-						sp = sp->getSibling();
-					} while(sp);
-				}
-			}
 
 		public:
 			TreeNode() = default;
@@ -115,12 +106,21 @@ namespace spn {
 			// ムーブは可
 			TreeNode& operator = (TreeNode&& t) = default;
 
+			template <class CB>
+			void iterateChild(CB&& cb) const {
+				if(SP sp = getChild()) {
+					do {
+						cb(sp);
+						sp = sp->getSibling();
+					} while(sp);
+				}
+			}
 			//! 任意の基準で子ノードをソート
 			template <class CMP>
 			void sortChild(CMP&& cmp, const bool recursive) {
 				if(auto c = getChild()) {
 					SPVector spv;
-					_iterateChild([&spv](auto& nd){
+					iterateChild([&spv](auto& nd){
 						spv.emplace_back(nd);
 					});
 					std::sort(spv.begin(), spv.end(), cmp);
