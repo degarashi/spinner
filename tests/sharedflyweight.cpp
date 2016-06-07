@@ -30,7 +30,7 @@ namespace spn {
 			using GeneratedV = std::vector<Generated>;
 			GeneratedV gv;
 
-			::spn::SharedFlyweight<int, int, Gen> fw(gen);
+			::spn::SharedFlyweight<int, int, Gen, Chk_SharedPtr<int>> fw(gen);
 			enum Check {
 				Generate,		// 新たに値を生成
 				Get,			// 既に存在する値を取得

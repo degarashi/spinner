@@ -3,12 +3,21 @@
 #include "error.hpp"
 
 namespace spn {
-	template <class K, class V, class Gen>
+	template <class T>
+	struct Chk_SharedPtr {
+		using sp_t = std::shared_ptr<T>;
+		using wp_t = std::weak_ptr<T>;
+		static std::size_t Count(const wp_t& t) {
+			return t.use_count();
+		}
+		static auto Lock(const wp_t& t) {
+			return t.lock();
+		}
+	};
+	template <class K, class V, class Gen, class Chk>
 	class SharedFlyweight {
 		private:
-			using sp_t = std::shared_ptr<V>;
-			using wp_t = std::weak_ptr<V>;
-			using Map = std::unordered_map<K, wp_t>;
+			using Map = std::unordered_map<K, typename Chk::wp_t>;
 			Map		_map;
 			Gen		_generator;
 		public:
@@ -23,22 +32,22 @@ namespace spn {
 				const auto itr = _map.find(key);
 				if(itr == _map.end())
 					return 0;
-				return itr->second.use_count();
+				return Chk::Count(itr->second);
 			}
-			sp_t get(const K& key) {
+			auto get(const K& key) {
 				auto itr = _map.find(key);
 				if(itr == _map.end()) {
-					sp_t ret = _generator(key);
-					itr = _map.emplace(key, wp_t(ret)).first;
+					typename Chk::sp_t ret = _generator(key);
+					itr = _map.emplace(key, typename Chk::wp_t(ret)).first;
 					return ret;
 				}
-				return itr->second.lock();
+				return Chk::Lock(itr->second);
 			}
 			void collectGarbage() const {
 				auto& m = const_cast<Map&>(_map);
 				auto itr = m.begin();
 				while(itr != m.end()) {
-					if(itr->second.expired()) {
+					if(Chk::Count(itr->second)==0) {
 						const auto itr2 = itr;
 						++itr;
 						m.erase(itr2);
