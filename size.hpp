@@ -130,7 +130,9 @@ namespace spn {
 			{
 				_checkValidness();
 			}
-
+			static _Rect FromSize(const T& x0, const T& y0, const T& w, const T& h) {
+				return _Rect(x0, x0+w, y0, y0+h);
+			}
 			T width() const {
 				_checkValidness();
 				return x1-x0;
