@@ -62,9 +62,9 @@ namespace spn {
 			WP			_wpParent;
 
 			// --- ノードつなぎ変え時に呼ばれる関数. 継承先クラスが適時オーバーライドする ---
-			void onParentChange(const SP& /*from*/, const SP& /*to*/) {}
-			void onChildRemove(const SP& /*node*/) {}
-			void onChildAdded(const SP& /*node*/) {}
+			static void OnParentChange(const TreeNode* /*self*/, const SP& /*node*/) {}
+			static void OnChildRemove(const TreeNode* /*self*/, const SP& /*node*/) {}
+			static void OnChildAdded(const TreeNode* /*self*/, const SP& /*node*/) {}
 
 			static void _PrintIndent(std::ostream& os, int n) {
 				while(--n >= 0)
@@ -150,7 +150,7 @@ namespace spn {
 				   spP = getParent();
 				AssertP(Trap, sp.get() != this, "self-reference detected")
 				if(sp.get() != spP.get()) {
-					onParentChange(spP, sp);
+					T::OnParentChange(this, sp);
 					_wpParent = w;
 				}
 			}
@@ -194,7 +194,7 @@ namespace spn {
 			void removeChild(const SP& target) {
 				AssertP(Trap, _spChild)
 				if(_spChild == target) {
-					onChildRemove(target);
+					T::OnChildRemove(this, target);
 					// 最初の子ノードが削除対象
 					target->setParent(WP());
 					_spChild = target->getSibling();
@@ -207,7 +207,7 @@ namespace spn {
 			void removeSibling(pointer prev, const SP& target) {
 				if(target.get() == this) {
 					if(auto sp = getParent())
-						sp->onChildRemove(this->shared_from_this());
+						T::OnChildRemove(sp.get(), this->shared_from_this());
 					// このノードが削除対象
 					AssertP(Trap, prev)
 					prev->_spSibling = _spSibling;
@@ -225,7 +225,7 @@ namespace spn {
 				else {
 					_spChild = s;
 					s->setParent(this->shared_from_this());
-					onChildAdded(s);
+					T::OnChildAdded(this, s);
 				}
 			}
 			void addSibling(const SP& s) {
@@ -236,7 +236,7 @@ namespace spn {
 					_spSibling = s;
 					s->setParent(_wpParent);
 					if(auto sp = getParent())
-						sp->onChildAdded(s);
+						T::OnChildAdded(sp.get(), s);
 				}
 			}
 			//! 深さ優先で巡回
