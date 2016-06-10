@@ -99,24 +99,74 @@ namespace spn {
 			SP		_spRoot;
 			VEC		_spArray;
 
+			using CB = std::function<void (const SP&, const SP&)>;
+			CB		_cbAdd,
+					_cbRem,
+					_cbParent;
+			bool hasCB() const {
+				return static_cast<bool>(_cbAdd);
+			}
+			static std::false_type _IsSP(...);
+			static std::true_type _IsSP(const SP&);
+			template <class A>
+			constexpr static bool IsSP = decltype(_IsSP(std::decay_t<A>()))::value;
+
 			void _reflArray() {
 				_spArray = plain();
 			}
 			public:
 				using Type = T;
-				TestTree(const SP& sp): _spRoot(sp) {}
-				TestTree(int value): _spRoot(std::make_shared<T>(value)) {
+				template <
+					class A,
+					class... Ts,
+					std::enable_if_t<!IsSP<A>>*& = Enabler
+				>
+				TestTree(A&& a, Ts&&... params):
+					_spRoot(
+						std::make_shared<T>(
+							std::forward<A>(a),
+							std::forward<Ts>(params)...
+						)
+					)
+				{
 					_reflArray();
 				}
+				template <
+					class A,
+					std::enable_if_t<IsSP<A>>*& = Enabler
+				>
+				TestTree(A&& sp):
+					_spRoot(std::forward<A>(sp))
+				{
+					_reflArray();
+				}
+				TestTree() = default;
+				void setCallback(const CB& add, const CB& rem, const CB& p) {
+					if(add) {
+						Assert(Trap, add && rem && p)
+						_cbAdd = add;
+						_cbRem = rem;
+						_cbParent = p;
+					} else
+						_cbAdd = _cbRem = _cbParent = nullptr;
+				}
 				//! 要素の追加
-				void add(int n, const SP& node) {
+				void add(const int n, const SP& node) {
+					if(hasCB()) {
+						_cbParent(node, _spArray.at(n));
+						_cbAdd(_spArray.at(n), node);
+					}
 					ASSERT_NO_FATAL_FAILURE(_spArray.at(n)->addChild(node));
 					_reflArray();
 				}
 				//! 要素の削除
-				SP rem(int n) {
+				SP rem(const int n) {
 					SP sp = _spArray.at(n);
 					if(auto pr = sp->getParent()) {
+						if(hasCB()) {
+							_cbRem(pr, sp);
+							_cbParent(sp, nullptr);
+						}
 						pr->removeChild(sp);
 						if(::testing::Test::HasFatalFailure())
 							return SP();
@@ -128,8 +178,8 @@ namespace spn {
 					return sp;
 				}
 				//! 要素の入れ替え
-				SP swapAt(int from, int to) {
-					auto node = rem(from);
+				SP swapAt(const int from, const int to) {
+					const auto node = rem(from);
 					add(to % size(), node);
 					return node;
 				}
@@ -211,7 +261,7 @@ namespace spn {
 					int from = rd.template getUniform<int>({1, t.size()-1}),
 						to = rd.template getUniform<int>({0, t.size()-2});
 					if(to >= from)
-						++to;
+						to = (to+1) % t.size();
 
 					_CallTS([from, to](auto& t){
 									return t.swapAt(from, to)->value;
@@ -483,6 +533,121 @@ namespace spn {
 			);
 			ChkSort(root);
 			ChkCount(root, value+1);
+		}
+		namespace {
+			struct Action {
+				enum type {
+					ParentChange,
+					AddChild,
+					RemChild,
+					_Num
+				};
+			};
+			class TreeNotify_t;
+			using SP = std::shared_ptr<TreeNotify_t>;
+			struct ActInfo {
+				const TreeNotify_t*		target;
+				Action::type			action;
+				const TreeNotify_t*		node;
+
+				using Ptr = TreeNode<TreeNotify_t>*;
+				ActInfo(const Ptr tgt,
+						Action::type type,
+						const Ptr node);
+				static ActInfo AsParentChange(const Ptr tgt, const Ptr node);
+				static ActInfo AsAddChild(const Ptr tgt, const Ptr node);
+				static ActInfo AsRemChild(const Ptr tgt, const Ptr node);
+				bool operator == (const ActInfo& info) const {
+					if(info.target != target ||
+							info.action != action)
+					{
+						return false;
+					}
+					return info.node == node;
+				}
+			};
+			using ActV = std::vector<ActInfo>;
+			ActV	g_act;
+			class TreeNotify_t : public TreeNode<TreeNotify_t> {
+				friend class TreeNode<TreeNotify_t>;
+				private:
+					static void OnParentChange(const pointer self, const SP& node) {
+						g_act.emplace_back(ActInfo::AsParentChange(self, node.get()));
+					}
+					static void OnChildAdded(const pointer self, const SP& node) {
+						g_act.emplace_back(ActInfo::AsAddChild(self, node.get()));
+					}
+					static void OnChildRemove(const pointer self, const SP& node) {
+						g_act.emplace_back(ActInfo::AsRemChild(self, node.get()));
+					}
+				public:
+					int		value;
+					TreeNotify_t(const int v): value(v) {}
+			};
+			ActInfo::ActInfo(const Ptr tgt,
+							Action::type type,
+							const Ptr node):
+				target(static_cast<const TreeNotify_t*>(tgt)),
+				action(type),
+				node(static_cast<const TreeNotify_t*>(node))
+			{}
+			ActInfo ActInfo::AsParentChange(const Ptr tgt, const Ptr node) {
+				return ActInfo(tgt, Action::ParentChange, node);
+			}
+			ActInfo ActInfo::AsAddChild(const Ptr tgt, const Ptr node) {
+				return ActInfo(tgt, Action::AddChild, node);
+			}
+			ActInfo ActInfo::AsRemChild(const Ptr tgt, const Ptr node) {
+				return ActInfo(tgt, Action::RemChild, node);
+			}
+		}
+		TEST_F(TreeNodeTest, Notify) {
+			auto rd = getRand();
+			// ランダムなツリーを作る
+			TestTree<TreeNotify_t>	tree(0);
+			int value = 0;
+			constexpr int N_Manip = 100;
+			MakeRandomTree(
+				rd,
+				N_Manip,
+				[&value](const int){
+					return ++value;
+				},
+				{Manip::Add},
+				tree
+			);
+			ActV act;
+			tree.setCallback(
+				// Add
+				[&act](const auto& tgt, const auto& node){
+					act.emplace_back(ActInfo::AsAddChild(tgt.get(), node.get()));
+				},
+				// Rem
+				[&act](const auto& tgt, const auto& node){
+					act.emplace_back(ActInfo::AsRemChild(tgt.get(), node.get()));
+				},
+				// Parent
+				[&act](const auto& tgt, const auto& node){
+					act.emplace_back(ActInfo::AsParentChange(tgt.get(), node.get()));
+				}
+			);
+			// g_act = TreeNode側で検知したイベントリスト
+			// act = 確認用のイベントリスト
+			g_act.clear();
+			MakeRandomTree(
+				rd,
+				100,
+				[&value](const int){
+					return ++value;
+				},
+				{Manip::Add, Manip::Remove, Manip::Recompose},
+				tree
+			);
+			ASSERT_EQ(act.size(), g_act.size());
+			const int n = act.size();
+			for(int i=0 ; i<n ; i++) {
+				ASSERT_EQ(act[i], g_act[i]);
+			}
 		}
 	}
 }
