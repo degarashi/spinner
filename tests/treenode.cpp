@@ -164,26 +164,31 @@ namespace spn {
 			_CallTS(std::forward<CB>(cb), std::forward<Ts>(ts)...);
 			return res;
 		}
-		template <class RD, class VT, class T, class... Ts>
-		void RandomManipulate(RD& rd, VT&& vt, const int index, const bool allowRemove, T&& t, Ts&&... ts) {
-			enum class E_Manip {
+		struct Manip {
+			enum type {
 				Add,
-				Add2,
-				Add3,
 				Remove,
 				Recompose,
 				_Num
 			};
+		};
+		using ManipV = std::vector<Manip::type>;
+		template <class RD, class VT, class T, class... Ts>
+		void RandomManipulate(RD& rd, VT&& vt, const int index, const ManipV& manipList, T&& t, Ts&&... ts) {
 			// ノードが1つしか無い時は追加オンリー
-			E_Manip typ = (t.size() <= 1) ? E_Manip::Add :
-							static_cast<E_Manip>(rd.template getUniform<int>({0, static_cast<int>(E_Manip::_Num)-1}));
+			Manip::type typ;
+			if(t.size() <= 1) {
+				if(std::count(manipList.begin(), manipList.end(), Manip::Add) == 0)
+					return;
+				typ = Manip::Add;
+			} else {
+				typ = manipList.at(rd.template getUniform<int>({0, manipList.size()-1}));
+			}
 			switch(typ) {
 				// 新たなノードを追加
-				case E_Manip::Add:
-				case E_Manip::Add2:
-				case E_Manip::Add3: {
+				case Manip::Add: {
 					// 挿入箇所を配列から適当に選ぶ
-					int at = rd.template getUniform<int>({0, t.size()-1});
+					const int at = rd.template getUniform<int>({0, t.size()-1});
 					// Tree-A
 					auto value = vt(index);
 					value = _CallTS([value, at](auto& t){
@@ -193,18 +198,16 @@ namespace spn {
 					// std::cout << boost::format("added: %1% value=%2%\n") % at % value;
 					break; }
 				// ノードを削除
-				case E_Manip::Remove: {
-					if(!allowRemove)
-						break;
+				case Manip::Remove: {
 					// ルート以外を選ぶ
-					int at = rd.template getUniform<int>({1, t.size()-1});
+					const int at = rd.template getUniform<int>({1, t.size()-1});
 					_CallTS([at](auto& t){
 									return t.rem(at)->value;
 								}, std::forward<T>(t), std::forward<Ts>(ts)...);
 					// std::cout << boost::format("removed: %1% value=%2%\n") % at % value;
 					break; }
 				// ノードを別の場所に繋ぎ変え
-				case E_Manip::Recompose: {
+				case Manip::Recompose: {
 					int from = rd.template getUniform<int>({1, t.size()-1}),
 						to = rd.template getUniform<int>({0, t.size()-2});
 					if(to >= from)
@@ -253,10 +256,19 @@ namespace spn {
 		namespace {
 			// ランダムにノード操作
 			template <class RD, class V, class... TS>
-			void MakeRandomTree(RD& rd, const int repeat, V&& fnValue, const bool allowRemove, TS&&... tree) {
+			void MakeRandomTree(RD& rd, const int repeat, V&& fnValue, const ManipV& manipList, TS&&... tree) {
 				for(int i=0 ; i<repeat ; i++)
-					RandomManipulate(rd, fnValue, i, allowRemove, std::forward<TS>(tree)...);
+					RandomManipulate(rd, fnValue, i, manipList, std::forward<TS>(tree)...);
 			}
+			const ManipV cs_manip = {
+				Manip::Add, Manip::Add, Manip::Add,
+				Manip::Remove,
+				Manip::Recompose
+			};
+			const ManipV cs_manip_noremove = {
+				Manip::Add, Manip::Add, Manip::Add,
+				Manip::Recompose
+			};
 		}
 		class TreeNodeTest : public RandomTestInitializer {};
 		TEST_F(TreeNodeTest, General) {
@@ -270,7 +282,7 @@ namespace spn {
 				[](const int r){
 					return r+1;
 				},
-				true,
+				cs_manip,
 				treeA,
 				treeB
 			);
@@ -317,7 +329,7 @@ namespace spn {
 				[](const int r){
 					return r+1;
 				},
-				true,
+				cs_manip,
 				tree
 			);
 			auto spRoot = tree.getRoot();
@@ -344,7 +356,7 @@ namespace spn {
 				[](const int r){
 					return r+1;
 				},
-				true,
+				cs_manip,
 				treeA
 			);
 			TestTree<TreeNode_t>	treeB(treeA.getRoot()->cloneTree());
@@ -371,7 +383,7 @@ namespace spn {
 				[](const int r){
 					return r+1;
 				},
-				true,
+				cs_manip,
 				tree
 			);
 
@@ -401,7 +413,7 @@ namespace spn {
 				[](const int r){
 					return r+1;
 				},
-				true,
+				cs_manip,
 				tree
 			);
 
@@ -458,7 +470,7 @@ namespace spn {
 				[&value](const int){
 					return ++value;
 				},
-				false,
+				cs_manip_noremove,
 				tree
 			);
 			SPTreeNode root = tree.getRoot();
