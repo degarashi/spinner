@@ -306,7 +306,7 @@ namespace spn {
 		namespace {
 			// ランダムにノード操作
 			template <class RD, class V, class... TS>
-			void MakeRandomTree(RD& rd, const int repeat, V&& fnValue, const ManipV& manipList, TS&&... tree) {
+			void RandomManipulation(RD& rd, const int repeat, V&& fnValue, const ManipV& manipList, TS&&... tree) {
 				for(int i=0 ; i<repeat ; i++)
 					RandomManipulate(rd, fnValue, i, manipList, std::forward<TS>(tree)...);
 			}
@@ -326,7 +326,7 @@ namespace spn {
 			// TreeNodeと、子を配列で持つノードでそれぞれツリーを作成
 			TestTree<TestNode>		treeA(0);		// 確認用
 			TestTree<TreeNode_t>	treeB(0);		// テスト対象
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[](const int r){
@@ -373,7 +373,7 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[](const int r){
@@ -400,7 +400,7 @@ namespace spn {
 			// ランダムなツリーを生成
 			auto rd = getRand();
 			TestTree<TreeNode_t>	treeA(0);
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[](const int r){
@@ -427,7 +427,7 @@ namespace spn {
 			auto rd = getRand();
 			// ランダムなツリーを作る
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[](const int r){
@@ -457,7 +457,7 @@ namespace spn {
 			auto rd = getRand();
 			// ランダムなツリーを作る
 			TestTree<TreeNode_t>	tree(0);
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[](const int r){
@@ -514,7 +514,7 @@ namespace spn {
 			TestTree<TreeNode_t>	tree(0);
 			int value = 0;
 			constexpr int N_Entry = 100;
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				N_Entry,
 				[&value](const int){
@@ -607,7 +607,7 @@ namespace spn {
 			TestTree<TreeNotify_t>	tree(0);
 			int value = 0;
 			constexpr int N_Manip = 100;
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				N_Manip,
 				[&value](const int){
@@ -634,7 +634,7 @@ namespace spn {
 			// g_act = TreeNode側で検知したイベントリスト
 			// act = 確認用のイベントリスト
 			g_act.clear();
-			MakeRandomTree(
+			RandomManipulation(
 				rd,
 				100,
 				[&value](const int){
