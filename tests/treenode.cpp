@@ -347,6 +347,55 @@ namespace spn {
 		}
 		namespace {
 			template <class T>
+			void Check(const T& node) {
+				if(node->getChild()) {
+					// 順方向で取り出した子ノードとprevSiblingで取り出したそれは、逆転すれば同一になる
+					using V = typename std::decay_t<decltype(*node)>::SPVector;
+					V vn, vr;
+					auto sp = node->getChild();
+					while(sp) {
+						vn.emplace_back(sp);
+						sp = sp->getSibling();
+					}
+					sp = node->getChild();
+					while(auto next = sp->getSibling())
+						sp = next;
+					while(sp) {
+						vr.emplace_back(sp);
+						sp = sp->getPrevSibling();
+					}
+					std::reverse(vr.begin(), vr.end());
+					ASSERT_EQ(vn, vr);
+				}
+				// 子ノードも再帰的に調べる
+				ASSERT_NO_FATAL_FAILURE(
+					node->iterateChild(
+						[](auto& nd){
+							Check(nd);
+						}
+					);
+				);
+			}
+		}
+		TEST_F(TreeNodeTest, PrevSibling) {
+			auto rd = getRand();
+			// ランダムなツリーを作る
+			TestTree<TreeNode_t>	tree(0);
+			int value = 0;
+			constexpr int N_Manip = 100;
+			RandomManipulation(
+				rd,
+				N_Manip,
+				[&value](const int){
+					return ++value;
+				},
+				cs_manip,
+				tree
+			);
+			ASSERT_NO_FATAL_FAILURE(Check(tree.getRoot()));
+		}
+		namespace {
+			template <class T>
 			T* GetPointer(T* p) {
 				return p;
 			}

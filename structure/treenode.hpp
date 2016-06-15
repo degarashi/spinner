@@ -59,13 +59,15 @@ namespace spn {
 
 			SP			_spChild,
 						_spSibling;
-			WP			_wpParent;
+			WP			_wpParent,
+						_wpPrevSibling;
 
 			// --- ノードつなぎ変え時に呼ばれる関数. 継承先クラスが適時オーバーライドする ---
 			static void OnParentChange(const TreeNode* /*self*/, const SP& /*node*/) {}
 			static void OnChildRemove(const TreeNode* /*self*/, const SP& /*node*/) {}
 			static void OnChildAdded(const TreeNode* /*self*/, const SP& /*node*/) {}
 
+			//! 決められた回数分、タブを出力
 			static void _PrintIndent(std::ostream& os, int n) {
 				while(--n >= 0)
 					os << '\t';
@@ -95,6 +97,25 @@ namespace spn {
 				});
 				return pv;
 			}
+			void _isolate() {
+				if(const auto p = getPrevSibling())
+					p->_spSibling = getSibling();
+				if(const auto s = getSibling()) {
+					s->_wpPrevSibling = _wpPrevSibling;
+					_spSibling.reset();
+				}
+				_wpPrevSibling.reset();
+				if(auto s = getParent()) {
+					T::OnParentChange(this, nullptr);
+					_wpParent.reset();
+				}
+			}
+			void _setParent(const SP& s) {
+				AssertP(Trap, s.get() != this, "self-reference detected")
+				AssertP(Trap, isolating(), "target node must isolated")
+				T::OnParentChange(this, s);
+				_wpParent = s;
+			}
 
 		public:
 			TreeNode() = default;
@@ -106,6 +127,15 @@ namespace spn {
 			// ムーブは可
 			TreeNode& operator = (TreeNode&& t) = default;
 
+			//! 孤立判定
+			bool isolating() const {
+				return _wpParent.expired() && !hasSibling();
+			}
+			//! 前後どちらかでも兄弟ノードを持っているか
+			bool hasSibling() const {
+				return !_wpPrevSibling.expired() || _spSibling;
+			}
+			//! 直下の子ノードだけ巡回
 			template <class CB>
 			void iterateChild(CB&& cb) const {
 				if(SP sp = getChild()) {
@@ -130,8 +160,11 @@ namespace spn {
 					auto itr = spv.begin();
 					do {
 						cur = *itr;
-						if(pcur)
+						if(pcur) {
+							cur->_wpPrevSibling = pcur;
 							pcur->_spSibling = cur;
+						} else
+							cur->_wpPrevSibling.reset();
 						pcur = cur;
 					} while(++itr != spv.end());
 					cur->_spSibling.reset();
@@ -140,18 +173,6 @@ namespace spn {
 						for(auto& s : spv)
 							s->sortChild(cmp, recursive);
 					}
-				}
-			}
-			void setParent(const SP& s) {
-				setParent(WP(s));
-			}
-			void setParent(const WP& w) {
-				SP sp = w.lock(),
-				   spP = getParent();
-				AssertP(Trap, sp.get() != this, "self-reference detected")
-				if(sp.get() != spP.get()) {
-					T::OnParentChange(this, sp);
-					_wpParent = w;
 				}
 			}
 
@@ -164,30 +185,18 @@ namespace spn {
 			const SP& getSibling() const {
 				return _spSibling;
 			}
+			//! 直前の兄弟ノードを取得
 			SP getPrevSibling(const bool bLoop=false) const {
-				const SP p = getParent();
-				if(p) {
-					auto cur = p->getChild();
-					if(!cur->getSibling()) {
-						// 項目が1つしかない
-						return nullptr;
-					}
-					// カーソルがリストの最初
-					if(cur.get() == this) {
-						if(bLoop) {
-							// カーソルを末尾にループ
-							while(const auto& tmp = cur->getSibling())
-								cur = tmp;
-							return cur;
-						}
-						return nullptr;
-					}
-					// 直前の項目を探す
-					while(const auto& cur2 = cur->getSibling()) {
-						if(cur2.get() == this)
-							return cur;
-						cur = cur2;
-					}
+				if(SP ret = _wpPrevSibling.lock())
+					return ret;
+				if(bLoop) {
+					auto cur = getParent();
+					if(!cur)
+						return const_cast<this_t*>(this)->shared_from_this();
+					cur = cur->getChild();
+					while(auto next = cur->getSibling())
+						cur = next;
+					return cur;
 				}
 				return nullptr;
 			}
@@ -196,9 +205,8 @@ namespace spn {
 				if(_spChild == target) {
 					T::OnChildRemove(this, target);
 					// 最初の子ノードが削除対象
-					target->setParent(WP());
 					_spChild = target->getSibling();
-					target->_spSibling = nullptr;
+					target->_isolate();
 				} else {
 					// 兄弟ノードのどれかが削除対象
 					_spChild->removeSibling(nullptr, target);
@@ -210,9 +218,7 @@ namespace spn {
 						T::OnChildRemove(sp.get(), this->shared_from_this());
 					// このノードが削除対象
 					AssertP(Trap, prev)
-					prev->_spSibling = _spSibling;
-					setParent(WP());
-					_spSibling = nullptr;
+					_isolate();
 					return;
 				}
 				AssertP(Trap, _spSibling)
@@ -220,22 +226,25 @@ namespace spn {
 			}
 			void addChild(const SP& s) {
 				AssertP(Trap, s.get() != this, "self-reference detected")
+				AssertP(Trap, s->isolating(), "target node must isolated")
 				if(_spChild)
 					_spChild->addSibling(s);
 				else {
 					_spChild = s;
-					s->setParent(this->shared_from_this());
+					s->_setParent(this->shared_from_this());
 					T::OnChildAdded(this, s);
 				}
 			}
 			void addSibling(const SP& s) {
 				AssertP(Trap, s.get() != this, "self-reference detected")
+				AssertP(Trap, s->isolating(), "target node must isolated")
 				if(_spSibling)
 					_spSibling->addSibling(s);
 				else {
 					_spSibling = s;
-					s->setParent(_wpParent);
-					if(auto sp = getParent())
+					s->_setParent(_wpParent.lock());
+					s->_wpPrevSibling = this->shared_from_this();
+					if(const auto sp = getParent())
 						T::OnChildAdded(sp.get(), s);
 				}
 			}
@@ -280,8 +289,10 @@ namespace spn {
 								HasMethod_clone<T>(nullptr));
 				if(_spChild)
 					sp->_spChild = _spChild->cloneTree(sp);
-				if(_spSibling)
+				if(_spSibling) {
 					sp->_spSibling = _spSibling->cloneTree(parent);
+					sp->_spSibling->_wpPrevSibling = sp;
+				}
 				sp->_wpParent = parent;
 				return sp;
 			}
@@ -326,15 +337,15 @@ namespace spn {
 			return itr - ar.begin();
 		};
 		// 配列化して親ノード番号をチェック
-		auto ar0 = t0.plainPtr();
-		auto ar1 = t1.plainPtr();
+		const auto ar0 = t0.plainPtr();
+		const auto ar1 = t1.plainPtr();
 		if(ar0.size() != ar1.size())
 			return false;
-		auto sz = ar0.size();
+		const auto sz = ar0.size();
 		for(size_t i=0 ; i<sz ; i++) {
 			// 親ノード番号
-			int idx0 = fnParentIndex(ar0, ar0[i]->getParent()),
-				idx1 = fnParentIndex(ar1, ar1[i]->getParent());
+			const int idx0 = fnParentIndex(ar0, ar0[i]->getParent()),
+						idx1 = fnParentIndex(ar1, ar1[i]->getParent());
 			if(idx0!=idx1 || !cmp(ar0[i], ar1[i]))
 				return false;
 		}
