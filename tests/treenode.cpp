@@ -372,6 +372,7 @@ namespace spn {
 					node->iterateChild(
 						[](auto& nd){
 							Check(nd);
+							return true;
 						}
 					);
 				);

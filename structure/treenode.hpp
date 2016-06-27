@@ -116,6 +116,16 @@ namespace spn {
 				T::OnParentChange(this, s);
 				_wpParent = s;
 			}
+			template <class S, class CB>
+			static void _IterateChild(S& node, CB&& cb) {
+				if(auto sp = node.getChild()) {
+					do {
+						if(!cb(sp))
+							break;
+						sp = sp->getSibling();
+					} while(sp);
+				}
+			}
 
 		public:
 			TreeNode() = default;
@@ -137,14 +147,9 @@ namespace spn {
 			}
 			//! 直下の子ノードだけ巡回
 			template <class CB>
-			void iterateChild(CB&& cb) const {
-				if(SP sp = getChild()) {
-					do {
-						cb(sp);
-						sp = sp->getSibling();
-					} while(sp);
-				}
-			}
+			void iterateChild(CB&& cb) const { _IterateChild(*this, std::forward<CB>(cb)); }
+			template <class CB>
+			void iterateChild(CB&& cb) { _IterateChild(*this, std::forward<CB>(cb)); }
 			//! 任意の基準で子ノードをソート
 			template <class CMP>
 			void sortChild(CMP&& cmp, const bool recursive) {
@@ -152,6 +157,7 @@ namespace spn {
 					SPVector spv;
 					iterateChild([&spv](auto& nd){
 						spv.emplace_back(nd);
+						return true;
 					});
 					std::sort(spv.begin(), spv.end(), cmp);
 					SP	cur = spv.front(),
