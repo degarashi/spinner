@@ -40,6 +40,7 @@ namespace spn {
 
 					Block(const Name& name);
 					USec getLowerTime() const;			//!< 下層にかかった時間
+					USec getAverageTime(bool omitLower) const;
 				};
 				using BlockSP = std::shared_ptr<Block>;
 			private:

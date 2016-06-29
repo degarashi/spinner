@@ -19,6 +19,11 @@ namespace spn {
 			});
 			return sum;
 		}
+		USec Profiler::Block::getAverageTime(const bool omitLower) const {
+			if(omitLower)
+				return (hist.tAccum - getLowerTime()) / hist.nCalled;
+			return hist.getAverageTime();
+		}
 		// -------------------- Profiler::BlockObj --------------------
 		Profiler::BlockObj::BlockObj(const Name& name):
 			_bValid(true),
