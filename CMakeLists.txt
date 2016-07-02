@@ -48,6 +48,7 @@ message(STATUS "CXX_FLAGS_DEBUG = ${CMAKE_CXX_FLAGS_DEBUG}")
 message(STATUS "CXX_FLAGS_RELEASE = ${CMAKE_CXX_FLAGS_RELEASE}")
 if(NOT DEFINED ARCHITECTURE)
 	aux_source_directory(tests TEST_SRC)
+	add_definitions(-DSPN_PROFILER)
 	add_executable(spn_test main.cpp ${TEST_SRC})
 	set(LINK_LIBS
 				spinner

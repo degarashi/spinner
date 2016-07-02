@@ -6,6 +6,15 @@
 #include <unordered_map>
 #include <stack>
 
+#if SPN_PROFILER
+	#define SpnBeginPB(name)	::spn::profiler::beginBlock(name)
+	#define SpnEndPB(name)		::spn::profiler::endBlock(name)
+	#define SpnPB(name)			const auto name##__LINE__ = ::spn::profiler(name)
+#else
+	#define SpnBeginPB(name)
+	#define SpnEndPB(name)
+	#define SpnPB(name)
+#endif
 namespace spn {
 	namespace prof {
 		using Clock = std::chrono::steady_clock;
