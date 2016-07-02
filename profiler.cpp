@@ -1,4 +1,4 @@
-#include "structure/profiler.hpp"
+#include "profiler.hpp"
 namespace spn {
 	thread_local prof::Profiler profiler;
 	namespace prof {

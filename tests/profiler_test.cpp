@@ -2,7 +2,7 @@
 	#include <intrin.h>
 #endif
 #include "test.hpp"
-#include "../structure/profiler.hpp"
+#include "profiler.hpp"
 
 namespace spn {
 	namespace test {
