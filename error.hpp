@@ -125,8 +125,8 @@ struct AAct_Warn {
 template <class E, class... Ts>
 struct AAct_Throw : spn::ArgHolder<Ts...> {
 	using spn::ArgHolder<Ts...>::ArgHolder;
-	void onError(const std::string& str, std::false_type={}) {
-		this->inorder([&str](Ts... args){
+	void onError(const std::string& /*str*/, std::false_type={}) {
+		this->inorder([](Ts... args){
 			throw E(args...);
 		});
 	}

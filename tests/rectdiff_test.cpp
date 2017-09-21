@@ -47,7 +47,7 @@ namespace spn {
 					rect::DivideRect(
 						size,
 						rect,
-						[&rect, &size, &area, &imap](const Rect& g, const Rect& l){
+						[&size, &area, &imap](const Rect& g, const Rect& l){
 							ASSERT_NO_THROW(g.checkValidness());
 							ASSERT_NO_THROW(l.checkValidness());
 							// グローバルとローカル矩形の面積は同じ
@@ -86,7 +86,6 @@ namespace spn {
 				const int mvx = randMove(),
 						mvy = randMove();
 				const auto rect2 = rect.move(mvx, mvy);
-				const bool bHit = rect.hit(rect2);
 				int area0 = 0;
 				int nResult = 0;
 				Rect result[2];
@@ -94,7 +93,7 @@ namespace spn {
 					rect,
 					mvx,
 					mvy,
-					[&area0, &result, &nResult, &rect, &rect2, bHit](const Rect& r){
+					[&area0, &result, &nResult, &rect, &rect2](const Rect& r){
 						if(nResult != 0) {
 							// 既に算出された差分矩形同士は重ならない
 							ASSERT_FALSE(r.hit(result[0]));

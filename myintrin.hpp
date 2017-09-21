@@ -234,6 +234,9 @@
 		using T = int32_t;
 		using base_t::base_t;
 		using base_t::operator =;
+		reg128i(const base_t& b):
+			base_t(b)
+		{}
 
 		static T And(T t0, T t1) { return t0 & t1; }
 		static T AndNot(T t0, T t1) { return ~t0 & t1; }
@@ -270,6 +273,9 @@
 		using base_t::operator =;
 
 		reg128() = default;
+		reg128(const base_t& b):
+			base_t(b)
+		{}
 		reg128(const reg128i& r) {
 			for(int i=0 ; i<4 ; i++)
 				v[i] = r.v[i];
